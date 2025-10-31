@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Mon site Django{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'vetements/style.css' %}">
+</head>
+<body>
+    <header>
+        <h1>👕 Mon site de vêtements</h1>
+        <nav>
+            <a href="{% url 'accueil' %}">Accueil</a>
+            <a href="{% url 'catalogue' %}">Catalogue</a>
+            <a href="{% url 'about' %}">À propos</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <p>© 2025 - Projet d'étude Django</p>
+    </footer>
+</body>
+</html>

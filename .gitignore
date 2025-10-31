@@ -1,0 +1,56 @@
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+
+# Fichiers Python compilés
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers de logs
+*.log
+
+# Fichiers de base de données locaux (sqlite)
+*.sqlite3
+
+# Fichiers d’environnement
+.env
+*.env
+
+# Caches / temporaires
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# IDE et éditeurs
+.vscode/
+.idea/
+*.iml
+
+# Docker
+# (tu peux garder ton Dockerfile et docker-compose.yml)
+*.pid
+*.tar
+*.bak
+
+# Django
+/staticfiles/
+/media/
+db.sqlite3
+
+# Migrations auto si tu veux les regénérer à chaque fois
+# (optionnel, à ton choix)
+# */migrations/
+# !*/migrations/__init__.py

@@ -1,0 +1,27 @@
+# Image de base
+FROM python:3.10-slim
+
+# Répertoire de travail
+WORKDIR /app
+
+# Installer gcc et dépendances nécessaires
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copier et installer les dépendances
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r ./requirements.txt
+
+# Copier le projet
+COPY . .
+
+# Exposer le port
+EXPOSE 8000
+
+# Lancer le serveur
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+

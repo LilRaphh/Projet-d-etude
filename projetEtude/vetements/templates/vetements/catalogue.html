@@ -1,0 +1,18 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block content %}
+<h2>Catalogue</h2>
+
+<ul>
+    {% for v in vetements %}
+        <li>
+            <strong>{{ v.name }}</strong> — {{ v.category }} — 
+            {% if v.price %}{{ v.price }} €{% else %}Non renseigné{% endif %}
+        </li>
+    {% empty %}
+        <li>Aucun vêtement trouvé.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
