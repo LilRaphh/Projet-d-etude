@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}SmartWear{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="container topbar__inner">
+            <a class="brand" href="/">SmartWear</a>
+            <nav class="nav">
+                <a href="{% url 'vetements_list' %}">Vêtements</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+
+</html>

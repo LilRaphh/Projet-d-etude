@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<form method="post" enctype="multipart/form-data" class="form">
+    {% csrf_token %}
+
+    <div class="form-row">
+        <label>Nom</label>
+        {{ form.nom }}
+    </div>
+
+    <div class="form-row">
+        <label>Type</label>
+        {{ form.type }}
+    </div>
+
+    <div class="form-row">
+        <label>Marque</label>
+        {{ form.marque }}
+    </div>
+
+    <div class="form-row">
+        <label>Style (optionnel)</label>
+        {{ form.style }}
+    </div>
+
+    <div class="form-row">
+        <label>Taille</label>
+        {{ form.taille }}
+    </div>
+
+    <div class="form-row">
+        <label>Photo</label>
+        {{ form.photo }}
+    </div>
+
+    <div class="form-actions">
+        <button class="btn" type="submit">Enregistrer</button>
+        <a class="btn btn--ghost" href="{% url 'vetements_list' %}">Annuler</a>
+    </div>
+</form>
+{% endblock %}

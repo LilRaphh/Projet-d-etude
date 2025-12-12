@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ vetement.nom }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ vetement.nom }}</h1>
+    <a class="btn" href="{% url 'vetement_update' vetement.pk %}">Modifier</a>
+</div>
+
+<div class="detail">
+    <img src="{{ vetement.photo.url }}" class="detail__img" alt="{{ vetement.nom }}">
+    <div class="detail__info">
+        <p><strong>Type :</strong> {{ vetement.get_type_display }}</p>
+        <p><strong>Marque :</strong> {{ vetement.marque }}</p>
+        <p><strong>Taille :</strong> {{ vetement.taille }}</p>
+        <p><strong>Style :</strong> {{ vetement.style|default:"—" }}</p>
+    </div>
+</div>
+{% endblock %}

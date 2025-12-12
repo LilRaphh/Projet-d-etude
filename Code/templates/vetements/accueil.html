@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+
+<section class="page-header">
+    <div>
+        <h1>SmartWear</h1>
+        <div class="page-subtitle">
+            Gère, organise et compose tes vêtements facilement.
+        </div>
+    </div>
+    <a href="{% url 'vetements_list' %}" class="btn">Voir le dressing</a>
+</section>
+
+{% if derniers_vetements %}
+<section>
+    <h2 style="margin-top:20px;">Derniers vêtements ajoutés</h2>
+
+    <div class="grid">
+        {% for v in derniers_vetements %}
+        <a class="card" href="{% url 'vetement_detail' v.pk %}">
+            <img src="{{ v.photo.url }}" alt="{{ v.nom }}" class="card__img">
+            <div class="card__body">
+                <div class="card__title">{{ v.nom }}</div>
+                <div class="card__meta">
+                    {{ v.get_type_display }} • {{ v.marque }} • {{ v.taille }}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% else %}
+<div class="notice">
+    Aucun vêtement pour l’instant. Commence par en ajouter un.
+</div>
+{% endif %}
+
+{% endblock %}
