@@ -1,4 +1,4 @@
-# 🚀 Application Django – README Complet
+# 🚀 Application Django 
 
 ## 1. Présentation générale
 
