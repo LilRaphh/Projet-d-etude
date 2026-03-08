@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block extra_css %}
+.page-hdr { padding: 2rem 0 1rem; border-bottom: 1px solid var(--bor); margin-bottom: 1.75rem; }
+.page-hdr-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.page-ttl { font-family: var(--serif); font-size: clamp(1.8rem,4vw,2.7rem); font-weight: 300; line-height: 1.1; }
+.page-ttl em { color: var(--a); font-style: italic; }
+.page-sub { color: var(--tm); font-size: .84rem; margin-top: .28rem; }
+.ogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1.25rem; }
+.ocard { background: var(--sur); border-radius: var(--rl); overflow: hidden; border: 1px solid var(--bor); transition: box-shadow var(--tr), transform var(--tr); }
+.ocard:hover { box-shadow: var(--shh); transform: translateY(-3px); }
+.ocard-imgs { height: 160px; background: var(--bg); display: flex; overflow: hidden; position: relative; }
+.ocard-img { flex: 1; overflow: hidden; }
+.ocard-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+.ocard:hover .ocard-img img { transform: scale(1.06); }
+.ocard-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2rem; opacity: .15; }
+.ai-badge { position: absolute; top: .5rem; left: .5rem; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: .66rem; font-weight: 600; padding: .18rem .48rem; border-radius: 99px; }
+.ocard-body { padding: .85rem 1rem 1rem; }
+.ocard-occasion { font-size: .68rem; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--a); margin-bottom: .2rem; }
+.ocard-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 400; margin-bottom: .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ocard-meta { font-size: .75rem; color: var(--tm); display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.stars { color: #F5A623; font-size: .82rem; }
+.ocard-acts { display: flex; border-top: 1px solid var(--bor); }
+.oa { flex: 1; padding: .38rem; border: none; background: transparent; color: var(--tm); font-size: .74rem; font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .22rem; transition: all var(--tr); font-weight: 500; }
+.oa:hover { background: var(--bg); color: var(--tx); }
+.oa.del:hover { background: #FFF0F0; color: #C0392B; }
+.oa + .oa { border-left: 1px solid var(--bor); }
+.empty-outfits { text-align: center; padding: 5rem 1rem; }
+.empty-outfits .ico { font-size: 3.5rem; opacity: .18; margin-bottom: 1rem; }
+.empty-outfits h3 { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; margin-bottom: .45rem; }
+.empty-outfits p { color: var(--tm); margin-bottom: 1.4rem; }
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="page-hdr">
+    <div class="page-hdr-row">
+      <div>
+        <h1 class="page-ttl">Mes <em>tenues</em></h1>
+        <p class="page-sub">{{ outfits|length }} tenue{{ 's' if outfits|length != 1 else '' }}</p>
+      </div>
+      <a href="/outfits/new" class="btn btn-primary">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Créer une tenue
+      </a>
+    </div>
+  </div>
+
+  {% if outfits %}
+  <div class="ogrid">
+    {% for o in outfits %}
+    <article class="ocard">
+      <a href="/outfits/{{ o.id }}">
+        <div class="ocard-imgs">
+          {% if o.generated_image %}
+            <div class="ocard-img"><img src="/static/{{ o.generated_image }}" alt="{{ o.name }}"></div>
+            <span class="ai-badge">✦ IA</span>
+          {% else %}
+            {% set pitems = o.items[:3] %}
+            {% if pitems %}
+              {% for it in pitems %}
+              <div class="ocard-img">
+                {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+                {% else %}<div class="ocard-ph">👗</div>{% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="ocard-ph" style="width:100%;font-size:2.5rem">✦</div>
+            {% endif %}
+          {% endif %}
+        </div>
+      </a>
+      <div class="ocard-body">
+        {% if o.occasion %}<div class="ocard-occasion">{{ o.occasion }}</div>{% endif %}
+        <div class="ocard-name" title="{{ o.name }}">{{ o.name }}</div>
+        <div class="ocard-meta">
+          {% if o.rating %}<span class="stars">{% for i in range(o.rating) %}★{% endfor %}</span>{% endif %}
+          {% if o.season %}<span>{{ o.season }}</span>{% endif %}
+          <span>{{ o.items|length }} pièce{{ 's' if o.items|length != 1 else '' }}</span>
+          <span>{{ o.times_worn }}× portée</span>
+        </div>
+      </div>
+      <div class="ocard-acts">
+        <a href="/outfits/{{ o.id }}" class="oa">Voir</a>
+        <a href="/outfits/{{ o.id }}/edit" class="oa">Modifier</a>
+        <form method="POST" action="/outfits/{{ o.id }}/delete" style="flex:1;display:contents" onsubmit="return confirm('Supprimer ?')">
+          <button type="submit" class="oa del">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-outfits">
+    <div class="ico">✦</div>
+    <h3>Aucune tenue pour l'instant</h3>
+    <p>Combinez vos vêtements pour créer vos premières tenues.</p>
+    <a href="/outfits/new" class="btn btn-primary">Créer ma première tenue</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

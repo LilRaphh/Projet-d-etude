@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block extra_css %}
+.fp { padding: 1.75rem 0 5rem; }
+.fp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: 1.4rem; }
+.fp-ttl em { color: var(--a); font-style: italic; }
+.flay { display: grid; grid-template-columns: 290px 1fr; gap: 1.6rem; align-items: start; }
+@media (max-width: 660px) { .flay { grid-template-columns: 1fr; } }
+.upz { aspect-ratio: 1; border: 2px dashed var(--bor); border-radius: var(--rl); background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; cursor: pointer; transition: all var(--tr); position: relative; overflow: hidden; }
+.upz:hover { border-color: var(--a); background: var(--am); }
+.upz.has { border-style: solid; }
+.upz img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.up-lbl { font-size: .77rem; color: var(--tm); text-align: center; padding: 1rem; pointer-events: none; position: relative; }
+.up-ico { font-size: 1.9rem; opacity: .22; }
+.up-in { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.fcard { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.4rem; }
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 440px) { .frow { grid-template-columns: 1fr; } }
+.fdiv { border: none; border-top: 1px solid var(--bor); margin: .9rem 0; }
+.fav-tog { display: flex; align-items: center; gap: .42rem; padding: .4rem .62rem; border: 1px solid var(--bor); border-radius: var(--r); cursor: pointer; background: var(--bg); font-size: .82rem; color: var(--tm); transition: all var(--tr); }
+.fav-tog:hover { border-color: var(--a); color: var(--a); }
+.fav-tog.on { background: #FFF0F5; border-color: #F0A0B0; color: #C0395A; }
+.fav-tog input { display: none; }
+.fact { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin-top: 1.1rem; }
+{% endblock %}
+
+{% block content %}
+<div class="fp"><div class="wrap">
+  <a href="{{ back }}" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Retour</a>
+  <h1 class="fp-ttl">{% if item %}<em>Modifier</em> {{ item.name }}{% else %}Ajouter un <em>vêtement</em>{% endif %}</h1>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="flay">
+      <div>
+        <label class="lbl" style="margin-bottom:.42rem">Photo</label>
+        <label class="upz {% if item and item.image_path %}has{% endif %}" id="upz">
+          {% if item and item.image_path %}<img src="/static/{{ item.image_path }}" id="prev">{% endif %}
+          {% if not item or not item.image_path %}
+          <div class="up-lbl"><div class="up-ico">📸</div>Cliquez ou glissez<br><small style="opacity:.55">PNG, JPG, WEBP</small></div>
+          {% endif %}
+          <input type="file" name="image" class="up-in" accept="image/*" id="upi">
+        </label>
+      </div>
+      <div class="fcard">
+        <div class="frow">
+          <div class="fg" style="grid-column:1/-1">
+            <label class="lbl">Nom *</label>
+            <input name="name" class="fc" required placeholder="ex. T-shirt blanc Uniqlo" value="{{ item.name if item else '' }}">
+          </div>
+          <div class="fg">
+            <label class="lbl">Catégorie *</label>
+            <select name="category" class="fc" required>
+              {% for c in cats %}<option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="fg">
+            <label class="lbl">Marque</label>
+            <input name="brand" class="fc" placeholder="Zara, H&M..." value="{{ item.brand or '' if item else '' }}">
+          </div>
+        </div>
+        <hr class="fdiv">
+        <div class="frow">
+          <div class="fg"><label class="lbl">Taille</label>
+            <select name="size" class="fc"><option value="">—</option>{% for s in sizes %}<option value="{{ s }}" {% if item and item.size == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+          <div class="fg"><label class="lbl">Couleur</label>
+            <select name="color" class="fc"><option value="">—</option>{% for c in colors %}<option value="{{ c }}" {% if item and item.color == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+          <div class="fg"><label class="lbl">Saison</label>
+            <select name="season" class="fc"><option value="">—</option>{% for s in seasons %}<option value="{{ s }}" {% if item and item.season == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+          <div class="fg"><label class="lbl">État</label>
+            <select name="condition" class="fc"><option value="">—</option>{% for c in conds %}<option value="{{ c }}" {% if item and item.condition == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+        </div>
+        <hr class="fdiv">
+        <div class="frow">
+          <div class="fg"><label class="lbl">Prix payé</label>
+            <input name="price" type="number" step="0.01" min="0" class="fc" placeholder="0.00" value="{{ item.price if item and item.price else '' }}"></div>
+          <div class="fg"><label class="lbl">Tags (virgules)</label>
+            <input name="tags" class="fc" placeholder="casual, été..." value="{{ etags }}"></div>
+        </div>
+        <div class="fg"><label class="lbl">Notes</label>
+          <textarea name="notes" class="fc" placeholder="Entretien, occasions...">{{ item.notes or '' if item else '' }}</textarea></div>
+        <label class="fav-tog {% if item and item.is_favorite %}on{% endif %}" id="favL">
+          <input type="checkbox" name="is_favorite" id="favC" {% if item and item.is_favorite %}checked{% endif %}>
+          <span id="favI">{{ '❤️' if item and item.is_favorite else '🤍' }}</span>
+          <span id="favT">{{ 'Dans mes favoris' if item and item.is_favorite else 'Ajouter aux favoris' }}</span>
+        </label>
+        <div class="fact">
+          <a href="{{ back }}" class="btn btn-ghost btn-sm">Annuler</a>
+          <button type="submit" class="btn btn-primary">{{ 'Mettre à jour' if item else 'Ajouter' }}</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var upi = document.getElementById("upi");
+var upz = document.getElementById("upz");
+if (upi) {
+  upi.addEventListener("change", function() {
+    var f = this.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function(e) {
+      var img = upz.querySelector("img");
+      if (!img) { img = document.createElement("img"); img.id = "prev"; upz.appendChild(img); var lbl = upz.querySelector(".up-lbl"); if (lbl) lbl.remove(); }
+      img.src = e.target.result; upz.classList.add("has");
+    };
+    r.readAsDataURL(f);
+  });
+  upz.addEventListener("dragover", function(e) { e.preventDefault(); upz.style.borderColor = "var(--a)"; });
+  upz.addEventListener("dragleave", function() { upz.style.borderColor = ""; });
+  upz.addEventListener("drop", function(e) {
+    e.preventDefault(); upz.style.borderColor = "";
+    var dt = new DataTransfer(); dt.items.add(e.dataTransfer.files[0]);
+    upi.files = dt.files; upi.dispatchEvent(new Event("change"));
+  });
+}
+var fc  = document.getElementById("favC");
+var fl  = document.getElementById("favL");
+var fi  = document.getElementById("favI");
+var ft  = document.getElementById("favT");
+if (fc) {
+  fc.addEventListener("change", function() {
+    fl.classList.toggle("on", this.checked);
+    fi.textContent = this.checked ? "❤️" : "🤍";
+    ft.textContent = this.checked ? "Dans mes favoris" : "Ajouter aux favoris";
+  });
+}
+</script>
+{% endblock %}

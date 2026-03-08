@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Contact — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.page-shell{padding:3rem 0 4rem}
+.contact-wrap{max-width:980px;margin:0 auto}
+.contact-hero{margin-bottom:2rem}
+.contact-kicker{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:99px;font-size:.7rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;background:var(--am);color:var(--a);margin-bottom:.9rem}
+.contact-title{font-family:var(--serif);font-size:3rem;line-height:1;margin-bottom:.7rem;font-weight:400}
+.contact-sub{color:var(--tm);font-size:.95rem;max-width:680px}
+.contact-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:1.2rem}
+.contact-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);padding:1.4rem}
+.contact-card h2{font-family:var(--serif);font-size:1.7rem;font-weight:400;line-height:1.1;margin-bottom:.9rem}
+.contact-card p{color:var(--tm);font-size:.9rem;line-height:1.75}
+.contact-card p + p{margin-top:.75rem}
+.contact-list{display:grid;gap:.9rem}
+.contact-item{padding:.9rem 1rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg)}
+.contact-item-label{display:block;font-size:.7rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);margin-bottom:.22rem}
+.contact-item-value{color:var(--tx);font-size:.92rem}
+.contact-note{margin-top:1rem;padding:.9rem 1rem;border-radius:var(--r);background:var(--bg);border:1px solid var(--bor);color:var(--tm);font-size:.84rem}
+@media (max-width: 860px){
+  .page-shell{padding:2rem 0 3rem}
+  .contact-title{font-size:2.25rem}
+  .contact-grid{grid-template-columns:1fr}
+  .contact-card{padding:1rem}
+}
+{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+  <div class="wrap">
+    <div class="contact-wrap">
+      <div class="contact-hero">
+        <span class="contact-kicker">Nous contacter</span>
+        <h1 class="contact-title">Contact</h1>
+        <p class="contact-sub">
+          Une question, un retour ou un besoin particulier concernant {{ app_name }} ? Utilise les informations ci-dessous pour nous joindre.
+        </p>
+      </div>
+
+      <div class="contact-grid">
+        <div class="contact-card">
+          <h2>Une demande à propos du service</h2>
+          <p>
+            Tu peux utiliser cette page pour indiquer les coordonnées de contact officielles du projet :
+            support, responsable du site, demande liée aux données personnelles ou simple prise de contact.
+          </p>
+          <p>
+            Si tu le souhaites plus tard, on pourra aussi transformer cette page en vrai formulaire de contact relié à une adresse email,
+            avec validation et message de confirmation.
+          </p>
+
+          <div class="contact-note">
+            Astuce : garde ici une adresse email dédiée, claire et simple, pour éviter d’afficher une adresse trop personnelle.
+          </div>
+        </div>
+
+        <div class="contact-card">
+          <h2>Informations de contact</h2>
+
+          <div class="contact-list">
+            <div class="contact-item">
+              <span class="contact-item-label">Email</span>
+              <div class="contact-item-value">à compléter</div>
+            </div>
+
+            <div class="contact-item">
+              <span class="contact-item-label">Responsable</span>
+              <div class="contact-item-value">à compléter</div>
+            </div>
+
+            <div class="contact-item">
+              <span class="contact-item-label">Adresse</span>
+              <div class="contact-item-value">à compléter</div>
+            </div>
+
+            <div class="contact-item">
+              <span class="contact-item-label">Disponibilité</span>
+              <div class="contact-item-value">à compléter</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

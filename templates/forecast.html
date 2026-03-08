@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Prévisions — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+.fc-shell{padding:2.2rem 0 3.5rem}
+.fc-head{margin-bottom:1.4rem}
+.fc-kicker{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:99px;font-size:.7rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;background:var(--am);color:var(--a);margin-bottom:.85rem}
+.fc-title{font-family:var(--serif);font-size:2.7rem;line-height:1;font-weight:400;margin-bottom:.5rem}
+.fc-sub{color:var(--tm);font-size:.92rem}
+
+.fc-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh)}
+.fc-now{padding:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.fc-now-main{display:flex;align-items:center;gap:1rem}
+.fc-now-icon{font-size:2rem}
+.fc-now-temp{font-size:2rem;font-weight:600;line-height:1}
+.fc-now-label{color:var(--tm);font-size:.88rem}
+.fc-stats{display:flex;gap:.8rem;flex-wrap:wrap}
+.fc-stat{padding:.7rem .9rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);min-width:120px}
+.fc-stat span{display:block}
+.fc-stat .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--tm)}
+.fc-stat .v{font-size:.95rem;color:var(--tx);margin-top:.15rem}
+
+.fc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.85rem;margin-top:1.2rem}
+.fc-day{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);padding:1rem}
+.fc-day-date{font-size:.76rem;color:var(--tm);margin-bottom:.45rem}
+.fc-day-icon{font-size:1.4rem;margin-bottom:.35rem}
+.fc-day-label{font-size:.82rem;color:var(--tx);min-height:2.4em}
+.fc-day-temp{margin-top:.55rem;font-size:.9rem}
+.fc-day-meta{margin-top:.55rem;font-size:.76rem;color:var(--tm);line-height:1.6}
+
+.fc-chart{margin-top:1.4rem}
+.fc-chart-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.fc-chart-head{padding:1rem 1.2rem;border-bottom:1px solid var(--bor);font-family:var(--serif);font-size:1.4rem}
+.fc-chart-body{padding:1rem 1.2rem 1.2rem}
+.fc-chart-sub{color:var(--tm);font-size:.83rem;margin-bottom:.9rem}
+.fc-canvas-wrap{position:relative;height:340px}
+
+.fc-map{margin-top:1.4rem}
+.fc-map-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.fc-map-head{padding:1rem 1.2rem;border-bottom:1px solid var(--bor);font-family:var(--serif);font-size:1.4rem}
+.fc-map-body{padding:1rem 1.2rem 1.2rem}
+.fc-map-sub{color:var(--tm);font-size:.83rem;margin-bottom:.9rem}
+.fc-map-wrap{border:1px solid var(--bor);border-radius:12px;overflow:hidden}
+#forecastMap{height:360px;width:100%}
+
+.fc-hourly{margin-top:1.4rem}
+.fc-hourly-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);overflow:hidden}
+.fc-hourly-head{padding:1rem 1.2rem;border-bottom:1px solid var(--bor);font-family:var(--serif);font-size:1.4rem}
+.fc-table-wrap{overflow:auto}
+.fc-table{width:100%;border-collapse:collapse}
+.fc-table th,.fc-table td{padding:.8rem 1rem;text-align:left;font-size:.84rem;border-bottom:1px solid var(--bor)}
+.fc-table th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);background:var(--bg)}
+.fc-muted{color:var(--tm)}
+.fc-error{padding:1rem 1.1rem;border:1px solid #F0C9C9;background:#FFF4F4;color:#8A1A1A;border-radius:var(--r)}
+
+@media (max-width: 1100px){
+  .fc-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width: 700px){
+  .fc-shell{padding:1.6rem 0 2.5rem}
+  .fc-title{font-size:2rem}
+  .fc-grid{grid-template-columns:repeat(2,1fr)}
+  .fc-canvas-wrap{height:280px}
+  #forecastMap{height:300px}
+}
+@media (max-width: 520px){
+  .fc-grid{grid-template-columns:1fr}
+}
+{% endblock %}
+
+{% block content %}
+<section class="fc-shell">
+  <div class="wrap">
+    <div class="fc-head">
+      <span class="fc-kicker">Prévisions météo</span>
+      <h1 class="fc-title">Prévisions pour {{ city }}</h1>
+      <p class="fc-sub">Vue actuelle, prévisions sur 7 jours, évolution horaire et carte interactive.</p>
+    </div>
+
+    {% if forecast_error %}
+      <div class="fc-error">{{ forecast_error }}</div>
+    {% elif forecast %}
+      <div class="fc-card">
+        <div class="fc-now">
+          <div class="fc-now-main">
+            <div class="fc-now-icon">{{ forecast.current.icon }}</div>
+            <div>
+              <div class="fc-now-temp">{{ forecast.current.temp }}°C</div>
+              <div class="fc-now-label">{{ forecast.current.label }} · Ressenti {{ forecast.current.feels }}°C</div>
+            </div>
+          </div>
+
+          <div class="fc-stats">
+            <div class="fc-stat">
+              <span class="k">Vent</span>
+              <span class="v">{{ forecast.current.wind }} km/h</span>
+            </div>
+            <div class="fc-stat">
+              <span class="k">Humidité</span>
+              <span class="v">{{ forecast.current.hum }}%</span>
+            </div>
+            <div class="fc-stat">
+              <span class="k">Ville</span>
+              <span class="v">{{ forecast.current.city }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fc-grid">
+        {% for day in forecast.days %}
+        <div class="fc-day">
+          <div class="fc-day-date">{{ day.date }}</div>
+          <div class="fc-day-icon">{{ day.icon }}</div>
+          <div class="fc-day-label">{{ day.label }}</div>
+          <div class="fc-day-temp">
+            <strong>{{ day.temp_max }}°</strong> / <span class="fc-muted">{{ day.temp_min }}°</span>
+          </div>
+          <div class="fc-day-meta">
+            Pluie : {{ day.rain_prob }}%<br>
+            Cumul : {{ day.rain_sum }} mm<br>
+            Vent max : {{ day.wind_max }} km/h
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="fc-chart">
+        <div class="fc-chart-card">
+          <div class="fc-chart-head">Évolution de la journée</div>
+          <div class="fc-chart-body">
+            <p class="fc-chart-sub">
+              Courbe de température et probabilité de pluie sur les prochaines heures.
+            </p>
+            <div class="fc-canvas-wrap">
+              <canvas id="weatherDayChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fc-map">
+        <div class="fc-map-card">
+          <div class="fc-map-head">Carte de localisation</div>
+          <div class="fc-map-body">
+            <p class="fc-map-sub">
+              Localisation de la ville utilisée pour les prévisions météo.
+            </p>
+            <div class="fc-map-wrap">
+              <div id="forecastMap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fc-hourly">
+        <div class="fc-hourly-card">
+          <div class="fc-hourly-head">Aperçu horaire</div>
+          <div class="fc-table-wrap">
+            <table class="fc-table">
+              <thead>
+                <tr>
+                  <th>Heure</th>
+                  <th>Conditions</th>
+                  <th>Température</th>
+                  <th>Pluie</th>
+                  <th>Vent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for hour in forecast.hours %}
+                <tr>
+                  <td>{{ hour.time[-5:] }}</td>
+                  <td>{{ hour.icon }} {{ hour.label }}</td>
+                  <td>{{ hour.temp }}°C</td>
+                  <td>{{ hour.rain_prob }}%</td>
+                  <td>{{ hour.wind }} km/h</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if forecast and forecast.hours %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const weatherHours = {{ forecast.hours | tojson }};
+  const labels = weatherHours.map(h => h.time.slice(-5));
+  const temps = weatherHours.map(h => h.temp);
+  const rainProb = weatherHours.map(h => h.rain_prob);
+
+  const chartCanvas = document.getElementById("weatherDayChart");
+  if (chartCanvas) {
+    new Chart(chartCanvas, {
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: "bar",
+            label: "Pluie (%)",
+            data: rainProb,
+            yAxisID: "y1",
+            borderRadius: 4,
+            maxBarThickness: 22
+          },
+          {
+            type: "line",
+            label: "Température (°C)",
+            data: temps,
+            yAxisID: "y",
+            tension: 0.35,
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              boxWidth: 12,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: "#ffffff",
+            titleColor: "#18120E",
+            bodyColor: "#7A6E68",
+            borderColor: "#E9E4DE",
+            borderWidth: 1,
+            displayColors: true
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: "#7A6E68",
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 8
+            }
+          },
+          y: {
+            position: "left",
+            ticks: {
+              color: "#7A6E68",
+              callback: (value) => value + "°"
+            },
+            grid: {
+              color: "#E9E4DE"
+            }
+          },
+          y1: {
+            position: "right",
+            min: 0,
+            max: 100,
+            grid: {
+              drawOnChartArea: false
+            },
+            ticks: {
+              color: "#7A6E68",
+              callback: (value) => value + "%"
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endif %}
+
+{% if forecast and forecast.place %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const forecastPlace = {{ forecast.place | tojson }};
+  const forecastCurrent = {{ forecast.current | tojson }};
+
+  const lat = forecastPlace.latitude;
+  const lon = forecastPlace.longitude;
+  const cityName = forecastPlace.name;
+  const countryName = forecastPlace.country;
+  const weatherLabel = forecastCurrent.label;
+  const weatherTemp = forecastCurrent.temp;
+  const weatherIcon = forecastCurrent.icon;
+
+  const mapEl = document.getElementById("forecastMap");
+  if (mapEl && lat && lon) {
+    const map = L.map("forecastMap", {
+      scrollWheelZoom: false
+    }).setView([lat, lon], 10);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marker = L.marker([lat, lon]).addTo(map);
+
+    marker.bindPopup(`
+      <div style="font-family: Arial, sans-serif; line-height:1.5;">
+        <strong>${weatherIcon} ${cityName}</strong><br>
+        ${countryName ? countryName + "<br>" : ""}
+        ${weatherLabel}<br>
+        Température actuelle : ${weatherTemp}°C
+      </div>
+    `).openPopup();
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  }
+</script>
+{% endif %}
+{% endblock %}

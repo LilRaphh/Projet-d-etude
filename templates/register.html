@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block extra_css %}
+.auth-page { min-height: calc(100vh - 62px); display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.auth-box { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 2.5rem; width: 100%; max-width: 420px; box-shadow: var(--sh); }
+.auth-title { font-family: var(--serif); font-size: 1.85rem; font-weight: 300; margin-bottom: .3rem; }
+.auth-title em { color: var(--a); font-style: italic; }
+.auth-sub { color: var(--tm); font-size: .84rem; margin-bottom: 1.65rem; }
+.auth-link { text-align: center; margin-top: 1.2rem; font-size: .82rem; color: var(--tm); }
+.auth-link a { color: var(--a); font-weight: 500; }
+.pw-wrap { position: relative; }
+.pw-wrap .fc { padding-right: 2.4rem; }
+.pw-eye { position: absolute; right: .65rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--tl); cursor: pointer; padding: 0; font-size: .9rem; }
+{% endblock %}
+{% block content %}
+<div class="auth-page"><div class="auth-box">
+  <h1 class="auth-title">Créer un <em>compte</em></h1>
+  <p class="auth-sub">Votre garde-robe personnelle, partout</p>
+  <form method="POST">
+    <div class="fg">
+      <label class="lbl">Nom d'utilisateur</label>
+      <input name="username" class="fc" required autofocus placeholder="raphael" maxlength="40" value="{{ prefill_u }}">
+    </div>
+    <div class="fg">
+      <label class="lbl">Email</label>
+      <input name="email" type="email" class="fc" required placeholder="vous@email.com" value="{{ prefill_e }}">
+    </div>
+    <div class="fg">
+      <label class="lbl">Mot de passe</label>
+      <div class="pw-wrap">
+        <input name="password" type="password" class="fc" required id="pw1" minlength="6" placeholder="6 caractères minimum">
+        <button type="button" class="pw-eye" onclick="togglePw('pw1', this)">👁</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Confirmer</label>
+      <div class="pw-wrap">
+        <input name="password2" type="password" class="fc" required id="pw2">
+        <button type="button" class="pw-eye" onclick="togglePw('pw2', this)">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.2rem">Créer mon compte</button>
+  </form>
+  <p class="auth-link">Déjà un compte ? <a href="/login">Se connecter</a></p>
+</div></div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function togglePw(id, btn) {
+  var i = document.getElementById(id);
+  i.type = i.type === "password" ? "text" : "password";
+  btn.textContent = i.type === "password" ? "👁" : "🙈";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ app_name }}{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --a:{{ accent }};--am:{{ accent }}22;
+  --bg:#F9F8F6;--sur:#FFF;--bor:#E9E4DE;
+  --tx:#18120E;--tm:#7A6E68;--tl:#C0B8B0;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --r:6px;--rl:14px;
+  --sh:0 1px 3px #0000000a,0 4px 16px #00000007;
+  --shh:0 6px 20px #00000014,0 20px 60px #0000000d;
+  --tr:.18s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;font-size:.9rem;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button,input,select,textarea{font-family:inherit;cursor:pointer}
+.wrap{max-width:1300px;margin:0 auto;padding:0 1.75rem}
+
+/* Header */
+.hdr{background:var(--sur);border-bottom:1px solid var(--bor);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;height:62px;gap:1rem}
+.logo{font-family:var(--serif);font-size:1.55rem;font-weight:300;letter-spacing:.05em;flex-shrink:0}
+.logo b{color:var(--a);font-weight:300}
+.hdr-nav{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+.nav-link{padding:.32rem .65rem;border-radius:var(--r);font-size:.82rem;color:var(--tm);transition:all var(--tr)}
+.nav-link:hover{background:var(--bg);color:var(--tx)}
+.nav-link.active{background:var(--am);color:var(--a);font-weight:500}
+.nav-badge{background:var(--a);color:#fff;border-radius:99px;font-size:.65rem;padding:.08rem .38rem;margin-left:.2rem}
+.user-pill{display:flex;align-items:center;gap:.4rem;padding:.28rem .65rem .28rem .3rem;border-radius:99px;border:1px solid var(--bor);background:var(--bg);font-size:.79rem;color:var(--tm)}
+.avatar{width:24px;height:24px;border-radius:50%;background:var(--a);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:600;flex-shrink:0;text-transform:uppercase}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:.38rem;padding:.44rem .9rem;border-radius:var(--r);font-size:.81rem;font-weight:500;border:none;transition:all var(--tr);white-space:nowrap;line-height:1;cursor:pointer}
+.btn-primary{background:var(--a);color:#fff}
+.btn-primary:hover{filter:brightness(.9);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--tm);border:1px solid var(--bor)}
+.btn-ghost:hover{background:var(--bg);color:var(--tx)}
+.btn-ai{background:linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899);color:#fff;font-weight:600}
+.btn-ai:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 16px #8b5cf660}
+.btn-ai:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-sm{padding:.3rem .6rem;font-size:.77rem}
+.btn-icon{width:32px;height:32px;padding:0;justify-content:center;border-radius:50%;background:transparent;border:1px solid var(--bor);color:var(--tm)}
+.btn-icon:hover{background:var(--bg);color:var(--tx)}
+
+/* Flash */
+.flash{padding:.6rem 1rem;border-radius:var(--r);margin:.6rem 0;font-size:.83rem;display:flex;align-items:center;gap:.45rem}
+.flash.success{background:#F0FBF4;border:1px solid #B4E8C4;color:#1A6035}
+.flash.info{background:#F0F5FF;border:1px solid #BDD0F8;color:#1A3580}
+.flash.error{background:#FFF0F0;border:1px solid #F8C0C0;color:#8A1A1A}
+
+/* Forms */
+.fg{margin-bottom:1rem}
+.lbl{display:block;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);margin-bottom:.34rem}
+.fc{width:100%;padding:.54rem .8rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:.86rem;transition:border-color var(--tr);appearance:none}
+.fc:focus{outline:none;border-color:var(--a);box-shadow:0 0 0 3px var(--am)}
+textarea.fc{resize:vertical;min-height:80px}
+.badge{display:inline-flex;align-items:center;padding:.14rem .48rem;border-radius:99px;font-size:.69rem;font-weight:500;background:var(--am);color:var(--a)}
+
+/* Settings panel */
+.s-ov{position:fixed;inset:0;background:#00000040;z-index:200;opacity:0;pointer-events:none;transition:opacity var(--tr);backdrop-filter:blur(3px)}
+.s-ov.on{opacity:1;pointer-events:all}
+.s-pn{position:fixed;right:0;top:0;bottom:0;width:min(400px,100vw);background:var(--sur);border-left:1px solid var(--bor);padding:2rem;z-index:201;transform:translateX(100%);transition:transform .3s cubic-bezier(.16,1,.3,1);overflow-y:auto}
+.s-pn.on{transform:translateX(0)}
+.s-ttl{font-family:var(--serif);font-size:1.3rem;font-weight:400;margin-bottom:1.2rem}
+.s-sep{border:none;border-top:1px solid var(--bor);margin:1.25rem 0}
+
+{% block extra_css %}{% endblock %}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a href="/" class="logo">{{ app_name }}<b>.</b></a>
+    {% if me %}
+    <nav class="hdr-nav">
+      <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
+      <a href="/outfits" class="nav-link {% if '/outfit' in request.path %}active{% endif %}">
+        Tenues
+        {% set oc = me.outfits.count() %}
+        {% if oc %}<span class="nav-badge">{{ oc }}</span>{% endif %}
+      </a>
+      <a href="/stylist" class="nav-link {% if request.path == '/stylist' %}active{% endif %}">
+        ✦ Styliste
+      </a>
+      <a href="/add" class="btn btn-primary btn-sm" style="margin-left:.25rem">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter
+      </a>
+      <div class="user-pill">
+        <div class="avatar">{{ me.username[:2] }}</div>
+        {{ me.username }}
+      </div>
+      <button class="btn btn-icon" id="sBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </nav>
+    {% else %}
+    <nav class="hdr-nav">
+      <a href="/login" class="btn btn-ghost btn-sm">Connexion</a>
+      <a href="/register" class="btn btn-primary btn-sm">Créer un compte</a>
+    </nav>
+    {% endif %}
+  </div>
+</header>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}
+  <div class="wrap">
+    {% for cat, msg in msgs %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main>{% block content %}{% endblock %}</main>
+
+{% if me %}
+<div class="s-ov" id="sOv"></div>
+<aside class="s-pn" id="sPn">
+  <p class="s-ttl">Paramètres</p>
+  <form method="POST" action="/settings">
+    <div class="fg">
+      <label class="lbl">Nom de l'application</label>
+      <input name="app_name" class="fc" value="{{ app_name }}">
+    </div>
+    <div class="fg">
+      <label class="lbl">Couleur d'accent</label>
+      <div style="display:flex;gap:.5rem">
+        <input type="color" name="accent" id="cpick" class="fc" style="width:44px;height:34px;padding:.1rem" value="{{ accent }}">
+        <input type="text" id="hexIn" class="fc" value="{{ accent }}" style="flex:1">
+      </div>
+      <div id="colorPrev" style="height:26px;border-radius:var(--r);background:{{ accent }};margin-top:.4rem;transition:background .2s"></div>
+    </div>
+    <div class="fg">
+      <label class="lbl">Devise</label>
+      <input name="currency" class="fc" value="{{ currency }}" maxlength="4">
+    </div>
+    <hr class="s-sep">
+    <p class="s-ttl" style="font-size:1.05rem">Génération IA</p>
+    <div class="fg">
+      <label class="lbl">Clé API Anthropic (optionnel)</label>
+      <input name="anthropic_key" type="password" class="fc" placeholder="sk-ant-...">
+      <p style="font-size:.73rem;color:var(--tm);margin-top:.35rem;line-height:1.5">
+        Sans clé : prompt auto. Avec clé Claude : meilleurs résultats.<br>
+        <a href="https://console.anthropic.com" target="_blank" style="color:var(--a)">Obtenir une clé →</a>
+      </p>
+    </div>
+    <div class="fg">
+      <label class="lbl">Ville (météo)</label>
+      <input name="city" class="fc" placeholder="Paris, Lyon, Bordeaux..."
+             value="{{ me.user_settings.filter_by(key='city').first().value if me.user_settings.filter_by(key='city').first() else '' }}">
+      <p style="font-size:.73rem;color:var(--tm);margin-top:.25rem">Utilisée pour adapter les tenues à la météo</p>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Sauvegarder</button>
+  </form>
+  <hr class="s-sep">
+  <p class="lbl" style="margin-bottom:.5rem">Compte</p>
+  <div style="font-size:.83rem;color:var(--tm);margin-bottom:.7rem">
+    <strong style="color:var(--tx)">{{ me.username }}</strong> — {{ me.email }}
+  </div>
+  <a href="/logout" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</a>
+</aside>
+
+<script>
+var sBtn = document.getElementById("sBtn");
+var sOv  = document.getElementById("sOv");
+var sPn  = document.getElementById("sPn");
+if (sBtn) {
+  sBtn.addEventListener("click", function() { sPn.classList.add("on"); sOv.classList.add("on"); });
+  sOv.addEventListener("click",  function() { sPn.classList.remove("on"); sOv.classList.remove("on"); });
+}
+var cp  = document.getElementById("cpick");
+var hi  = document.getElementById("hexIn");
+var prv = document.getElementById("colorPrev");
+if (cp && hi) {
+  cp.addEventListener("input", function() {
+    hi.value = cp.value; prv.style.background = cp.value;
+    document.documentElement.style.setProperty("--a", cp.value);
+  });
+  hi.addEventListener("input", function() {
+    if (/^#[0-9A-Fa-f]{6}$/.test(hi.value)) {
+      cp.value = hi.value; prv.style.background = hi.value;
+      document.documentElement.style.setProperty("--a", hi.value);
+    }
+  });
+}
+</script>
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

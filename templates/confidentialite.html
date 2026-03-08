@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Confidentialité — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.page-shell{padding:3rem 0 4rem}
+.privacy-wrap{max-width:900px;margin:0 auto}
+.privacy-hero{margin-bottom:2rem}
+.privacy-kicker{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:99px;font-size:.7rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;background:var(--am);color:var(--a);margin-bottom:.9rem}
+.privacy-title{font-family:var(--serif);font-size:3rem;line-height:1;margin-bottom:.7rem;font-weight:400}
+.privacy-sub{color:var(--tm);font-size:.95rem;max-width:700px}
+.privacy-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);box-shadow:var(--sh);padding:1.4rem 1.4rem 1.2rem}
+.privacy-section + .privacy-section{margin-top:1.4rem;padding-top:1.4rem;border-top:1px solid var(--bor)}
+.privacy-section h2{font-family:var(--serif);font-size:1.7rem;font-weight:400;line-height:1.1;margin-bottom:.8rem}
+.privacy-section p{color:var(--tm);font-size:.9rem;line-height:1.75}
+.privacy-section p + p{margin-top:.8rem}
+.privacy-list{margin-top:.7rem;padding-left:1.1rem;color:var(--tm)}
+.privacy-list li{margin:.35rem 0;line-height:1.7}
+.privacy-note{margin-top:1.2rem;padding:.9rem 1rem;border-radius:var(--r);background:var(--bg);border:1px solid var(--bor);color:var(--tm);font-size:.84rem}
+@media (max-width: 768px){
+  .page-shell{padding:2rem 0 3rem}
+  .privacy-title{font-size:2.25rem}
+  .privacy-card{padding:1rem}
+}
+{% endblock %}
+
+{% block content %}
+<section class="page-shell">
+  <div class="wrap">
+    <div class="privacy-wrap">
+      <div class="privacy-hero">
+        <span class="privacy-kicker">Données personnelles</span>
+        <h1 class="privacy-title">Politique de confidentialité</h1>
+        <p class="privacy-sub">
+          Cette page décrit la manière dont {{ app_name }} peut collecter, utiliser et protéger les données liées à l’utilisation du service.
+        </p>
+      </div>
+
+      <div class="privacy-card">
+        <section class="privacy-section">
+          <h2>Données collectées</h2>
+          <p>
+            Dans le cadre de son fonctionnement, {{ app_name }} peut traiter certaines données nécessaires à la gestion du compte utilisateur,
+            aux préférences d’affichage et à l’utilisation des fonctionnalités proposées.
+          </p>
+          <ul class="privacy-list">
+            <li>Informations de compte : nom d’utilisateur, email</li>
+            <li>Préférences enregistrées : nom de l’application, couleur d’accent, devise, ville</li>
+            <li>Contenus saisis par l’utilisateur : vêtements, notes, tenues, paramètres</li>
+          </ul>
+        </section>
+
+        <section class="privacy-section">
+          <h2>Finalités du traitement</h2>
+          <p>
+            Les données sont utilisées uniquement pour permettre le bon fonctionnement du service, personnaliser l’expérience utilisateur
+            et améliorer la pertinence de certaines fonctionnalités, comme l’adaptation à la météo ou les suggestions de tenues.
+          </p>
+        </section>
+
+        <section class="privacy-section">
+          <h2>Conservation des données</h2>
+          <p>
+            Les données sont conservées pendant la durée nécessaire à l’utilisation du service et à la gestion du compte utilisateur,
+            sauf obligation légale contraire ou demande de suppression.
+          </p>
+        </section>
+
+        <section class="privacy-section">
+          <h2>Partage des données</h2>
+          <p>
+            Les données personnelles ne sont pas vendues. Elles ne sont communiquées à des tiers que lorsque cela est strictement nécessaire
+            au fonctionnement technique du service ou requis par la loi.
+          </p>
+        </section>
+
+        <section class="privacy-section">
+          <h2>Sécurité</h2>
+          <p>
+            Des mesures raisonnables sont mises en œuvre pour protéger les données contre l’accès non autorisé, la perte, l’altération
+            ou la divulgation non souhaitée. Aucun système n’étant infaillible, un niveau de sécurité absolu ne peut toutefois être garanti.
+          </p>
+        </section>
+
+        <section class="privacy-section">
+          <h2>Vos droits</h2>
+          <p>
+            Selon la réglementation applicable, vous pouvez demander l’accès, la rectification, la suppression ou la limitation du traitement
+            de vos données, ainsi que formuler toute question relative à leur usage.
+          </p>
+          <p>
+            Pour exercer ces droits, un point de contact doit être indiqué ici : <strong>à compléter</strong>.
+          </p>
+        </section>
+
+        <div class="privacy-note">
+          Ce texte constitue une base de travail. Pense à l’adapter précisément à ton mode d’hébergement, à tes traitements réels et à tes obligations réglementaires.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

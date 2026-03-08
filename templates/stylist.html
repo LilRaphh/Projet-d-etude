@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}Styliste — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.sty{padding:2.5rem 0 5rem}
+.sty-h{font-family:var(--serif);font-size:clamp(1.9rem,4vw,2.8rem);font-weight:300;line-height:1.1;margin-bottom:.25rem}
+.sty-h em{color:var(--a);font-style:italic}
+.sty-sub{color:var(--tm);font-size:.86rem;margin-bottom:1.5rem}
+
+/* Nudge clé API */
+.key-nudge{background:#f5f3ff;border:1px solid #d8b4fe;border-radius:var(--rl);padding:1.1rem 1.3rem;margin-bottom:1.4rem;display:flex;gap:.85rem;align-items:flex-start}
+.key-nudge-ico{font-size:1.4rem;flex-shrink:0;line-height:1.4}
+.key-nudge h3{font-size:.88rem;font-weight:600;color:#6d28d9;margin-bottom:.2rem}
+.key-nudge p{font-size:.79rem;color:#7c3aed;line-height:1.55}
+.key-nudge a{color:#6d28d9;text-decoration:underline}
+
+/* Barre météo */
+.wx{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:.85rem 1.1rem;margin-bottom:1.25rem}
+.wx-main{display:flex;align-items:center;gap:.6rem}
+.wx-ico{font-size:2rem;line-height:1}
+.wx-tmp{font-family:var(--serif);font-size:1.8rem;font-weight:300}
+.wx-desc{font-size:.78rem;color:var(--tm)}
+.wx-feels{font-size:.72rem;color:var(--tl)}
+.wx-layer{flex:1;min-width:150px;background:var(--am);border-radius:var(--r);padding:.38rem .75rem;font-size:.77rem;color:var(--a);line-height:1.45}
+.wx-form{display:flex;align-items:center;gap:.38rem;margin-left:auto}
+.wx-form input{padding:.32rem .6rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);font-size:.79rem;color:var(--tx);width:130px}
+.wx-form input:focus{outline:none;border-color:var(--a)}
+
+/* Prompt */
+.pcard{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.25rem;margin-bottom:1.4rem}
+.prow{display:flex;gap:.5rem;align-items:flex-end}
+.pta{flex:1;padding:.68rem .8rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:.9rem;font-family:var(--sans);resize:none;line-height:1.55;min-height:50px;max-height:150px;transition:border-color .15s}
+.pta:focus{outline:none;border-color:var(--a);box-shadow:0 0 0 3px var(--am)}
+.btn-ai-wrap{height:50px}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.65rem}
+.chip{padding:.22rem .62rem;border-radius:99px;border:1px solid var(--bor);background:var(--bg);color:var(--tm);font-size:.74rem;cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.chip:hover{border-color:var(--a);color:var(--a);background:var(--am)}
+.ptip{font-size:.72rem;color:var(--tl);margin-top:.55rem;line-height:1.5}
+
+/* Loading */
+.loading{display:none;text-align:center;padding:3rem 1rem}
+.loading.on{display:block}
+.dots{display:inline-flex;gap:.35rem;margin-bottom:.65rem}
+.dots span{width:9px;height:9px;border-radius:50%;background:var(--a);animation:ld .9s ease-in-out infinite}
+.dots span:nth-child(2){animation-delay:.15s}
+.dots span:nth-child(3){animation-delay:.30s}
+@keyframes ld{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
+.loading-msg{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:var(--tm)}
+
+/* Erreur */
+.err{background:#FFF0F0;border:1px solid #F8C0C0;color:#8A1A1A;border-radius:var(--r);padding:.8rem 1rem;font-size:.83rem;line-height:1.6;margin-bottom:1.1rem}
+
+/* Résultats */
+.res-hdr{display:flex;align-items:baseline;gap:.65rem;margin-bottom:1.1rem;flex-wrap:wrap}
+.res-ttl{font-family:var(--serif);font-size:1.45rem;font-weight:300}
+.res-for{font-style:italic;font-size:.79rem;color:var(--tm);background:var(--am);padding:.18rem .65rem;border-radius:99px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1.1rem}
+@media(max-width:700px){.sgrid{grid-template-columns:1fr}}
+.sc{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden;transition:box-shadow var(--tr),transform var(--tr)}
+.sc:hover{box-shadow:var(--shh);transform:translateY(-2px)}
+.sc-head{padding:1rem 1.1rem .85rem;border-bottom:1px solid var(--bor);display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem}
+.sc-vibe{font-size:.65rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--a);margin-bottom:.18rem}
+.sc-name{font-family:var(--serif);font-size:1.15rem;font-weight:400;line-height:1.2}
+.sc-num{width:26px;height:26px;border-radius:50%;background:var(--am);color:var(--a);font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-items{padding:.8rem 1.1rem;display:flex;flex-direction:column;gap:.4rem}
+.si{display:flex;align-items:center;gap:.6rem;padding:.38rem .6rem;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r)}
+.si-thumb{width:42px;height:42px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bor)}
+.si-thumb img{width:100%;height:100%;object-fit:cover}
+.si-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.15rem;opacity:.2}
+.si-cat{font-size:.62rem;color:var(--a);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.si-name{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-meta{font-size:.69rem;color:var(--tl)}
+.sc-reason{padding:.7rem 1.1rem .85rem;font-size:.81rem;color:var(--tm);line-height:1.65;border-top:1px solid var(--bor)}
+.wx-note{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;color:var(--a);background:var(--am);padding:.14rem .5rem;border-radius:99px;margin-bottom:.4rem}
+.sc-foot{display:flex;gap:.4rem;padding:.7rem 1.1rem;border-top:1px solid var(--bor)}
+.miss{margin:0 1.1rem .4rem;padding:.3rem .6rem;background:#FFF8F0;border:1px solid #FFD0A0;border-radius:var(--r);font-size:.72rem;color:#9A5B00}
+{% endblock %}
+
+{% block content %}
+<div class="sty"><div class="wrap">
+  <h1 class="sty-h">Mon <em>styliste</em> IA</h1>
+  <p class="sty-sub">Décris l'occasion — je compose 3 tenues depuis ta garde-robe.</p>
+
+  {% if not has_api_key %}
+  <div class="key-nudge">
+    <div class="key-nudge-ico">🔑</div>
+    <div>
+      <h3>Clé API Anthropic requise</h3>
+      <p>Lance l'app avec <code>set ANTHROPIC_API_KEY=sk-ant-...</code> (Windows) ou
+      entre-la dans les Paramètres ⚙️.<br>
+      <a href="https://console.anthropic.com" target="_blank">Obtenir une clé gratuitement →</a></p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not item_count %}
+  <div style="text-align:center;padding:4rem 1rem;color:var(--tm)">
+    <div style="font-size:3rem;opacity:.15;margin-bottom:.6rem">👗</div>
+    <p style="font-family:var(--serif);font-size:1.3rem;font-weight:300;margin-bottom:.4rem">Garde-robe vide</p>
+    <p style="margin-bottom:1rem">Ajoutez des vêtements pour utiliser le styliste.</p>
+    <a href="/add" class="btn btn-primary">Ajouter un vêtement</a>
+  </div>
+  {% else %}
+
+  <!-- Météo -->
+  <div class="wx">
+    {% if weather %}
+      <div class="wx-main">
+        <div class="wx-ico">{{ weather.icon }}</div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:.4rem">
+            <span class="wx-tmp">{{ weather.temp }}°</span>
+            <span class="wx-desc">{{ weather.desc }} · {{ weather.city }}</span>
+          </div>
+          <div class="wx-feels">Ressenti {{ weather.feels }}°C · {{ weather.hum }}% hum. · {{ weather.wind }} km/h</div>
+        </div>
+      </div>
+      <div class="wx-layer">{{ weather.layer }}</div>
+    {% else %}
+      <span style="font-size:.82rem;color:var(--tm)">📍 Entrez votre ville pour adapter les suggestions à la météo</span>
+    {% endif %}
+    <form method="POST" class="wx-form">
+      <input type="hidden" name="prompt" value="{{ user_prompt }}">
+      <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
+      <button type="submit" class="btn btn-ghost btn-sm">Mettre à jour</button>
+    </form>
+  </div>
+
+  <!-- Prompt -->
+  <div class="pcard">
+    <form method="POST" id="sugForm">
+      <input type="hidden" name="city" value="{{ city }}">
+      <div class="prow">
+        <textarea name="prompt" id="pta" class="pta"
+          placeholder="Ex : Soirée décontractée chez des amis, pas trop habillé…"
+          rows="2">{{ user_prompt }}</textarea>
+        <button type="submit" class="btn btn-ai btn-ai-wrap" id="subBtn"
+          {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Générer
+        </button>
+      </div>
+      <div class="chips">
+        <span class="chip">☀️ Journée décontractée</span>
+        <span class="chip">💼 Réunion pro</span>
+        <span class="chip">🌙 Soirée élégante</span>
+        <span class="chip">🏃 Week-end actif</span>
+        <span class="chip">☕ Brunch du dimanche</span>
+        <span class="chip">🎉 Fête entre amis</span>
+        <span class="chip">✈️ Voyage confortable</span>
+      </div>
+      <p class="ptip">{{ item_count }} pièce{{ 's' if item_count != 1 }} dans ta garde-robe{% if weather %} · Météo prise en compte{% endif %} · Claude compose 3 tenues variées</p>
+    </form>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="ldg">
+    <div class="dots"><span></span><span></span><span></span></div>
+    <div class="loading-msg" id="ldgMsg">Analyse de ta garde-robe…</div>
+  </div>
+
+  {% if error %}<div class="err">⚠ {{ error }}</div>{% endif %}
+
+  {% if suggestions %}
+  <div class="res-hdr">
+    <span class="res-ttl">Mes suggestions</span>
+    {% if user_prompt %}<span class="res-for" title="{{ user_prompt }}">{{ user_prompt }}</span>{% endif %}
+  </div>
+
+  {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜','Sport':'🏃'} %}
+
+  <div class="sgrid">
+  {% for s in suggestions %}
+  <div class="sc">
+    <div class="sc-head">
+      <div>
+        <div class="sc-vibe">{{ s.vibe }}</div>
+        <div class="sc-name">{{ s.name }}</div>
+      </div>
+      <div class="sc-num">{{ loop.index }}</div>
+    </div>
+    <div class="sc-items">
+      {% set missing = [] %}
+      {% for iid in s.item_ids %}
+        {% set it = items_map.get(iid) %}
+        {% if it %}
+        <div class="si">
+          <div class="si-thumb">
+            {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+            {% else %}<div class="si-ph">{{ emo.get(it.category, '👗') }}</div>{% endif %}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="si-cat">{{ it.category }}</div>
+            <div class="si-name">{{ it.name }}</div>
+            <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}{% if it.brand %} · {{ it.brand }}{% endif %}</div>
+          </div>
+        </div>
+        {% else %}{% set _ = missing.append(iid) %}{% endif %}
+      {% endfor %}
+      {% if missing %}<div class="miss">⚠ ID introuvable : {{ missing|join(', ') }}</div>{% endif %}
+    </div>
+    <div class="sc-reason">
+      {% if s.weather_note %}<div class="wx-note">🌡 {{ s.weather_note }}</div>{% endif %}
+      {{ s.reasoning }}
+    </div>
+    <div class="sc-foot">
+      <button class="btn btn-ghost btn-sm" onclick="save(this, {{ s|tojson }})">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var ta   = document.getElementById("pta");
+var form = document.getElementById("sugForm");
+var ldg  = document.getElementById("ldg");
+var ldgM = document.getElementById("ldgMsg");
+var sub  = document.getElementById("subBtn");
+
+/* Auto-resize textarea */
+if (ta) ta.addEventListener("input", function() {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 150) + "px";
+});
+
+/* Chips */
+document.querySelectorAll(".chip").forEach(function(c) {
+  c.addEventListener("click", function() {
+    if (!ta) return;
+    ta.value = this.textContent.trim().replace(/^[\u{1F300}-\u{1FFFF}\u2600-\u27BF]\s*/u, "");
+    ta.focus(); ta.dispatchEvent(new Event("input"));
+  });
+});
+
+/* Loading */
+var msgs = ["Analyse de ta garde-robe…","Prise en compte de la météo…","Composition des tenues…","Accord des couleurs…","Finalisation…"];
+if (form) form.addEventListener("submit", function() {
+  if (!ta || !ta.value.trim()) return;
+  if (ldg) ldg.classList.add("on");
+  if (sub) sub.disabled = true;
+  var i = 0;
+  setInterval(function() { i=(i+1)%msgs.length; if(ldgM) ldgM.textContent=msgs[i]; }, 3000);
+});
+
+/* Sauvegarder */
+function save(btn, data) {
+  btn.disabled = true; btn.textContent = "Sauvegarde…";
+  fetch("/api/stylist/save", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({name:data.name, reasoning:data.reasoning, item_ids:data.item_ids})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.ok) {
+      btn.textContent = "✓ Sauvegardée"; btn.style.color = "var(--a)";
+      var a = document.createElement("a"); a.href="/outfits/"+d.outfit_id;
+      a.className="btn btn-primary btn-sm"; a.textContent="Voir →";
+      btn.parentElement.appendChild(a);
+    } else { btn.textContent="Erreur"; btn.disabled=false; }
+  }).catch(function(){ btn.textContent="Erreur réseau"; btn.disabled=false; });
+}
+</script>
+{% endblock %}

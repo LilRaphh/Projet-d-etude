@@ -1,0 +1,5 @@
+flask>=3.0
+flask-sqlalchemy>=3.1
+pillow>=10.0
+requests>=2.31
+anthropic>=0.25   # optionnel — meilleurs prompts IA si clé fournie

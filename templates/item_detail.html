@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block extra_css %}
+.dp { padding: 2rem 0 5rem; }
+.dlay { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+@media (max-width: 680px) { .dlay { grid-template-columns: 1fr; } }
+.d-img { border-radius: var(--rl); overflow: hidden; background: var(--bg); border: 1px solid var(--bor); aspect-ratio: 1; }
+.d-img img { width: 100%; height: 100%; object-fit: cover; }
+.d-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 5.5rem; opacity: .12; }
+.d-cat { font-size: .72rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--a); margin-bottom: .46rem; }
+.d-name { font-family: var(--serif); font-size: clamp(1.65rem,3.5vw,2.4rem); font-weight: 300; line-height: 1.1; margin-bottom: .9rem; }
+.pills { display: flex; gap: .36rem; flex-wrap: wrap; margin-bottom: .9rem; }
+.pill { display: inline-flex; align-items: center; gap: .28rem; padding: .26rem .65rem; border-radius: 99px; font-size: .75rem; font-weight: 500; background: var(--am); color: var(--a); border: 1px solid var(--a); }
+.pill.fav { background: #FFF0F5; color: #C0395A; border-color: #F0A0B0; }
+.mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1.1rem; }
+.mi { padding: .6rem .82rem; background: var(--bg); border-radius: var(--r); border: 1px solid var(--bor); }
+.mi-lbl { font-size: .64rem; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--tl); margin-bottom: .12rem; }
+.mi-val { font-size: .84rem; }
+.mi-val.none { color: var(--tl); font-style: italic; }
+.d-notes { background: var(--bg); border: 1px solid var(--bor); border-radius: var(--r); padding: .82rem; font-size: .85rem; color: var(--tm); line-height: 1.7; margin-bottom: 1.1rem; }
+.tags-row { display: flex; flex-wrap: wrap; gap: .32rem; margin-bottom: 1.1rem; }
+.d-acts { display: flex; gap: .45rem; flex-wrap: wrap; }
+{% endblock %}
+
+{% block content %}
+<div class="dp"><div class="wrap">
+  <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:1.25rem">← Garde-robe</a>
+  <div class="dlay">
+    <div><div class="d-img">
+      {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜'} %}
+      {% if item.image_path %}<img src="/static/{{ item.image_path }}" alt="{{ item.name }}">
+      {% else %}<div class="d-ph">{{ emo.get(item.category, '👗') }}</div>{% endif %}
+    </div></div>
+    <div>
+      <div class="d-cat">{{ item.category }}</div>
+      <h1 class="d-name">{{ item.name }}</h1>
+      <div class="pills">
+        <span class="pill"><span id="wc">{{ item.times_worn }}× porté{{ 's' if item.times_worn != 1 else '' }}</span></span>
+        {% if item.is_favorite %}<span class="pill fav">❤️ Favori</span>{% endif %}
+        {% if item.condition %}<span class="pill">{{ item.condition }}</span>{% endif %}
+      </div>
+      <div class="mgrid">
+        <div class="mi"><div class="mi-lbl">Marque</div><div class="mi-val {% if not item.brand %}none{% endif %}">{{ item.brand or '—' }}</div></div>
+        <div class="mi"><div class="mi-lbl">Taille</div><div class="mi-val {% if not item.size %}none{% endif %}">{{ item.size or '—' }}</div></div>
+        <div class="mi"><div class="mi-lbl">Couleur</div><div class="mi-val {% if not item.color %}none{% endif %}">{{ item.color or '—' }}</div></div>
+        <div class="mi"><div class="mi-lbl">Saison</div><div class="mi-val {% if not item.season %}none{% endif %}">{{ item.season or '—' }}</div></div>
+        {% if item.price %}<div class="mi"><div class="mi-lbl">Prix</div><div class="mi-val">{{ "%.2f"|format(item.price) }} {{ currency }}</div></div>{% endif %}
+        <div class="mi"><div class="mi-lbl">Ajouté le</div><div class="mi-val">{{ item.created_at.strftime('%d/%m/%Y') }}</div></div>
+      </div>
+      {% if item.notes %}<div class="d-notes">{{ item.notes }}</div>{% endif %}
+      {% set tl = item.tags.all() %}
+      {% if tl %}<div class="tags-row">{% for t in tl %}<a href="/?search={{ t.name }}" class="badge">{{ t.name }}</a>{% endfor %}</div>{% endif %}
+      <div class="d-acts">
+        <button type="button" class="btn btn-ghost" onclick="worn({{ item.id }})">Porté aujourd'hui</button>
+        <a href="/edit/{{ item.id }}" class="btn btn-primary">Modifier</a>
+        <form method="POST" action="/delete/{{ item.id }}" onsubmit="return confirm('Supprimer ?')">
+          <button type="submit" class="btn btn-ghost" style="color:#C0392B;border-color:#F0C0C0">Supprimer</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function worn(id) {
+  fetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+    document.getElementById("wc").textContent = d.times_worn + "x porte" + (d.times_worn !== 1 ? "s" : "");
+  });
+}
+</script>
+{% endblock %}
