@@ -53,6 +53,7 @@
         <button type="button" class="btn btn-ghost" onclick="worn({{ item.id }})">Porté aujourd'hui</button>
         <a href="/edit/{{ item.id }}" class="btn btn-primary">Modifier</a>
         <form method="POST" action="/delete/{{ item.id }}" onsubmit="return confirm('Supprimer ?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-ghost" style="color:#C0392B;border-color:#F0C0C0">Supprimer</button>
         </form>
       </div>
@@ -64,7 +65,7 @@
 {% block extra_js %}
 <script>
 function worn(id) {
-  fetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+  csrfFetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
     document.getElementById("wc").textContent = d.times_worn + "x porte" + (d.times_worn !== 1 ? "s" : "");
   });
 }

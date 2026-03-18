@@ -8,6 +8,7 @@ from PIL import Image
 from flask import current_app
 
 from config import (
+    ANTHROPIC_MODEL,
     OUTFIT_FOLDER,
     POLLINATIONS_ENHANCE,
     POLLINATIONS_FIXED_SEED,
@@ -151,8 +152,9 @@ def build_negative_prompt():
     )
 
 
-def generate_prompt_with_claude(outfit):
-    api_key = os.environ.get('ANTHROPIC_API_KEY', '').strip()
+def generate_prompt_with_claude(outfit, api_key=None):
+    if not api_key:
+        api_key = os.environ.get('ANTHROPIC_API_KEY', '').strip()
     if not api_key:
         return build_prompt(outfit), None
 
@@ -164,7 +166,7 @@ def generate_prompt_with_claude(outfit):
         notes = f"\nAdditional notes: {_clean_text(outfit.description)}" if outfit.description else ''
 
         message = client.messages.create(
-            model='claude-sonnet-4-5',
+            model=ANTHROPIC_MODEL,
             max_tokens=350,
             messages=[{
                 'role': 'user',
@@ -184,14 +186,15 @@ def generate_prompt_with_claude(outfit):
         return build_prompt(outfit), None
 
 
-def generate_image(prompt):
+def generate_image(prompt, api_key=None):
     clean_prompt = ' '.join(str(prompt).split()).strip()
     negative_prompt = build_negative_prompt()
     encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
     encoded_negative = urllib.parse.quote(negative_prompt, safe='')
 
     seed = POLLINATIONS_FIXED_SEED if POLLINATIONS_FIXED_SEED else str(uuid.uuid4().int % 99999)
-    api_key = os.environ.get('POLLINATIONS_API_KEY', '').strip()
+    if not api_key:
+        api_key = os.environ.get('POLLINATIONS_API_KEY', '').strip()
 
     url = (
         f'https://gen.pollinations.ai/image/{encoded_prompt}'

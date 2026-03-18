@@ -47,6 +47,7 @@
   </h1>
 
   <form method="POST" id="outfitForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="item_ids" id="itemIdsInput" value="{{ selected_ids }}">
     <div class="outfit-layout">
 

@@ -120,6 +120,7 @@
       <span style="font-size:.82rem;color:var(--tm)">📍 Entrez votre ville pour adapter les suggestions à la météo</span>
     {% endif %}
     <form method="POST" class="wx-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="prompt" value="{{ user_prompt }}">
       <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
       <button type="submit" class="btn btn-ghost btn-sm">Mettre à jour</button>
@@ -129,6 +130,7 @@
   <!-- Prompt -->
   <div class="pcard">
     <form method="POST" id="sugForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="city" value="{{ city }}">
       <div class="prow">
         <textarea name="prompt" id="pta" class="pta"
@@ -254,7 +256,7 @@ if (form) form.addEventListener("submit", function() {
 /* Sauvegarder */
 function save(btn, data) {
   btn.disabled = true; btn.textContent = "Sauvegarde…";
-  fetch("/api/stylist/save", {
+  csrfFetch("/api/stylist/save", {
     method: "POST", headers: {"Content-Type":"application/json"},
     body: JSON.stringify({name:data.name, reasoning:data.reasoning, item_ids:data.item_ids})
   }).then(function(r){return r.json();}).then(function(d){

@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, session
 
-from extensions import db
+from extensions import db, limiter
 from models import User
 from utils.auth import current_user, get_ctx
 
@@ -8,6 +8,7 @@ auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per minute; 20 per hour")
 def register():
     if current_user():
         return redirect('/')
@@ -43,6 +44,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per minute; 30 per hour")
 def login():
     if current_user():
         return redirect('/')

@@ -149,6 +149,7 @@
         </button>
         <a href="/edit/{{ it.id }}" class="ca">Modifier</a>
         <form method="POST" action="/delete/{{ it.id }}" style="flex:1;display:contents" onsubmit="return confirm('Supprimer ?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="ca del">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
@@ -168,6 +169,19 @@
     </div>
   {% endif %}
   </div>
+
+  {% if pagination and pagination.pages > 1 %}
+  <nav style="display:flex;align-items:center;justify-content:center;gap:.75rem;padding:1.5rem 0 2rem;flex-wrap:wrap">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('main.index', page=pagination.prev_num, search=af.search, category=af.category, color=af.color, season=af.season, brand=af.brand, fav='1' if af.fav else '', sort=af.sort) }}" class="btn btn-ghost btn-sm">← Précédent</a>
+    {% endif %}
+    <span style="font-size:.83rem;color:var(--tm)">Page {{ pagination.page }} / {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+      <a href="{{ url_for('main.index', page=pagination.next_num, search=af.search, category=af.category, color=af.color, season=af.season, brand=af.brand, fav='1' if af.fav else '', sort=af.sort) }}" class="btn btn-ghost btn-sm">Suivant →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
 </div></div>
 
 {% else %}
@@ -200,10 +214,10 @@ document.getElementById("si") && document.getElementById("si").addEventListener(
   searchTimer = setTimeout(function() { document.getElementById("ff").submit(); }, 400);
 });
 function fav(id, btn) {
-  fetch("/api/fav/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) { btn.textContent = d.is_favorite ? "❤️" : "🤍"; });
+  csrfFetch("/api/fav/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) { btn.textContent = d.is_favorite ? "❤️" : "🤍"; });
 }
 function worn(id, btn) {
-  fetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
+  csrfFetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
     btn.querySelector(".wc").textContent = d.times_worn + "x";
     btn.style.color = "var(--a)";
     setTimeout(function() { btn.style.color = ""; }, 700);

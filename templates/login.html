@@ -16,6 +16,7 @@
   <h1 class="auth-title">Bon <em>retour</em></h1>
   <p class="auth-sub">Connectez-vous à votre garde-robe</p>
   <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="fg">
       <label class="lbl">Email ou nom d'utilisateur</label>
       <input name="login" class="fc" required autofocus placeholder="vous@email.com" value="{{ prefill }}">

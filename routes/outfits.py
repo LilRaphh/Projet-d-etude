@@ -132,19 +132,14 @@ def outfit_generate(oid):
     if not outfit.items:
         return jsonify(error='Ajoutez au moins un vêtement à la tenue avant de générer.'), 400
 
-    stored_anthropic_key = UserSetting.get(me.id, 'anthropic_key', '')
-    if stored_anthropic_key and not os.environ.get('ANTHROPIC_API_KEY'):
-        os.environ['ANTHROPIC_API_KEY'] = stored_anthropic_key
+    anthropic_key = UserSetting.get(me.id, 'anthropic_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+    pollinations_key = UserSetting.get(me.id, 'pollinations_key', '') or os.environ.get('POLLINATIONS_API_KEY', '')
 
-    stored_pollinations_key = UserSetting.get(me.id, 'pollinations_key', '')
-    if stored_pollinations_key and not os.environ.get('POLLINATIONS_API_KEY'):
-        os.environ['POLLINATIONS_API_KEY'] = stored_pollinations_key
-
-    prompt, err = generate_prompt_with_claude(outfit)
+    prompt, err = generate_prompt_with_claude(outfit, api_key=anthropic_key)
     if err:
         return jsonify(error=err), 500
 
-    img_path, err2 = generate_image(prompt)
+    img_path, err2 = generate_image(prompt, api_key=pollinations_key)
     if err2:
         return jsonify(error=err2), 500
 

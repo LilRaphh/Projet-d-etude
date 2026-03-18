@@ -4,11 +4,11 @@ routes/stylist.py — Page Styliste IA
 import json
 import os
 
-import requests
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 
 from models import ClothingItem, Outfit, User, UserSetting
 from extensions import db
+from utils.weather import WeatherService
 
 
 stylist_bp = Blueprint("stylist", __name__)
@@ -59,109 +59,6 @@ def _save_city(city):
     if uid and city:
         UserSetting.set(uid, "city", city)
 
-# ── Météo ─────────────────────────────────────────────────────────────────────
-
-WMO = {
-    0: "Ciel dégagé",
-    1: "Principalement dégagé",
-    2: "Partiellement nuageux",
-    3: "Couvert",
-    45: "Brouillard",
-    48: "Brouillard givrant",
-    51: "Bruine légère",
-    53: "Bruine modérée",
-    55: "Bruine forte",
-    61: "Pluie légère",
-    63: "Pluie modérée",
-    65: "Pluie forte",
-    71: "Neige légère",
-    73: "Neige modérée",
-    75: "Neige forte",
-    80: "Averses légères",
-    81: "Averses modérées",
-    82: "Averses violentes",
-    95: "Orage",
-    96: "Orage avec grêle",
-    99: "Orage violent",
-}
-
-
-def get_weather(city):
-    try:
-        geo = requests.get(
-            "https://geocoding-api.open-meteo.com/v1/search",
-            params={"name": city, "count": 1, "language": "fr", "format": "json"},
-            timeout=6,
-        ).json()
-
-        if not geo.get("results"):
-            return None
-
-        result = geo["results"][0]
-
-        weather_data = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": result["latitude"],
-                "longitude": result["longitude"],
-                "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m",
-                "wind_speed_unit": "kmh",
-                "timezone": "auto",
-            },
-            timeout=6,
-        ).json()
-
-        current = weather_data["current"]
-        code = current.get("weather_code", 0)
-        temp = round(current.get("temperature_2m", 0))
-        feels = round(current.get("apparent_temperature", temp))
-        wind = round(current.get("wind_speed_10m", 0))
-        hum = round(current.get("relative_humidity_2m", 0))
-
-        if code == 0:
-            icon = "☀️"
-        elif code <= 2:
-            icon = "🌤️"
-        elif code <= 3:
-            icon = "☁️"
-        elif code <= 48:
-            icon = "🌫️"
-        elif code <= 67:
-            icon = "🌧️"
-        elif code <= 77:
-            icon = "❄️"
-        elif code <= 82:
-            icon = "🌦️"
-        else:
-            icon = "⛈️"
-
-        if feels <= 0:
-            layer = "Très froid — manteau, écharpe et gants indispensables"
-        elif feels <= 8:
-            layer = "Froid — manteau et superpositions recommandés"
-        elif feels <= 14:
-            layer = "Frais — veste légère ou pull conseillé"
-        elif feels <= 20:
-            layer = "Doux — t-shirt + veste légère suffit"
-        elif feels <= 26:
-            layer = "Chaud — tenue légère"
-        else:
-            layer = "Très chaud — matières légères et aérées"
-
-        return {
-            "temp": temp,
-            "feels": feels,
-            "wind": wind,
-            "hum": hum,
-            "desc": WMO.get(code, "Variable"),
-            "icon": icon,
-            "layer": layer,
-            "city": result["name"],
-        }
-
-    except Exception:
-        return None
-
 # ── Claude ────────────────────────────────────────────────────────────────────
 
 def suggest_outfits(items, weather, prompt):
@@ -193,8 +90,9 @@ def suggest_outfits(items, weather, prompt):
     try:
         import anthropic
 
+        from config import ANTHROPIC_MODEL
         msg = anthropic.Anthropic(api_key=key).messages.create(
-            model="claude-sonnet-4-5",
+            model=ANTHROPIC_MODEL,
             max_tokens=1400,
             system=(
                 "Tu es un styliste personnel. Tu proposes des tenues uniquement avec les pièces listées. "
@@ -236,7 +134,7 @@ def stylist():
         return redirect(url_for("auth.login"))
 
     city = _city()
-    weather = get_weather(city) if city else None
+    weather = WeatherService.get_current(city) if city else None
     suggestions = None
     user_prompt = ""
     error = None

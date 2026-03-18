@@ -28,6 +28,7 @@
   <a href="{{ back }}" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Retour</a>
   <h1 class="fp-ttl">{% if item %}<em>Modifier</em> {{ item.name }}{% else %}Ajouter un <em>vêtement</em>{% endif %}</h1>
   <form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="flay">
       <div>
         <label class="lbl" style="margin-bottom:.42rem">Photo</label>

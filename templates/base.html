@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}{{ app_name }}{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -316,10 +317,10 @@ textarea.fc{resize:vertical;min-height:80px}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Ajouter
       </a>
-      <div class="user-pill">
+      <a href="/profile" class="user-pill" style="text-decoration:none">
         <div class="avatar">{{ me.username[:2] }}</div>
         {{ me.username }}
-      </div>
+      </a>
       <button class="btn btn-icon" id="sBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
@@ -371,6 +372,7 @@ textarea.fc{resize:vertical;min-height:80px}
 <aside class="s-pn" id="sPn">
   <p class="s-ttl">Paramètres</p>
   <form method="POST" action="/settings">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="fg">
       <label class="lbl">Nom de l'application</label>
       <input name="app_name" class="fc" value="{{ app_name }}">
@@ -410,6 +412,7 @@ textarea.fc{resize:vertical;min-height:80px}
   <div style="font-size:.83rem;color:var(--tm);margin-bottom:.7rem">
     <strong style="color:var(--tx)">{{ me.username }}</strong> — {{ me.email }}
   </div>
+  <a href="/profile" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:.45rem">Mon profil</a>
   <a href="/logout" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</a>
 </aside>
 
@@ -439,6 +442,15 @@ if (cp && hi) {
 </script>
 {% endif %}
 
+<script>
+function csrfFetch(url, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  var token = document.querySelector('meta[name="csrf-token"]');
+  if (token) options.headers['X-CSRFToken'] = token.getAttribute('content');
+  return fetch(url, options);
+}
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

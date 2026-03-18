@@ -7,3 +7,6 @@ wardrobe.db
 static/uploads/
 .DS_Store
 _archive_old/
+.claude/
+*.db
+*.db-journal
