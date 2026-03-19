@@ -1,0 +1,67 @@
+# =============================================================
+#  docker-compose.yml — SmartWear (Scraper + MongoDB + Django)
+# =============================================================
+
+version: "3.9"
+
+services:
+
+  # ── MongoDB ────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: smartwear_mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: smartwear
+      MONGO_INITDB_ROOT_PASSWORD: smartwear_pass
+      MONGO_INITDB_DATABASE: smartwear
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - smartwear_net
+
+  # ── Scraper ────────────────────────────────────────────────────
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: smartwear_scraper
+    depends_on:
+      - mongodb
+    environment:
+      MONGO_URI: "mongodb://smartwear:smartwear_pass@mongodb:27017/smartwear?authSource=admin"
+      GOOGLE_GEMINI_API_KEY: "${GOOGLE_GEMINI_API_KEY}"   # depuis .env
+    volumes:
+      - ./output:/app/output   # Les JSON générés sont accessibles localement
+    networks:
+      - smartwear_net
+    # Le scraper tourne une fois puis s'arrête (pas de restart)
+    restart: "no"
+
+  # ── Django ─────────────────────────────────────────────────────
+  django:
+    build:
+      context: ./django          # Ton dossier Django (à adapter)
+      dockerfile: Dockerfile
+    container_name: smartwear_django
+    depends_on:
+      - mongodb
+    environment:
+      MONGO_URI: "mongodb://smartwear:smartwear_pass@mongodb:27017/smartwear?authSource=admin"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY}"
+      DEBUG: "false"
+    ports:
+      - "8000:8000"
+    networks:
+      - smartwear_net
+    restart: unless-stopped
+
+# ── Volumes & Réseaux ──────────────────────────────────────────
+volumes:
+  mongo_data:
+
+networks:
+  smartwear_net:
+    driver: bridge
