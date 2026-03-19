@@ -36,9 +36,8 @@ COLORS = [
 CONDITIONS = ['Neuf', 'Excellent', 'Bon', 'Correct', 'Usé']
 OCCASIONS = ['Quotidien', 'Travail', 'Soirée', 'Sport', 'Voyage', 'Cérémonie', 'Autre']
 
-GENDERS = ['Homme', 'Femme', 'Non-binaire', 'Préférer ne pas dire']
+GENDERS = ['Homme', 'Femme']
 AESTHETICS = ['Casual', 'Chic', 'Streetwear', 'Sport', 'Bohème', 'Minimaliste', 'Vintage', 'Business', 'Autre']
-BODY_TYPES = ['Sablier', 'Pomme', 'Poire', 'Rectangle', 'Triangle inversé']
 BUDGETS = ['Économique', 'Moyen', 'Premium', 'Luxe']
 
 

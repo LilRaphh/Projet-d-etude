@@ -1,3 +1,4 @@
+from .ai_recommend import ai_bp
 from .api import api_bp
 from .auth import auth_bp
 from .main import main_bp
@@ -13,3 +14,4 @@ def register_blueprints(app):
     app.register_blueprint(api_bp)
     app.register_blueprint(stylist_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(ai_bp)

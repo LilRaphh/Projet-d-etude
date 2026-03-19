@@ -57,6 +57,15 @@ class ClothingItem(db.Model):
     thumb_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Attributs extraits par l'IA locale (Qwen2.5-VL + FashionCLIP)
+    ai_subcategory = db.Column(db.String(80))
+    ai_style = db.Column(db.String(40))
+    ai_formality = db.Column(db.Integer)
+    ai_pattern = db.Column(db.String(40))
+    ai_material = db.Column(db.String(40))
+    ai_fit = db.Column(db.String(20))
+    ai_analyzed = db.Column(db.Boolean, default=False, index=True)
+
     __table_args__ = (
         db.Index('ix_clothing_user_category', 'user_id', 'category'),
         db.Index('ix_clothing_user_season', 'user_id', 'season'),
@@ -93,6 +102,23 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40), unique=True, nullable=False)
     items = db.relationship('ClothingItem', secondary=item_tags, back_populates='tags', lazy='dynamic')
+
+
+class ItemEmbedding(db.Model):
+    """Stockage local des embeddings FashionCLIP — remplace ChromaDB."""
+    __tablename__ = 'item_embeddings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('clothing_items.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    embedding_json = db.Column(db.Text, nullable=False)   # JSON list[float]
+    metadata_json = db.Column(db.Text, nullable=False, default='{}')
+    description = db.Column(db.Text, default='')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('item_id', 'user_id', name='uq_embedding_item_user'),
+    )
 
 
 class UserSetting(db.Model):

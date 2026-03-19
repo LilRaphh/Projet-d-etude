@@ -1,13 +1,13 @@
 from flask import Blueprint, flash, redirect, render_template, request
 
-from config import AESTHETICS, BODY_TYPES, BUDGETS, GENDERS
+from config import AESTHETICS, BUDGETS, GENDERS
 from extensions import db
 from models import UserSetting
 from utils.auth import current_user, get_ctx, login_required
 
 profile_bp = Blueprint('profile', __name__)
 
-_PROFILE_KEYS = ('display_name', 'bio', 'style_aesthetic', 'body_type', 'style_budget', 'style_notes')
+_PROFILE_KEYS = ('display_name', 'bio', 'style_aesthetic', 'height', 'weight', 'style_budget', 'style_notes')
 
 
 @profile_bp.route('/profile', methods=['GET', 'POST'])
@@ -52,7 +52,6 @@ def profile():
         'profile.html',
         genders=GENDERS,
         aesthetics=AESTHETICS,
-        body_types=BODY_TYPES,
         budgets=BUDGETS,
         profile=profile_data,
         **ctx,

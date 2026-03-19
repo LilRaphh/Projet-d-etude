@@ -19,6 +19,12 @@
 .d-notes { background: var(--bg); border: 1px solid var(--bor); border-radius: var(--r); padding: .82rem; font-size: .85rem; color: var(--tm); line-height: 1.7; margin-bottom: 1.1rem; }
 .tags-row { display: flex; flex-wrap: wrap; gap: .32rem; margin-bottom: 1.1rem; }
 .d-acts { display: flex; gap: .45rem; flex-wrap: wrap; }
+.ai-box { margin-top: 1.1rem; padding: .85rem 1rem; background: var(--bg); border: 1px solid var(--bor); border-radius: var(--r); }
+.ai-box-ttl { font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--a); margin-bottom: .6rem; }
+.ai-attrs { display: grid; grid-template-columns: 1fr 1fr; gap: .35rem .8rem; }
+.ai-attr { font-size: .78rem; color: var(--tm); }
+.ai-attr strong { color: var(--tx); }
+.ai-pending { font-size: .8rem; color: var(--tm); font-style: italic; }
 {% endblock %}
 
 {% block content %}
@@ -52,10 +58,37 @@
       <div class="d-acts">
         <button type="button" class="btn btn-ghost" onclick="worn({{ item.id }})">Porté aujourd'hui</button>
         <a href="/edit/{{ item.id }}" class="btn btn-primary">Modifier</a>
+        <button type="button" class="btn btn-ghost" id="aiBtn" onclick="analyzeItem({{ item.id }})"
+          {% if not item.image_path %}disabled title="Ajoutez une photo pour analyser"{% endif %}>
+          {% if item.ai_analyzed %}Re-analyser IA{% else %}Analyser avec l'IA{% endif %}
+        </button>
         <form method="POST" action="/delete/{{ item.id }}" onsubmit="return confirm('Supprimer ?')">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-ghost" style="color:#C0392B;border-color:#F0C0C0">Supprimer</button>
         </form>
+      </div>
+
+      <!-- Attributs IA -->
+      <div class="ai-box" id="aiBox">
+        <div class="ai-box-ttl">Analyse IA locale</div>
+        {% if item.ai_analyzed %}
+        <div class="ai-attrs" id="aiAttrs">
+          {% if item.ai_subcategory %}<div class="ai-attr"><strong>Sous-catégorie</strong> {{ item.ai_subcategory }}</div>{% endif %}
+          {% if item.ai_style %}<div class="ai-attr"><strong>Style</strong> {{ item.ai_style }}</div>{% endif %}
+          {% if item.ai_formality %}<div class="ai-attr"><strong>Formalisme</strong> {{ item.ai_formality }}/5</div>{% endif %}
+          {% if item.ai_material %}<div class="ai-attr"><strong>Matière</strong> {{ item.ai_material }}</div>{% endif %}
+          {% if item.ai_pattern %}<div class="ai-attr"><strong>Motif</strong> {{ item.ai_pattern }}</div>{% endif %}
+          {% if item.ai_fit %}<div class="ai-attr"><strong>Coupe</strong> {{ item.ai_fit }}</div>{% endif %}
+        </div>
+        {% else %}
+        <p class="ai-pending" id="aiPending">
+          {% if item.image_path %}
+            Ce vêtement n'a pas encore été analysé. Cliquez sur "Analyser avec l'IA".
+          {% else %}
+            Ajoutez une photo pour activer l'analyse IA.
+          {% endif %}
+        </p>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -68,6 +101,47 @@ function worn(id) {
   csrfFetch("/api/worn/" + id, { method: "POST" }).then(function(r) { return r.json(); }).then(function(d) {
     document.getElementById("wc").textContent = d.times_worn + "x porte" + (d.times_worn !== 1 ? "s" : "");
   });
+}
+
+function analyzeItem(id) {
+  var btn = document.getElementById("aiBtn");
+  var pending = document.getElementById("aiPending");
+  btn.disabled = true;
+  btn.textContent = "Analyse en cours…";
+  if (pending) pending.textContent = "Qwen2.5-VL analyse la photo… (30-60 s)";
+
+  csrfFetch("/ai/analyze/" + id, { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.error) {
+        btn.disabled = false;
+        btn.textContent = "Réessayer";
+        if (pending) pending.textContent = "Erreur : " + d.error;
+        return;
+      }
+      btn.textContent = "Re-analyser IA";
+      btn.disabled = false;
+      // Mise à jour de la boîte IA sans rechargement
+      var attrs = d.attrs;
+      var rows = "";
+      var map = {
+        subcategory: "Sous-catégorie", style: "Style",
+        formality: "Formalisme", material_guess: "Matière",
+        pattern: "Motif", fit: "Coupe"
+      };
+      for (var key in map) {
+        var val = attrs[key];
+        if (key === "formality" && val) val = val + "/5";
+        if (val) rows += '<div class="ai-attr"><strong>' + map[key] + '</strong> ' + val + '</div>';
+      }
+      var box = document.getElementById("aiBox");
+      box.innerHTML = '<div class="ai-box-ttl">Analyse IA locale</div><div class="ai-attrs">' + rows + '</div>';
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = "Réessayer";
+      if (pending) pending.textContent = "Erreur réseau : " + e;
+    });
 }
 </script>
 {% endblock %}
