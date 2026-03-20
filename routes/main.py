@@ -12,6 +12,16 @@ from utils.weather import WeatherService
 main_bp = Blueprint('main', __name__)
 
 
+def _parse_price(raw: str):
+    """Parse un prix utilisateur. Accepte virgule ou point. Retourne None si invalide."""
+    if not raw:
+        return None
+    try:
+        return float(raw.replace(',', '.'))
+    except ValueError:
+        return None
+
+
 @main_bp.route('/')
 def index():
     ctx = get_ctx()
@@ -82,7 +92,7 @@ def index():
         items=pagination.items,
         pagination=pagination,
         brands=brands,
-        total=me.items.count(),
+        total=pagination.total,
         cats=CATEGORIES,
         colors=COLORS,
         seasons=SEASONS,
@@ -110,7 +120,7 @@ def add():
             color=request.form.get('color', '') or None,
             season=request.form.get('season', '') or None,
             condition=request.form.get('condition', '') or None,
-            price=float(price_raw) if price_raw else None,
+            price=_parse_price(price_raw),
             notes=request.form.get('notes', '').strip() or None,
             is_favorite=bool(request.form.get('is_favorite')),
             image_path=img,
@@ -144,6 +154,7 @@ def edit(iid):
     item = me.items.filter_by(id=iid).first()
 
     if not item:
+        flash("Vêtement introuvable.", "error")
         return redirect('/')
 
     if request.method == 'POST':
@@ -160,7 +171,10 @@ def edit(iid):
         item.color = request.form.get('color', '') or None
         item.season = request.form.get('season', '') or None
         item.condition = request.form.get('condition', '') or None
-        item.price = float(price_raw) if price_raw else None
+        parsed_price = _parse_price(price_raw)
+        if price_raw and parsed_price is None:
+            flash("Prix invalide, il a été ignoré.", "warning")
+        item.price = parsed_price
         item.notes = request.form.get('notes', '').strip() or None
         item.is_favorite = bool(request.form.get('is_favorite'))
         item.tags = get_tags(request.form.get('tags', ''))
@@ -190,6 +204,7 @@ def detail(iid):
     me = ctx['me']
     item = me.items.filter_by(id=iid).first()
     if not item:
+        flash("Vêtement introuvable.", "error")
         return redirect('/')
     return render_template('item_detail.html', item=item, **ctx)
 
@@ -242,6 +257,50 @@ def forecast():
         city=city,
         **ctx,
     )
+
+
+@main_bp.route('/settings/ai', methods=['GET'])
+@login_required
+def settings_ai_get():
+    from models import UserSetting
+    from ai.vision import check_ollama
+
+    ctx = get_ctx()
+    me = ctx['me']
+    ollama_info = check_ollama()
+    current_settings = {
+        'vision_model': UserSetting.get(me.id, 'vision_model', ''),
+        'image_gen_model': UserSetting.get(me.id, 'image_gen_model', ''),
+        'pollinations_key': UserSetting.get(me.id, 'pollinations_key', ''),
+        'anthropic_key': UserSetting.get(me.id, 'anthropic_key', ''),
+        'local_sd_url': UserSetting.get(me.id, 'local_sd_url', ''),
+        'local_sd_checkpoint': UserSetting.get(me.id, 'local_sd_checkpoint', ''),
+    }
+    return render_template(
+        'settings_ai.html',
+        ollama_info=ollama_info,
+        current_settings=current_settings,
+        **ctx,
+    )
+
+
+@main_bp.route('/settings/ai', methods=['POST'])
+@login_required
+def settings_ai_post():
+    from models import UserSetting
+
+    me = current_user()
+    # Modèles : on sauvegarde même vide (vide = utiliser la valeur d'environnement)
+    for key in ('vision_model', 'image_gen_model', 'local_sd_url', 'local_sd_checkpoint'):
+        value = request.form.get(key, '').strip()
+        UserSetting.set(me.id, key, value)
+    # Clés API : on ne sauvegarde que si non vide pour ne pas écraser une clé existante
+    for key in ('pollinations_key', 'anthropic_key'):
+        value = request.form.get(key, '').strip()
+        if value:
+            UserSetting.set(me.id, key, value)
+    flash('Paramètres IA sauvegardés !', 'success')
+    return redirect('/settings/ai')
 
 
 @main_bp.route('/mentions-legales')

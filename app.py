@@ -8,6 +8,11 @@ load_dotenv()
 
 import logging
 import os
+
+# Doit être défini avant tout import de transformers/huggingface_hub,
+# qui lit cette variable au moment de l'import.
+if os.environ.get("HF_HUB_OFFLINE") is None:
+    os.environ["HF_HUB_OFFLINE"] = "1"
 import socket
 import sys
 from datetime import datetime
@@ -51,11 +56,18 @@ def _get_global_weather():
     uid = session.get("user_id")
     if not uid:
         return None
+    cache_key = f"weather_{uid}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
     city = UserSetting.get(uid, "city", "")
     if not city:
         return None
     from utils.weather import WeatherService
-    return WeatherService.get_current(city)
+    result = WeatherService.get_current(city)
+    if result:
+        cache.set(cache_key, result, timeout=300)  # 5 minutes
+    return result
 
 
 def create_app():
@@ -77,6 +89,20 @@ def create_app():
     with app.app_context():
         from models import ClothingItem, Outfit, Tag, User, UserSetting  # noqa: F401
         db.create_all()
+
+    from ai.ollama_setup import ensure_ollama
+    ensure_ollama(app)
+
+    import threading
+
+    def _warmup_fashionclip():
+        try:
+            from ai.embeddings import _get_model
+            _get_model()
+        except Exception as e:
+            app.logger.warning("FashionCLIP warm-up échoué : %s", e)
+
+    threading.Thread(target=_warmup_fashionclip, name="fashionclip-warmup", daemon=True).start()
 
     # ── Error handlers ─────────────────────────────────────────────────────────
     from flask_wtf.csrf import CSRFError
@@ -140,8 +166,8 @@ if __name__ == '__main__':
             ip = socket.gethostbyname(socket.gethostname())
         except Exception:
             ip = 'votre-IP-locale'
-        print(f'\n  Wardrobe v5\n  Local  → http://localhost:{port}\n  Réseau → http://{ip}:{port}\n')
+        print(f'\n  Wardrobe \n  Local  → http://localhost:{port}\n  Réseau → http://{ip}:{port}\n')
     else:
-        print(f'\n  Wardrobe v5  →  http://localhost:{port}\n')
+        print(f'\n  Wardrobe   →  http://localhost:{port}\n')
 
     app.run(host=host, port=port, debug=debug, threaded=True)

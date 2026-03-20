@@ -72,6 +72,7 @@
       <div class="ai-box" id="aiBox">
         <div class="ai-box-ttl">Analyse IA locale</div>
         {% if item.ai_analyzed %}
+        {% if item.ai_description %}<p style="font-size:.82rem;color:var(--tm);font-style:italic;margin-bottom:.6rem">{{ item.ai_description }}</p>{% endif %}
         <div class="ai-attrs" id="aiAttrs">
           {% if item.ai_subcategory %}<div class="ai-attr"><strong>Sous-catégorie</strong> {{ item.ai_subcategory }}</div>{% endif %}
           {% if item.ai_style %}<div class="ai-attr"><strong>Style</strong> {{ item.ai_style }}</div>{% endif %}
@@ -79,6 +80,9 @@
           {% if item.ai_material %}<div class="ai-attr"><strong>Matière</strong> {{ item.ai_material }}</div>{% endif %}
           {% if item.ai_pattern %}<div class="ai-attr"><strong>Motif</strong> {{ item.ai_pattern }}</div>{% endif %}
           {% if item.ai_fit %}<div class="ai-attr"><strong>Coupe</strong> {{ item.ai_fit }}</div>{% endif %}
+          {% if item.ai_thickness %}<div class="ai-attr"><strong>Épaisseur</strong> {{ item.ai_thickness }}</div>{% endif %}
+          {% if item.ai_length %}<div class="ai-attr"><strong>Longueur</strong> {{ item.ai_length }}</div>{% endif %}
+          {% if item.ai_secondary_color %}<div class="ai-attr"><strong>Couleur secondaire</strong> {{ item.ai_secondary_color }}</div>{% endif %}
         </div>
         {% else %}
         <p class="ai-pending" id="aiPending">
@@ -127,15 +131,18 @@ function analyzeItem(id) {
       var map = {
         subcategory: "Sous-catégorie", style: "Style",
         formality: "Formalisme", material_guess: "Matière",
-        pattern: "Motif", fit: "Coupe"
+        pattern: "Motif", fit: "Coupe",
+        thickness: "Épaisseur", length: "Longueur",
+        secondary_color: "Couleur secondaire"
       };
       for (var key in map) {
         var val = attrs[key];
         if (key === "formality" && val) val = val + "/5";
         if (val) rows += '<div class="ai-attr"><strong>' + map[key] + '</strong> ' + val + '</div>';
       }
+      var desc = attrs.description ? '<p style="font-size:.82rem;color:var(--tm);font-style:italic;margin-bottom:.6rem">' + attrs.description + '</p>' : '';
       var box = document.getElementById("aiBox");
-      box.innerHTML = '<div class="ai-box-ttl">Analyse IA locale</div><div class="ai-attrs">' + rows + '</div>';
+      box.innerHTML = '<div class="ai-box-ttl">Analyse IA locale</div>' + desc + '<div class="ai-attrs">' + rows + '</div>';
     })
     .catch(function(e) {
       btn.disabled = false;

@@ -11,6 +11,17 @@ from utils.auth import current_user, get_ctx, login_required
 outfits_bp = Blueprint('outfits', __name__, url_prefix='/outfits')
 
 
+def _parse_rating(raw: str):
+    """Parse une note 1-5 depuis le formulaire. Retourne None si invalide."""
+    if not raw:
+        return None
+    try:
+        v = int(raw)
+        return v if 1 <= v <= 5 else None
+    except ValueError:
+        return None
+
+
 @outfits_bp.route('')
 @login_required
 def outfits():
@@ -38,7 +49,7 @@ def outfit_new():
             description=request.form.get('description', '').strip() or None,
             occasion=request.form.get('occasion', '') or None,
             season=request.form.get('season', '') or None,
-            rating=int(rating) if rating else None,
+            rating=_parse_rating(rating),
             items=items,
         )
         db.session.add(outfit)
@@ -64,6 +75,7 @@ def outfit_detail(oid):
     me = ctx['me']
     outfit = me.outfits.filter_by(id=oid).first()
     if not outfit:
+        flash("Tenue introuvable.", "error")
         return redirect('/outfits')
     return render_template('outfit_detail.html', outfit=outfit, **ctx)
 
@@ -75,6 +87,7 @@ def outfit_edit(oid):
     me = ctx['me']
     outfit = me.outfits.filter_by(id=oid).first()
     if not outfit:
+        flash("Tenue introuvable.", "error")
         return redirect('/outfits')
 
     all_items = me.items.order_by(ClothingItem.category, ClothingItem.name).all()
@@ -89,7 +102,7 @@ def outfit_edit(oid):
         outfit.description = request.form.get('description', '').strip() or None
         outfit.occasion = request.form.get('occasion', '') or None
         outfit.season = request.form.get('season', '') or None
-        outfit.rating = int(rating) if rating else None
+        outfit.rating = _parse_rating(rating)
         db.session.commit()
         return redirect(f'/outfits/{oid}')
 
@@ -134,12 +147,19 @@ def outfit_generate(oid):
 
     anthropic_key = UserSetting.get(me.id, 'anthropic_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
     pollinations_key = UserSetting.get(me.id, 'pollinations_key', '') or os.environ.get('POLLINATIONS_API_KEY', '')
+    image_gen_model = UserSetting.get(me.id, 'image_gen_model', '').strip() or None
+    local_sd_url = UserSetting.get(me.id, 'local_sd_url', '').strip() or None
+    local_sd_checkpoint = UserSetting.get(me.id, 'local_sd_checkpoint', '').strip() or None
 
     prompt, err = generate_prompt_with_claude(outfit, api_key=anthropic_key)
     if err:
         return jsonify(error=err), 500
 
-    img_path, err2 = generate_image(prompt, api_key=pollinations_key)
+    img_path, err2 = generate_image(
+        prompt, api_key=pollinations_key, outfit=outfit,
+        image_model=image_gen_model,
+        local_url=local_sd_url, local_checkpoint=local_sd_checkpoint,
+    )
     if err2:
         return jsonify(error=err2), 500
 

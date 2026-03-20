@@ -64,6 +64,10 @@ class ClothingItem(db.Model):
     ai_pattern = db.Column(db.String(40))
     ai_material = db.Column(db.String(40))
     ai_fit = db.Column(db.String(20))
+    ai_secondary_color = db.Column(db.String(40))
+    ai_thickness = db.Column(db.String(20))
+    ai_length = db.Column(db.String(20))
+    ai_description = db.Column(db.Text)
     ai_analyzed = db.Column(db.Boolean, default=False, index=True)
 
     __table_args__ = (

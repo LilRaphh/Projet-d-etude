@@ -8,9 +8,9 @@ THUMB_SIZE = (500, 500)
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
 POLLINATIONS_MODEL = os.environ.get('POLLINATIONS_MODEL', 'flux')
-POLLINATIONS_WIDTH = int(os.environ.get('POLLINATIONS_WIDTH', 768))
-POLLINATIONS_HEIGHT = int(os.environ.get('POLLINATIONS_HEIGHT', 1152))
-POLLINATIONS_ENHANCE = os.environ.get('POLLINATIONS_ENHANCE', 'false').lower() == 'true'
+POLLINATIONS_WIDTH = int(os.environ.get('POLLINATIONS_WIDTH', 832))
+POLLINATIONS_HEIGHT = int(os.environ.get('POLLINATIONS_HEIGHT', 1216))
+POLLINATIONS_ENHANCE = os.environ.get('POLLINATIONS_ENHANCE', 'true').lower() == 'true'
 POLLINATIONS_SAFE = os.environ.get('POLLINATIONS_SAFE', 'false').lower() == 'true'
 POLLINATIONS_FIXED_SEED = os.environ.get('POLLINATIONS_FIXED_SEED', '').strip()
 

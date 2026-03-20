@@ -20,20 +20,39 @@ log = logging.getLogger(__name__)
 
 FASHIONCLIP_MODEL = os.environ.get("FASHIONCLIP_MODEL", "patrickjohncyh/fashion-clip")
 
+
 # Singletons — chargés une seule fois au premier appel
 _model: Optional[CLIPModel] = None
 _processor: Optional[CLIPProcessor] = None
+_model_loading: bool = False
+_model_ready: bool = False
+
+
+def is_model_ready() -> bool:
+    """Retourne True si FashionCLIP est chargé en mémoire."""
+    return _model_ready
 
 
 def _get_model():
-    global _model, _processor
-    if _model is None:
+    global _model, _processor, _model_loading, _model_ready
+    if _model is not None:
+        return _model, _processor
+    if _model_loading:
+        raise RuntimeError("FashionCLIP est en cours de chargement, réessayez dans quelques secondes.")
+    _model_loading = True
+    try:
         log.info("Chargement de FashionCLIP (%s)…", FASHIONCLIP_MODEL)
         device = _best_device()
         _processor = CLIPProcessor.from_pretrained(FASHIONCLIP_MODEL)
         _model = CLIPModel.from_pretrained(FASHIONCLIP_MODEL).to(device)
         _model.eval()
+        _model_ready = True
         log.info("FashionCLIP prêt sur %s.", device)
+    except Exception as e:
+        _model_loading = False
+        raise RuntimeError(f"Impossible de charger FashionCLIP : {e}")
+    finally:
+        _model_loading = False
     return _model, _processor
 
 
@@ -137,6 +156,7 @@ def get_user_items_with_embeddings(user_id: int) -> List[dict]:
         items.append(
             {
                 "chroma_id": f"u{row.user_id}_i{row.item_id}",
+                "item_id": row.item_id,
                 "embedding": embedding,
                 "metadata": metadata,
                 "description": row.description or "",

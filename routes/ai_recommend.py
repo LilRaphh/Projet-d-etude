@@ -66,6 +66,8 @@ def status():
 @ai_bp.route("/analyze/<int:item_id>", methods=["POST"])
 @login_required
 def analyze_item(item_id):
+    from models import UserSetting
+
     me = current_user()
     item = me.items.filter_by(id=item_id).first()
 
@@ -76,10 +78,12 @@ def analyze_item(item_id):
     if not img_path or not os.path.exists(img_path):
         return jsonify({"error": "Ce vêtement n'a pas de photo — ajoutez-en une pour l'analyser."}), 400
 
+    vision_model = UserSetting.get(me.id, 'vision_model', '').strip() or None
+
     try:
         from ai.pipeline import analyze_and_store_item
 
-        ai_attrs = analyze_and_store_item(item, img_path)
+        ai_attrs = analyze_and_store_item(item, img_path, vision_model=vision_model)
 
         # Persistance des attributs IA dans la base SQLite
         item.ai_subcategory = ai_attrs.get("subcategory")
@@ -88,6 +92,10 @@ def analyze_item(item_id):
         item.ai_pattern = ai_attrs.get("pattern")
         item.ai_material = ai_attrs.get("material_guess")
         item.ai_fit = ai_attrs.get("fit")
+        item.ai_secondary_color = ai_attrs.get("secondary_color")
+        item.ai_thickness = ai_attrs.get("thickness")
+        item.ai_length = ai_attrs.get("length")
+        item.ai_description = ai_attrs.get("description")
         item.ai_analyzed = True
 
         # Auto-complétion des champs vides dans l'app
@@ -114,8 +122,11 @@ def analyze_item(item_id):
 @ai_bp.route("/analyze-all", methods=["POST"])
 @login_required
 def analyze_all():
+    from models import UserSetting
+
     me = current_user()
     pending = me.items.filter_by(ai_analyzed=False).all()
+    vision_model = UserSetting.get(me.id, 'vision_model', '').strip() or None
 
     results = {"success": 0, "skipped": 0, "failed": 0, "errors": []}
 
@@ -128,7 +139,7 @@ def analyze_all():
         try:
             from ai.pipeline import analyze_and_store_item
 
-            ai_attrs = analyze_and_store_item(item, img_path)
+            ai_attrs = analyze_and_store_item(item, img_path, vision_model=vision_model)
 
             item.ai_subcategory = ai_attrs.get("subcategory")
             item.ai_style = ai_attrs.get("style")
@@ -136,6 +147,10 @@ def analyze_all():
             item.ai_pattern = ai_attrs.get("pattern")
             item.ai_material = ai_attrs.get("material_guess")
             item.ai_fit = ai_attrs.get("fit")
+            item.ai_secondary_color = ai_attrs.get("secondary_color")
+            item.ai_thickness = ai_attrs.get("thickness")
+            item.ai_length = ai_attrs.get("length")
+            item.ai_description = ai_attrs.get("description")
             item.ai_analyzed = True
 
             if not item.color:

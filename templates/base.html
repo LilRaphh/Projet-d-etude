@@ -404,6 +404,7 @@ textarea.fc{resize:vertical;min-height:80px}
              value="{{ me.user_settings.filter_by(key='city').first().value if me.user_settings.filter_by(key='city').first() else '' }}">
       <p style="font-size:.73rem;color:var(--tm);margin-top:.25rem">Utilisée pour adapter les tenues à la météo</p>
     </div>
+    <a href="/settings/ai" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:.6rem">&#9881; Paramètres IA avancés</a>
     <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Sauvegarder</button>
   </form>
   <hr class="s-sep">

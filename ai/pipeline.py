@@ -32,7 +32,7 @@ _MAX_COMBINATIONS = 200
 # Ingestion
 # ---------------------------------------------------------------------------
 
-def analyze_and_store_item(item, image_full_path: str) -> dict:
+def analyze_and_store_item(item, image_full_path: str, vision_model: Optional[str] = None) -> dict:
     """
     Pipeline d'ingestion complet pour un vêtement.
 
@@ -43,6 +43,7 @@ def analyze_and_store_item(item, image_full_path: str) -> dict:
     Args:
         item  : instance SQLAlchemy ClothingItem
         image_full_path : chemin absolu vers l'image
+        vision_model : modèle Ollama à utiliser (None = valeur env VISION_MODEL)
 
     Returns:
         dict des attributs extraits par l'IA
@@ -51,7 +52,7 @@ def analyze_and_store_item(item, image_full_path: str) -> dict:
         RuntimeError si Ollama est inaccessible ou l'analyse échoue
     """
     log.info("Analyse visuelle item %d (%s)…", item.id, item.name)
-    ai_attrs = analyze_garment(image_full_path)
+    ai_attrs = analyze_garment(image_full_path, vision_model=vision_model or None)
 
     log.info("Encodage FashionCLIP item %d…", item.id)
     embedding = encode_image(image_full_path)
@@ -86,6 +87,28 @@ def analyze_and_store_item(item, image_full_path: str) -> dict:
 
 def _build_description(ai_attrs: dict, item) -> str:
     """Construit une description textuelle pour le champ document ChromaDB."""
+    shoe_detail = ai_attrs.get("shoe_detail")
+    if shoe_detail:
+        # Description enrichie pour les chaussures — maximise la précision de la recherche
+        parts = []
+        for key in (
+            "silhouette", "upper_material", "upper_details", "toe_shape",
+            "closure", "collar", "sole_profile", "sole_color",
+            "heel", "colorway", "branding", "overall_style",
+        ):
+            val = str(shoe_detail.get(key, "")).strip()
+            if val:
+                parts.append(val)
+        brand = getattr(item, "brand", None)
+        if brand:
+            parts.append(str(brand))
+        # Préfixe avec le prompt image-gen pour une bonne similarité sémantique
+        image_gen = str(shoe_detail.get("image_gen_prompt", "")).strip()
+        if image_gen:
+            parts.insert(0, image_gen)
+        return ". ".join(parts)
+
+    # Description standard pour les autres vêtements
     parts = []
     for val in [
         ai_attrs.get("primary_color"),
@@ -210,7 +233,7 @@ def recommend_outfits(
             {
                 "items": [
                     {
-                        "item_id": it["metadata"].get("item_id"),
+                        "item_id": it.get("item_id"),
                         "name": it["metadata"].get("item_name", ""),
                         "category": it["metadata"].get("category", ""),
                         "color": it["metadata"].get("primary_color", ""),

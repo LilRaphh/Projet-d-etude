@@ -236,7 +236,10 @@ def stylist_save():
     try:
         data = request.get_json(force=True)
         uid = _uid()
-        item_ids = [int(i) for i in data.get("item_ids", [])]
+        item_ids = [int(i) for i in data.get("item_ids", []) if i is not None]
+
+        if not item_ids:
+            return jsonify(ok=False, error="Aucun vêtement à sauvegarder."), 400
 
         items = [
             ClothingItem.query.filter_by(id=iid, user_id=uid).first()

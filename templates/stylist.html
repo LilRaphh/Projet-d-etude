@@ -259,7 +259,7 @@
       <div class="sc-num">{{ loop.index }}</div>
     </div>
     <div class="sc-items">
-      {% for it in s.items %}
+      {% for it in s['items'] %}
       <div class="si">
         <div class="si-thumb">
           {% set db_item = items_map.get(it.item_id) %}
@@ -291,7 +291,7 @@
     {% endif %}
     <div class="sc-foot">
       <button class="btn btn-ghost btn-sm"
-        onclick="saveLocal(this, {{ s|tojson }})">
+        onclick='saveLocal(this, {{ s|tojson }})'>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Sauvegarder
       </button>
@@ -342,7 +342,7 @@
       {{ s.reasoning }}
     </div>
     <div class="sc-foot">
-      <button class="btn btn-ghost btn-sm" onclick="saveClaude(this, {{ s|tojson }})">
+      <button class="btn btn-ghost btn-sm" onclick='saveClaude(this, {{ s|tojson }})'>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Sauvegarder
       </button>
@@ -439,7 +439,7 @@ function saveLocal(btn, data) {
   var item_ids = data.items.map(function(i) { return i.item_id; }).filter(Boolean);
   csrfFetch("/api/stylist/save", {
     method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({name: "Tenue IA locale", reasoning: data.explanation || "", item_ids: item_ids})
+    body: JSON.stringify({name: data.items.map(function(i){ return i.name; }).filter(Boolean).join(' · ') || "Tenue IA locale", reasoning: data.explanation || "", item_ids: item_ids})
   }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
       btn.textContent = "Sauvegardée";

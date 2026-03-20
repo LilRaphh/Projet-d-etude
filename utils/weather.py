@@ -186,16 +186,22 @@ class WeatherService:
                 })
 
             hours = []
-            for i in range(min(24, len(hourly.get("time", [])))):
-                c = hourly["weather_code"][i]
+            h_time = hourly.get("time", [])
+            h_code = hourly.get("weather_code", [])
+            h_temp = hourly.get("temperature_2m", [])
+            h_rain = hourly.get("precipitation_probability", [])
+            h_wind = hourly.get("wind_speed_10m", [])
+            n = min(24, len(h_time), len(h_code), len(h_temp), len(h_rain), len(h_wind))
+            for i in range(n):
+                c = h_code[i]
                 hours.append({
-                    "time": hourly["time"][i],
-                    "temp": round(hourly["temperature_2m"][i]) if hourly["temperature_2m"][i] is not None else None,
+                    "time": h_time[i],
+                    "temp": round(h_temp[i]) if h_temp[i] is not None else None,
                     "code": c,
                     "label": WMO.get(c, "Variable"),
                     "icon": weather_icon(c),
-                    "rain_prob": hourly["precipitation_probability"][i],
-                    "wind": round(hourly["wind_speed_10m"][i]) if hourly["wind_speed_10m"][i] is not None else None,
+                    "rain_prob": h_rain[i],
+                    "wind": round(h_wind[i]) if h_wind[i] is not None else None,
                 })
 
             return {
