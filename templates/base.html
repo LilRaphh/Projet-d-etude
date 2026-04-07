@@ -277,7 +277,6 @@ textarea.fc{resize:vertical;min-height:80px}
     <nav class="hdr-nav">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
       <a href="/boutique" class="nav-link {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
-      <a href="/style-check" class="nav-link {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse Mon style</a>
       <a href="/outfits" class="nav-link {% if '/outfit' in request.path %}active{% endif %}">
         Tenues
         {% set oc = me.outfits.count() %}
@@ -286,6 +285,7 @@ textarea.fc{resize:vertical;min-height:80px}
       <a href="/stylist" class="nav-link {% if request.path == '/stylist' %}active{% endif %}">
         ✦ Styliste
       </a>
+      <a href="/style-check" class="nav-link {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse Mon style</a>
       {% if global_weather %}
       <a href="/forecast" class="weather-pill-wrap">
         <div class="weather-pill">
