@@ -228,7 +228,13 @@ def save_settings():
     from models import UserSetting
 
     me = current_user()
-    for key in ('app_name', 'accent', 'currency', 'anthropic_key', 'pollinations_key', 'city'):
+    for key in ('app_name', 'accent', 'currency', 'city'):
+        value = request.form.get(key, '').strip()
+        if value:
+            UserSetting.set(me.id, key, value)
+        else:
+            UserSetting.delete(me.id, key)
+    for key in ('anthropic_key', 'pollinations_key'):
         value = request.form.get(key, '').strip()
         if value:
             UserSetting.set(me.id, key, value)
@@ -290,10 +296,12 @@ def settings_ai_post():
     from models import UserSetting
 
     me = current_user()
-    # Modèles : on sauvegarde même vide (vide = utiliser la valeur d'environnement)
     for key in ('vision_model', 'image_gen_model', 'local_sd_url', 'local_sd_checkpoint'):
         value = request.form.get(key, '').strip()
-        UserSetting.set(me.id, key, value)
+        if value:
+            UserSetting.set(me.id, key, value)
+        else:
+            UserSetting.delete(me.id, key)
     # Clés API : on ne sauvegarde que si non vide pour ne pas écraser une clé existante
     for key in ('pollinations_key', 'anthropic_key'):
         value = request.form.get(key, '').strip()

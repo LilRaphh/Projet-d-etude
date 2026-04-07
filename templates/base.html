@@ -276,6 +276,8 @@ textarea.fc{resize:vertical;min-height:80px}
     {% if me %}
     <nav class="hdr-nav">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
+      <a href="/boutique" class="nav-link {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
+      <a href="/style-check" class="nav-link {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse Mon style</a>
       <a href="/outfits" class="nav-link {% if '/outfit' in request.path %}active{% endif %}">
         Tenues
         {% set oc = me.outfits.count() %}

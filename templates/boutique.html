@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% block title %}Boutique — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+/* ── Layout ── */
+.bq-page { padding: 2.5rem 0 5rem }
+.bq-h { font-family: var(--serif); font-size: clamp(1.9rem,4vw,2.8rem); font-weight: 300; line-height: 1.1; margin-bottom: .25rem }
+.bq-h em { color: var(--a); font-style: italic }
+.bq-sub { color: var(--tm); font-size: .86rem; margin-bottom: 2rem }
+
+/* ── Barre de filtres ── */
+.filter-bar {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  align-items: flex-end;
+}
+.filter-bar .fg { margin: 0; min-width: 130px; flex: 1 }
+.filter-bar .fg.wide { min-width: 200px; flex: 2 }
+.filter-bar .lbl { margin-bottom: .28rem }
+.filter-bar .fc { padding: .42rem .7rem; font-size: .82rem }
+.filter-bar .btn { align-self: flex-end; flex-shrink: 0 }
+
+/* ── Stats bar ── */
+.bq-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+  font-size: .82rem;
+  color: var(--tm);
+}
+.bq-stats strong { color: var(--tx) }
+
+/* ── Grid produits ── */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+/* ── Carte produit ── */
+.prod-card {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow var(--tr), transform var(--tr);
+}
+.prod-card:hover {
+  box-shadow: var(--shh);
+  transform: translateY(-2px);
+}
+.prod-img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  background: var(--bg);
+  display: block;
+}
+.prod-img-placeholder {
+  width: 100%;
+  aspect-ratio: 3/4;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--tl);
+}
+.prod-body {
+  padding: .75rem .9rem;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  flex: 1;
+}
+.prod-brand {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--a);
+}
+.prod-name {
+  font-size: .84rem;
+  font-weight: 500;
+  color: var(--tx);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.prod-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .28rem;
+  margin-top: .15rem;
+}
+.prod-tag {
+  font-size: .67rem;
+  padding: .12rem .42rem;
+  border-radius: 99px;
+  background: var(--bg);
+  border: 1px solid var(--bor);
+  color: var(--tm);
+}
+.prod-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: .5rem;
+  border-top: 1px solid var(--bor);
+}
+.prod-price {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--tx);
+}
+.prod-price.no-price {
+  font-size: .78rem;
+  color: var(--tl);
+  font-family: var(--sans);
+}
+.prod-link {
+  font-size: .72rem;
+  color: var(--a);
+  text-decoration: none;
+  font-weight: 500;
+  padding: .22rem .55rem;
+  border-radius: var(--r);
+  border: 1px solid var(--a);
+  transition: all var(--tr);
+}
+.prod-link:hover {
+  background: var(--a);
+  color: #fff;
+}
+
+/* ── Tailles ── */
+.prod-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .2rem;
+  margin-top: .2rem;
+}
+.prod-size {
+  font-size: .63rem;
+  font-weight: 600;
+  padding: .1rem .35rem;
+  border-radius: 4px;
+  background: var(--am);
+  color: var(--a);
+  border: 1px solid var(--a)33;
+}
+
+/* ── Rating étoiles ── */
+.prod-rating {
+  font-size: .72rem;
+  color: #f59e0b;
+  letter-spacing: .05em;
+}
+
+/* ── Empty state ── */
+.bq-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--tm);
+}
+.bq-empty-ico { font-size: 3rem; margin-bottom: .75rem }
+.bq-empty h3 { font-size: 1.1rem; font-weight: 400; margin-bottom: .4rem; color: var(--tx) }
+.bq-empty p { font-size: .85rem }
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  margin-top: 2.5rem;
+  flex-wrap: wrap;
+}
+.page-btn {
+  padding: .38rem .7rem;
+  border-radius: var(--r);
+  border: 1px solid var(--bor);
+  background: var(--sur);
+  color: var(--tm);
+  font-size: .82rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--tr);
+}
+.page-btn:hover { background: var(--bg); color: var(--tx) }
+.page-btn.active { background: var(--a); color: #fff; border-color: var(--a) }
+.page-btn.disabled { opacity: .4; pointer-events: none }
+
+@media (max-width: 640px) {
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem }
+  .filter-bar { flex-direction: column }
+  .filter-bar .fg, .filter-bar .fg.wide { min-width: 100%; flex: none }
+}
+{% endblock %}
+
+{% block content %}
+<div class="bq-page">
+  <div class="wrap">
+
+    <h1 class="bq-h">La <em>Boutique</em></h1>
+    <p class="bq-sub">{{ total }} produit{{ 's' if total != 1 }} scrapés — Mango, Nike, Jules, Le Coq Sportif, Kappa, Lotto, Sergio Tacchini</p>
+
+    <!-- Filtres -->
+    <form method="get" action="/boutique" class="filter-bar">
+      <div class="fg wide">
+        <label class="lbl">Recherche</label>
+        <input class="fc" type="text" name="search" placeholder="Nom, description…" value="{{ af.search }}">
+      </div>
+      <div class="fg">
+        <label class="lbl">Marque</label>
+        <select class="fc" name="brand">
+          <option value="">Toutes</option>
+          {% for b in all_brands %}
+          <option value="{{ b }}" {% if af.brand == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Type</label>
+        <select class="fc" name="type">
+          <option value="">Tous</option>
+          {% for t in all_types %}
+          <option value="{{ t }}" {% if af.type == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Catégorie</label>
+        <select class="fc" name="categorie">
+          <option value="">Toutes</option>
+          {% for c in all_cats %}
+          <option value="{{ c }}" {% if af.categorie == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Style</label>
+        <select class="fc" name="style">
+          <option value="">Tous</option>
+          {% for s in all_styles %}
+          <option value="{{ s }}" {% if af.style == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Genre</label>
+        <select class="fc" name="sexe">
+          <option value="">Tous</option>
+          {% for sx in all_sexes %}
+          <option value="{{ sx }}" {% if af.sexe == sx %}selected{% endif %}>{{ sx }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg">
+        <label class="lbl">Prix max (€)</label>
+        <input class="fc" type="number" name="price_max" min="0" step="1" placeholder="ex. 80" value="{{ af.price_max }}">
+      </div>
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+      {% if af.search or af.brand or af.type or af.categorie or af.style or af.sexe or af.price_max %}
+      <a href="/boutique" class="btn btn-ghost">Réinitialiser</a>
+      {% endif %}
+    </form>
+
+    <!-- Stats + page actuelle -->
+    <div class="bq-stats">
+      <span><strong>{{ total }}</strong> produit{{ 's' if total != 1 }}</span>
+      {% if total_pages > 1 %}
+      <span>Page {{ page }} / {{ total_pages }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Grille produits -->
+    {% if items %}
+    <div class="products-grid">
+      {% for p in items %}
+      <div class="prod-card">
+        {% if p.image %}
+        <img class="prod-img" src="{{ p.image }}" alt="{{ p.name }}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=\'prod-img-placeholder\'>👕</div>'">
+        {% else %}
+        <div class="prod-img-placeholder">👕</div>
+        {% endif %}
+
+        <div class="prod-body">
+          <div class="prod-brand">{{ p.brand_source or '—' }}</div>
+          <div class="prod-name">{{ p.name }}</div>
+
+          <div class="prod-meta">
+            {% if p.categorie %}<span class="prod-tag">{{ p.categorie }}</span>{% endif %}
+            {% if p.style %}<span class="prod-tag">{{ p.style }}</span>{% endif %}
+            {% if p.sexe %}<span class="prod-tag">{{ p.sexe }}</span>{% endif %}
+            {% if p.color %}<span class="prod-tag">{{ p.color }}</span>{% endif %}
+          </div>
+
+          {% set sizes = (p.taille if p.taille else []) + (p.sizes | map('string') | list if p.sizes else []) %}
+          {% if sizes %}
+          <div class="prod-sizes">
+            {% for s in sizes[:6] %}
+            <span class="prod-size">{{ s }}</span>
+            {% endfor %}
+            {% if sizes|length > 6 %}<span class="prod-size">+{{ sizes|length - 6 }}</span>{% endif %}
+          </div>
+          {% endif %}
+
+          {% if p.rating %}
+          <div class="prod-rating">
+            {% set full = (p.rating | round(0, 'floor')) | int %}
+            {% for i in range(full) %}★{% endfor %}{% for i in range(5 - full) %}☆{% endfor %}
+            <span style="color:var(--tm);font-size:.68rem;margin-left:.2rem">{{ p.rating }}</span>
+          </div>
+          {% endif %}
+
+          <div class="prod-footer">
+            {% if p.price_value %}
+            <span class="prod-price">{{ "%.2f"|format(p.price_value) }} {{ p.currency or '€' }}</span>
+            {% else %}
+            <span class="prod-price no-price">Prix N/D</span>
+            {% endif %}
+            {% if p.url %}
+            <a class="prod-link" href="{{ p.url }}" target="_blank" rel="noopener">Voir</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav class="pagination">
+      {% set qs_parts = [] %}
+      {% if af.search %}{% set _ = qs_parts.append('search=' ~ af.search | urlencode) %}{% endif %}
+      {% if af.brand %}{% set _ = qs_parts.append('brand=' ~ af.brand | urlencode) %}{% endif %}
+      {% if af.type %}{% set _ = qs_parts.append('type=' ~ af.type | urlencode) %}{% endif %}
+      {% if af.categorie %}{% set _ = qs_parts.append('categorie=' ~ af.categorie | urlencode) %}{% endif %}
+      {% if af.style %}{% set _ = qs_parts.append('style=' ~ af.style | urlencode) %}{% endif %}
+      {% if af.sexe %}{% set _ = qs_parts.append('sexe=' ~ af.sexe | urlencode) %}{% endif %}
+      {% if af.price_max %}{% set _ = qs_parts.append('price_max=' ~ af.price_max) %}{% endif %}
+      {% set qs = qs_parts | join('&') %}
+      {% set base = '/boutique?' ~ (qs ~ '&' if qs else '') %}
+
+      <a href="{{ base }}page={{ [page - 1, 1] | max }}" class="page-btn {{ 'disabled' if page == 1 }}">‹</a>
+
+      {% set start_p = [page - 2, 1] | max %}
+      {% set end_p   = [start_p + 4, total_pages] | min %}
+      {% set start_p = [end_p - 4, 1] | max %}
+
+      {% if start_p > 1 %}
+      <a href="{{ base }}page=1" class="page-btn">1</a>
+      {% if start_p > 2 %}<span style="color:var(--tl);padding:0 .2rem">…</span>{% endif %}
+      {% endif %}
+
+      {% for p_num in range(start_p, end_p + 1) %}
+      <a href="{{ base }}page={{ p_num }}" class="page-btn {{ 'active' if p_num == page }}">{{ p_num }}</a>
+      {% endfor %}
+
+      {% if end_p < total_pages %}
+      {% if end_p < total_pages - 1 %}<span style="color:var(--tl);padding:0 .2rem">…</span>{% endif %}
+      <a href="{{ base }}page={{ total_pages }}" class="page-btn">{{ total_pages }}</a>
+      {% endif %}
+
+      <a href="{{ base }}page={{ [page + 1, total_pages] | min }}" class="page-btn {{ 'disabled' if page == total_pages }}">›</a>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="bq-empty">
+      <div class="bq-empty-ico">🔍</div>
+      <h3>Aucun produit trouvé</h3>
+      <p>Essaie de modifier tes filtres ou <a href="/boutique" style="color:var(--a)">réinitialise la recherche</a>.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

@@ -246,6 +246,8 @@ def stylist_save():
             for iid in item_ids
         ]
         items = [it for it in items if it]
+        if not items:
+            return jsonify(ok=False, error="Aucun vêtement valide à sauvegarder."), 400
 
         outfit = Outfit(
             name=data.get("name", "Tenue suggérée").strip(),
@@ -258,4 +260,5 @@ def stylist_save():
         return jsonify(ok=True, outfit_id=outfit.id)
 
     except Exception as exc:
+        db.session.rollback()
         return jsonify(ok=False, error=str(exc)), 400

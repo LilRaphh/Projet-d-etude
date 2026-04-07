@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, jsonify, redirect, render_template, request
+from flask import Blueprint, flash, jsonify, redirect, render_template, request
 
 from config import BASE_DIR, OCCASIONS, SEASONS
 from extensions import db

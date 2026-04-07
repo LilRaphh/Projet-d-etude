@@ -68,14 +68,16 @@ def _layer_advice(feels: int) -> str:
 
 def _geocode(city: str) -> Optional[dict]:
     try:
-        geo = requests.get(
+        resp = requests.get(
             GEO_URL,
             params={"name": city, "count": 1, "language": "fr", "format": "json"},
             timeout=6,
-        ).json()
+        )
+        resp.raise_for_status()
+        geo = resp.json()
         results = geo.get("results")
         return results[0] if results else None
-    except (requests.Timeout, requests.ConnectionError, requests.RequestException):
+    except (requests.Timeout, requests.ConnectionError, requests.RequestException, ValueError):
         return None
 
 
@@ -89,7 +91,7 @@ class WeatherService:
         if not place:
             return None
         try:
-            data = requests.get(
+            resp = requests.get(
                 FORECAST_URL,
                 params={
                     "latitude": place["latitude"],
@@ -99,7 +101,9 @@ class WeatherService:
                     "timezone": "auto",
                 },
                 timeout=6,
-            ).json()
+            )
+            resp.raise_for_status()
+            data = resp.json()
             current = data.get("current", {})
             code = current.get("weather_code", 0)
             temp = round(current.get("temperature_2m", 0))
@@ -118,7 +122,7 @@ class WeatherService:
                 "desc": WMO.get(code, "Variable"),
                 "layer": _layer_advice(feels),
             }
-        except (requests.Timeout, requests.ConnectionError, requests.RequestException):
+        except (requests.Timeout, requests.ConnectionError, requests.RequestException, ValueError):
             return None
         except Exception:
             return None
@@ -132,7 +136,7 @@ class WeatherService:
         if not place:
             return None, "Ville introuvable."
         try:
-            data = requests.get(
+            resp = requests.get(
                 FORECAST_URL,
                 params={
                     "latitude": place["latitude"],
@@ -144,7 +148,9 @@ class WeatherService:
                     "timezone": "auto",
                 },
                 timeout=6,
-            ).json()
+            )
+            resp.raise_for_status()
+            data = resp.json()
 
             current = data.get("current", {})
             daily = data.get("daily", {})
@@ -221,6 +227,8 @@ class WeatherService:
             return None, "Délai d'attente dépassé. Réessayez."
         except requests.ConnectionError:
             return None, "Impossible de contacter le service météo."
+        except ValueError:
+            return None, "Réponse météo invalide."
         except requests.RequestException as e:
             return None, f"Erreur réseau météo : {e}"
         except Exception:

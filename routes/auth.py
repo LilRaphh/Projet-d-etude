@@ -1,3 +1,5 @@
+from urllib.parse import urljoin, urlparse
+
 from flask import Blueprint, flash, redirect, render_template, request, session
 
 from extensions import db, limiter
@@ -5,6 +7,14 @@ from models import User
 from utils.auth import current_user, get_ctx
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def _is_safe_redirect_target(target):
+    if not target:
+        return False
+    ref = urlparse(request.host_url)
+    test = urlparse(urljoin(request.host_url, target))
+    return test.scheme in ('http', 'https') and ref.netloc == test.netloc
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -59,7 +69,8 @@ def login():
             session.permanent = True
             session['user_id'] = user.id
             flash(f'Ravi de vous revoir, {user.username} !', 'success')
-            return redirect(request.args.get('next') or '/')
+            next_url = request.args.get('next')
+            return redirect(next_url if _is_safe_redirect_target(next_url) else '/')
 
         flash('Identifiants incorrects.', 'error')
         return render_template('login.html', prefill=login_value, **get_ctx())

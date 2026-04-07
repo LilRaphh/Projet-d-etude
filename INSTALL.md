@@ -69,7 +69,7 @@ L'app détecte et configure Ollama automatiquement au démarrage si disponible.
 ollama pull llama3.2          # ou tout autre modèle
 ```
 
-Le modèle utilisé est configurable dans **⚙️ Paramètres** de l'app.
+Le modèle utilisé est configurable dans ** Paramètres** de l'app.
 
 ---
 

@@ -1,10 +1,11 @@
 # =============================================================
-#  docker-compose.monitoring.yml — Stack Grafana + Loki + Promtail
+#  docker-compose.monitoring.yml — Stack Grafana + Loki + Promtail + Stats
 #
 #  Lance : docker compose -f docker-compose.monitoring.yml up -d
 #  Stop  : docker compose -f docker-compose.monitoring.yml down
 #
 #  Grafana → http://localhost:3000  (admin / admin)
+#  Stats   → http://localhost:8888/stats.json
 # =============================================================
 
 services:
@@ -17,7 +18,7 @@ services:
       - "3100:3100"
     volumes:
       - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/tmp/loki
+      - loki_data:/loki
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     networks:
@@ -29,13 +30,25 @@ services:
     container_name: smartwear_promtail
     volumes:
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
-      # Logs pipeline (JSON structuré)
       - ./pipeline/logs:/logs/pipeline:ro
-      # Logs Flask (texte, si LOG_DIR est configuré)
       - ./logs:/logs/flask:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Serveur stats JSON — expose pipeline/output/ en HTTP ──────
+  stats-server:
+    image: python:3.11-alpine
+    container_name: smartwear_stats
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./pipeline/output:/data:ro
+    working_dir: /data
+    command: python -m http.server 8888
     restart: unless-stopped
     networks:
       - monitoring
@@ -49,13 +62,13 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
-      # Provisionne Loki automatiquement comme datasource
-      GF_DATASOURCES_DEFAULT_URL: http://loki:3100
+      GF_INSTALL_PLUGINS: yesoreyeram-infinity-datasource
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - loki
+      - stats-server
     restart: unless-stopped
     networks:
       - monitoring

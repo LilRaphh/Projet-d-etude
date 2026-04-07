@@ -41,7 +41,7 @@ TYPE_VALUES = ["Vêtement", "Chaussures", "Autre"]
 CATEGORIE_VALUES = ["Haut", "Bas", "Robe/Combinaison", "Manteau/Veste", "Autre"]
 STYLE_VALUES = [
     "Jean", "Pull", "T-shirt", "Crop-top", "Robe", "Combinaison",
-    "Chemise", "Sweat", "Hoodie", "Veste", "Manteau", "Short",
+    "Chemise", "Sweat", "Hoodie", "Polo", "Veste", "Manteau", "Short",
     "Pantalon", "Legging", "Jupe", "Débardeur", "Cardigan",
     "Blazer", "Parka", "Doudoune", "Sneakers", "Bottines",
     "Sandales", "Mocassins", "Derbies", "Autre",

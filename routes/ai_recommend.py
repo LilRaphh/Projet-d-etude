@@ -108,9 +108,11 @@ def analyze_item(item_id):
         return jsonify({"ok": True, "attrs": ai_attrs})
 
     except RuntimeError as e:
+        db.session.rollback()
         log.error("analyze_item %d: %s", item_id, e)
         return jsonify({"error": str(e)}), 500
     except Exception:
+        db.session.rollback()
         log.exception("analyze_item %d unexpected error", item_id)
         return jsonify({"error": "Erreur interne lors de l'analyse. Consultez les logs."}), 500
 
@@ -162,6 +164,7 @@ def analyze_all():
             results["success"] += 1
 
         except Exception as e:
+            db.session.rollback()
             log.error("analyze_all item %d (%s): %s", item.id, item.name, e)
             results["failed"] += 1
             results["errors"].append(f"{item.name}: {str(e)[:120]}")

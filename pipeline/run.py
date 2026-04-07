@@ -22,6 +22,7 @@ from pipeline.models import Product
 from pipeline.pipeline import SmartWearPipeline
 from pipeline.audit import run_audit
 from pipeline.check import run_check
+from pipeline.stats import generate as generate_stats
 
 SCRAPERS = {
     "mango":        MangoScraper,
@@ -74,6 +75,7 @@ def run(scraper_names: List[str], log_level: str = "INFO") -> dict:
 
     audit_stats = run_audit()
     run_check()
+    generate_stats()
 
     return {
         "run_id":   run_id,

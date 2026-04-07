@@ -159,3 +159,10 @@ class UserSetting(db.Model):
         else:
             db.session.add(cls(user_id=user_id, key=key, value=value))
         db.session.commit()
+
+    @classmethod
+    def delete(cls, user_id, key):
+        row = cls.query.filter_by(user_id=user_id, key=key).first()
+        if row:
+            db.session.delete(row)
+            db.session.commit()
