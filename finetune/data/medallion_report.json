@@ -1,0 +1,89 @@
+{
+  "bronze": {
+    "layer": "bronze",
+    "input_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/pipeline/output/SmartWear_DB.json",
+    "output_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/bronze.jsonl",
+    "total_read": 1708,
+    "duplicates_raw": 0,
+    "written": 1708,
+    "ingested_at": "2026-04-07T14:44:26.896814+00:00",
+    "duration_s": 0.02
+  },
+  "silver": {
+    "layer": "silver",
+    "input_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/bronze.jsonl",
+    "output_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/silver.jsonl",
+    "total_read": 1708,
+    "written": 1605,
+    "rejected": 103,
+    "deduped": 103,
+    "rejection_reasons": {
+      "duplicate_name_brand": 103
+    },
+    "warnings_applied": {
+      "sexe_invalid": 106,
+      "price_too_low": 1
+    },
+    "retention_rate": "94.0%",
+    "duration_s": 0.08
+  },
+  "gold": {
+    "layer": "gold",
+    "input_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/silver.jsonl",
+    "output_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/gold.jsonl",
+    "min_completeness": 0.45,
+    "total_read": 1605,
+    "written": 1605,
+    "filtered_low_score": 0,
+    "descriptions_augmented": 14,
+    "retention_rate": "100.0%",
+    "distributions": {
+      "completeness_score": {
+        "100%": 1322,
+        "70%": 18,
+        "80%": 265
+      },
+      "price_tier": {
+        "mid-range": 757,
+        "premium": 390,
+        "budget": 323,
+        "luxe": 134,
+        "N/A": 1
+      },
+      "description_quality": {
+        "riche": 1560,
+        "moyenne": 44,
+        "pauvre": 1
+      },
+      "brands": {
+        "Sergio Tacchini": 630,
+        "Jules": 481,
+        "Le Coq Sportif": 196,
+        "Mango": 102,
+        "Nike": 90,
+        "Kappa": 84,
+        "Lotto": 22
+      },
+      "top_styles": {
+        "Veste": 314,
+        "Jean": 282,
+        "T-shirt": 267,
+        "N/A": 142,
+        "Chemise": 90,
+        "Sweat": 86,
+        "Short": 83,
+        "Pull": 68,
+        "Autre": 67,
+        "Hoodie": 42
+      }
+    },
+    "duration_s": 0.03
+  },
+  "dataset": {
+    "total_examples": 2627,
+    "train_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/train.jsonl",
+    "val_path": "/Users/raphc/Projet-detude/v2/Projet-d-etude/finetune/data/val.jsonl",
+    "duration_s": 0.07
+  },
+  "total_duration_s": 0.21
+}

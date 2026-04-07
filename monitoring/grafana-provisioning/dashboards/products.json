@@ -1,0 +1,145 @@
+{
+  "title": "SmartWear Produits",
+  "uid": "smartwear-products",
+  "schemaVersion": 38,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "1m",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Total produits",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value" },
+      "fieldConfig": { "defaults": { "color": { "mode": "fixed", "fixedColor": "blue" } } },
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "total",
+          "columns": []
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Produits par marque (tableau)",
+      "type": "table",
+      "gridPos": { "x": 4, "y": 0, "w": 10, "h": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": {},
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "by_brand",
+          "columns": [
+            { "selector": "brand",  "text": "Marque",   "type": "string" },
+            { "selector": "count",  "text": "Produits",  "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Répartition par catégorie (tableau)",
+      "type": "table",
+      "gridPos": { "x": 14, "y": 0, "w": 10, "h": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": {},
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "by_category",
+          "columns": [
+            { "selector": "category", "text": "Catégorie", "type": "string" },
+            { "selector": "count",    "text": "Produits",   "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Répartition par sexe (tableau)",
+      "type": "table",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": {},
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "by_sex",
+          "columns": [
+            { "selector": "sex",   "text": "Sexe",     "type": "string" },
+            { "selector": "count", "text": "Produits",  "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Distribution des prix (tableau)",
+      "type": "table",
+      "gridPos": { "x": 6, "y": 8, "w": 9, "h": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": {},
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "by_price_bucket",
+          "columns": [
+            { "selector": "range", "text": "Prix",     "type": "string" },
+            { "selector": "count", "text": "Produits",  "type": "number" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Prix moyen par marque (tableau)",
+      "type": "table",
+      "gridPos": { "x": 15, "y": 8, "w": 9, "h": 8 },
+      "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+      "options": {},
+      "targets": [
+        {
+          "datasource": { "type": "yesoreyeram-infinity-datasource", "uid": "smartwear-infinity" },
+          "refId": "A",
+          "type": "json",
+          "source": "url",
+          "parser": "backend",
+          "url": "http://stats-server:8888/stats.json",
+          "root_selector": "avg_price_by_brand",
+          "columns": [
+            { "selector": "brand",     "text": "Marque",          "type": "string" },
+            { "selector": "avg_price", "text": "Prix moyen (€)",   "type": "number" }
+          ]
+        }
+      ]
+    }
+  ]
+}

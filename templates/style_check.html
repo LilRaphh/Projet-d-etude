@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+{% block title %}Vérifier mon style – {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+/* ── Layout ── */
+.sc-page { padding: 2.5rem 0 5rem }
+.sc-h { font-family: var(--serif); font-size: clamp(1.9rem,4vw,2.8rem); font-weight: 300; line-height: 1.1; margin-bottom: .25rem }
+.sc-h em { color: var(--a); font-style: italic }
+.sc-sub { color: var(--tm); font-size: .86rem; margin-bottom: 2rem }
+
+/* ── Upload zone ── */
+.drop-zone {
+  border: 2px dashed var(--bor);
+  border-radius: var(--rl);
+  background: var(--bg);
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--a);
+  background: var(--am);
+}
+.drop-zone input[type=file] { display: none }
+.drop-ico { font-size: 2.5rem; margin-bottom: .75rem }
+.drop-label { font-size: .9rem; color: var(--tm); margin-bottom: .5rem }
+.drop-label b { color: var(--a); cursor: pointer }
+.drop-hint { font-size: .75rem; color: var(--tl) }
+
+/* ── Preview ── */
+.preview-wrap {
+  display: none;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  align-items: flex-start;
+}
+.preview-img-box {
+  flex-shrink: 0;
+  width: 260px;
+  border-radius: var(--rl);
+  overflow: hidden;
+  border: 1px solid var(--bor);
+  background: var(--bg);
+  position: relative;
+}
+.preview-img-box img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 380px;
+}
+.preview-change {
+  position: absolute;
+  bottom: .6rem;
+  right: .6rem;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  border: none;
+  border-radius: var(--r);
+  padding: .3rem .65rem;
+  font-size: .72rem;
+  cursor: pointer;
+}
+
+/* ── Analyze button ── */
+.btn-analyze {
+  margin-top: 1.25rem;
+  width: 100%;
+  padding: .75rem;
+  font-size: .92rem;
+  font-weight: 600;
+}
+
+/* ── Results ── */
+.results-section { margin-top: 2.5rem; display: none }
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem }
+
+.card-r {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  padding: 1.25rem 1.4rem;
+}
+.card-r-title {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--tm);
+  margin-bottom: 1rem;
+}
+
+/* Info grid inside card */
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .75rem }
+.info-item label { font-size: .7rem; color: var(--tl); display: block; margin-bottom: .1rem }
+.info-item span {
+  font-size: .83rem;
+  color: var(--tx);
+  font-weight: 500;
+  background: var(--bg);
+  padding: .18rem .5rem;
+  border-radius: 99px;
+  display: inline-block;
+}
+.info-item.full { grid-column: 1/-1 }
+
+/* Accessories badges */
+.acc-list { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem }
+.acc-badge {
+  padding: .2rem .55rem;
+  border-radius: 99px;
+  font-size: .73rem;
+  font-weight: 500;
+  background: var(--am);
+  color: var(--a);
+  border: 1px solid var(--a)22;
+}
+.acc-badge.absent {
+  background: var(--bg);
+  color: var(--tl);
+  border-color: var(--bor);
+  opacity: .55;
+  text-decoration: line-through;
+}
+
+/* ── Radar chart ── */
+.radar-wrap { display: flex; justify-content: center; align-items: center; min-height: 260px }
+canvas#radarChart { max-width: 100%; max-height: 280px }
+
+/* ── Color bars ── */
+.color-bar-section .cat-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--tm);
+  margin-bottom: .35rem;
+  margin-top: .75rem;
+  text-transform: capitalize;
+}
+.color-bar {
+  display: flex;
+  height: 28px;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--bor);
+  margin-bottom: .2rem;
+}
+.color-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .65rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  transition: flex .4s;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.color-legend { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .4rem }
+.color-dot-item { display: flex; align-items: center; gap: .28rem; font-size: .7rem; color: var(--tm) }
+.color-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0 }
+
+/* ── Full width card ── */
+.card-r.full-w { grid-column: 1/-1 }
+
+/* ── Loading state ── */
+.analyzing-state {
+  display: none;
+  text-align: center;
+  padding: 2.5rem;
+  color: var(--tm);
+  font-size: .9rem;
+}
+.spin {
+  display: inline-block;
+  width: 32px; height: 32px;
+  border: 3px solid var(--bor);
+  border-top-color: var(--a);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ── No API key notice ── */
+.no-key-notice {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: var(--rl);
+  padding: 1rem 1.25rem;
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.no-key-notice-ico { font-size: 1.3rem; flex-shrink: 0 }
+.no-key-notice h3 { font-size: .85rem; font-weight: 600; color: #92400e; margin-bottom: .25rem }
+.no-key-notice p { font-size: .78rem; color: #b45309; line-height: 1.55; margin: 0 }
+.no-key-notice code { background: #fef3c7; padding: .1rem .3rem; border-radius: 3px; font-size: .75rem }
+
+/* ── Error banner ── */
+.err-banner {
+  display: none;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--r);
+  padding: .75rem 1rem;
+  font-size: .82rem;
+  color: #dc2626;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .results-grid { grid-template-columns: 1fr }
+  .preview-wrap { flex-direction: column }
+  .preview-img-box { width: 100% }
+}
+{% endblock %}
+
+{% block content %}
+<div class="sc-page">
+  <div class="wrap">
+
+    <h1 class="sc-h">Vérifie <em>ton style</em></h1>
+    <p class="sc-sub">Importe une photo de ta tenue et obtiens une analyse complète : descriptif, radar des styles et palette de couleurs.</p>
+
+    {% if not gemini_ok %}
+    <div class="no-key-notice">
+      <div class="no-key-notice-ico">⚠️</div>
+      <div>
+        <h3>Clé API Groq manquante</h3>
+        <p>
+          Ajoute <code>GROQ_API_KEY=ta_clé</code> dans ton fichier <code>.env</code> pour activer l'analyse.<br>
+          Obtiens une clé gratuite sur <a href="https://console.groq.com/keys" target="_blank" style="color:#b45309">Groq Console</a>.
+        </p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Upload -->
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+      <div class="drop-ico">📸</div>
+      <div class="drop-label">Glisse ton image ici ou <b onclick="document.getElementById('fileInput').click()">parcourir</b></div>
+      <div class="drop-hint">JPG, PNG, WEBP – max 10 Mo</div>
+    </div>
+
+    <div class="err-banner" id="errBanner"></div>
+
+    <!-- Preview + bouton -->
+    <div class="preview-wrap" id="previewWrap">
+      <div class="preview-img-box">
+        <img id="previewImg" src="" alt="Aperçu">
+        <button class="preview-change" onclick="resetUpload()">↩ Changer</button>
+      </div>
+      <div style="flex:1">
+        <p style="font-size:.83rem;color:var(--tm);margin-bottom:1rem">
+          Image prête à analyser. Clique sur le bouton pour lancer l'analyse Groq Vision.
+        </p>
+        <button class="btn btn-primary btn-analyze" id="analyzeBtn" {% if not gemini_ok %}disabled{% endif %} onclick="analyzeImage()">
+          ✦ Analyser ma tenue
+        </button>
+      </div>
+    </div>
+
+    <!-- Spinner pendant analyse -->
+    <div class="analyzing-state" id="analyzingState">
+      <div><div class="spin"></div></div>
+      Groq analyse ta tenue…
+    </div>
+
+    <!-- Résultats -->
+    <div class="results-section" id="resultsSection">
+      <h2 style="font-family:var(--serif);font-size:1.4rem;font-weight:300;margin-bottom:.25rem">
+        Résultats de l'analyse
+      </h2>
+      <p style="font-size:.8rem;color:var(--tl);margin-bottom:1.25rem">Généré par Groq Vision</p>
+
+      <div class="results-grid" id="resultsGrid">
+        <!-- Rempli dynamiquement par JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Chart.js pour le radar -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script>
+const PALETTE = {
+  "Noir":"#111111","Blanc":"#F0F0F0","Gris":"#8E8E8E","Rouge":"#D62728",
+  "Bleu":"#1F77B4","Vert":"#2CA02C","Jaune":"#FFDD00","Marron":"#8B4513",
+  "Beige":"#F5F5DC","Violet":"#9467BD","Rose":"#FF69B4","Orange":"#FF7F0E",
+  "Doré":"#D4AF37","Argenté":"#C0C0C0","Bordeaux":"#800020","Turquoise":"#40E0D0"
+};
+
+let currentFile = null;
+let radarChart = null;
+
+// ── Drag & drop ──
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]) });
+
+function handleFile(file) {
+  if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+    showError("Format non supporté. Utilise JPG, PNG ou WEBP.");
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showError("Image trop lourde (max 10 Mo).");
+    return;
+  }
+  currentFile = file;
+  hideError();
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewWrap').style.display = 'flex';
+    document.getElementById('dropZone').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  currentFile = null;
+  fileInput.value = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('dropZone').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('analyzingState').style.display = 'none';
+  hideError();
+}
+
+// ── Analyse ──
+async function analyzeImage() {
+  if (!currentFile) return;
+
+  const b64 = await toBase64(currentFile);
+  const pureB64 = b64.split(',')[1];
+  const mime = currentFile.type;
+
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('analyzingState').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+  hideError();
+
+  try {
+    const resp = await csrfFetch('/style-check/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: pureB64, mime_type: mime })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Erreur serveur');
+    renderResults(data);
+  } catch(e) {
+    document.getElementById('analyzingState').style.display = 'none';
+    document.getElementById('previewWrap').style.display = 'flex';
+    showError(e.message);
+  }
+}
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error("Lecture échouée"));
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Rendu des résultats ──
+function renderResults(data) {
+  document.getElementById('analyzingState').style.display = 'none';
+  document.getElementById('previewWrap').style.display = 'flex';
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  const a = data.analyse || {};
+  const personne = a.personne || {};
+  const tenue = a.tenue || {};
+  const haut = tenue.haut || {};
+  const bas = tenue.bas || {};
+  const chaussures = tenue.chaussures || {};
+  const acc = tenue.accessoires || {};
+
+  // ── Carte 1 : Profil & style global ──
+  grid.appendChild(makeCard('🤍 Profil & style global', `
+    <div class="info-grid">
+      ${infoItem('Tranche d\'âge', personne.age_tranche)}
+      ${infoItem('Genre apparent', personne.genre_apparent)}
+      ${infoItem('Carnation', personne.couleur_peau)}
+      ${infoItem('Style global', a.style_global)}
+      ${infoItem('Saison', a.saison_vetement)}
+      ${infoItem('Occasion', a.occasion)}
+      ${infoItem('Taille estimée', a.taille_estimee)}
+    </div>
+  `));
+
+  // ── Carte 2 : Vêtements ──
+  grid.appendChild(makeCard('👗 Descriptif de la tenue', `
+    <div style="display:flex;flex-direction:column;gap:.85rem">
+      ${vetCard('Haut', haut)}
+      ${vetCard('Bas', bas)}
+      ${vetCard('Chaussures', chaussures)}
+    </div>
+  `));
+
+  // ── Carte 3 : Accessoires ──
+  const accNames = ['echarpe','chapeau','sac','ceinture','bijoux','lunettes','montre','autre'];
+  const accLabels = {echarpe:'Écharpe',chapeau:'Chapeau',sac:'Sac',ceinture:'Ceinture',bijoux:'Bijoux',lunettes:'Lunettes',montre:'Montre',autre:'Autre'};
+  let accHTML = '<div class="acc-list">';
+  accNames.forEach(k => {
+    const present = acc[k] == 1;
+    accHTML += `<span class="acc-badge ${present?'':'absent'}">${accLabels[k]}</span>`;
+  });
+  accHTML += '</div>';
+  if (acc.style_general || acc.couleur_generale) {
+    accHTML += `<div class="info-grid" style="margin-top:.75rem">
+      ${infoItem('Style', acc.style_general)}
+      ${infoItem('Couleur dominante', acc.couleur_generale)}
+    </div>`;
+  }
+  grid.appendChild(makeCard('💎 Accessoires', accHTML));
+
+  // ── Carte 4 : Radar ──
+  const radarCard = makeCard('📊 Radar des styles', `<div class="radar-wrap"><canvas id="radarChart"></canvas></div>`);
+  grid.appendChild(radarCard);
+
+  // ── Carte 5 : Couleurs (full width) ──
+  const colorsCard = makeCard('🎨 Palette de couleurs', buildColorsHTML(data.couleurs || {}), true);
+  grid.appendChild(colorsCard);
+
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Radar chart (après insertion DOM)
+  requestAnimationFrame(() => buildRadar(data.radar || {}));
+}
+
+function makeCard(title, content, fullWidth=false) {
+  const div = document.createElement('div');
+  div.className = 'card-r' + (fullWidth ? ' full-w' : '');
+  div.innerHTML = `<div class="card-r-title">${title}</div>${content}`;
+  return div;
+}
+
+function infoItem(label, value, full=false) {
+  const v = value || '—';
+  return `<div class="info-item${full?' full':''}">
+    <label>${label}</label>
+    <span>${v}</span>
+  </div>`;
+}
+
+function vetCard(label, obj) {
+  const fields = [
+    obj.type && `<b>${obj.type}</b>`,
+    obj.couleur && `Couleur : ${obj.couleur}${obj.teinte ? ` (${obj.teinte})` : ''}`,
+    obj.marque && `Marque : ${obj.marque}`,
+    obj.style && `Style : ${obj.style}`
+  ].filter(Boolean);
+  return `<div style="background:var(--bg);border-radius:var(--r);padding:.6rem .85rem;">
+    <div style="font-size:.7rem;font-weight:600;color:var(--tl);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem">${label}</div>
+    <div style="font-size:.82rem;color:var(--tx);line-height:1.6">${fields.length ? fields.join(' · ') : '—'}</div>
+  </div>`;
+}
+
+function buildColorsHTML(couleurs) {
+  const cats = ['haut','bas','chaussures','accessoires'];
+  const labels = {haut:'Haut',bas:'Bas',chaussures:'Chaussures',accessoires:'Accessoires'};
+  let html = '<div class="color-bar-section">';
+  const globalColors = new Set();
+
+  cats.forEach(cat => {
+    const data = couleurs[cat] || {};
+    const sorted = Object.entries(data).filter(([,v])=>v>0).sort(([,a],[,b])=>b-a);
+    if (!sorted.length) return;
+
+    html += `<div class="cat-label">${labels[cat]}</div><div class="color-bar">`;
+    sorted.forEach(([color, pct]) => {
+      const bg = PALETTE[color] || '#ccc';
+      globalColors.add(color);
+      html += `<div class="color-seg" style="flex:${pct};background:${bg}" title="${color} ${pct}%">
+        ${pct >= 12 ? pct + '%' : ''}
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  // Légende globale
+  if (globalColors.size) {
+    html += '<div class="color-legend" style="margin-top:.85rem">';
+    globalColors.forEach(c => {
+      html += `<div class="color-dot-item">
+        <div class="color-dot" style="background:${PALETTE[c]||'#ccc'};border:1px solid var(--bor)"></div>
+        ${c}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function buildRadar(radarData) {
+  const ctx = document.getElementById('radarChart');
+  if (!ctx) return;
+  if (radarChart) radarChart.destroy();
+
+  const labels = Object.keys(radarData);
+  const values = Object.values(radarData);
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--a').trim() || '#C8956C';
+
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Style',
+        data: values,
+        backgroundColor: accent + '33',
+        borderColor: accent,
+        borderWidth: 2,
+        pointBackgroundColor: accent,
+        pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 1,
+          ticks: { stepSize: .25, callback: v => (v*100)+'%', font: { size: 9 } },
+          pointLabels: { font: { size: 10 } },
+          grid: { color: '#e5e5e5' }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function showError(msg) {
+  const b = document.getElementById('errBanner');
+  b.textContent = '⚠ ' + msg;
+  b.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errBanner').style.display = 'none';
+}
+</script>
+{% endblock %}

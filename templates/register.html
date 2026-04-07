@@ -16,6 +16,7 @@
   <h1 class="auth-title">Créer un <em>compte</em></h1>
   <p class="auth-sub">Votre garde-robe personnelle, partout</p>
   <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="fg">
       <label class="lbl">Nom d'utilisateur</label>
       <input name="username" class="fc" required autofocus placeholder="raphael" maxlength="40" value="{{ prefill_u }}">

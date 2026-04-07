@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Mon profil — {{ app_name }}{% endblock %}
+{% block extra_css %}
+.pp { padding: 2rem 0 5rem; }
+.pp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: 1.75rem; }
+.pp-ttl em { color: var(--a); font-style: italic; }
+
+/* Hero card */
+.pp-hero { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.6rem; display: flex; align-items: center; gap: 1.4rem; margin-bottom: 1.6rem; }
+.pp-av { width: 72px; height: 72px; border-radius: 50%; background: var(--a); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 2rem; font-weight: 400; flex-shrink: 0; text-transform: uppercase; }
+.pp-av-name { font-family: var(--serif); font-size: 1.35rem; font-weight: 400; color: var(--tx); }
+.pp-av-sub { font-size: .8rem; color: var(--tm); margin-top: .18rem; }
+.pp-stats { display: flex; gap: 1.4rem; margin-top: .75rem; }
+.pp-stat { text-align: center; }
+.pp-stat-n { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; color: var(--a); line-height: 1; }
+.pp-stat-l { font-size: .72rem; color: var(--tm); margin-top: .15rem; }
+
+/* Layout */
+.pp-lay { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+@media (max-width: 680px) { .pp-lay { grid-template-columns: 1fr; } }
+
+/* Cards */
+.pc { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.4rem; }
+.pc-ttl { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--tm); margin-bottom: 1.1rem; padding-bottom: .65rem; border-bottom: 1px solid var(--bor); }
+
+/* Gender pills */
+.gender-grid { display: flex; flex-wrap: wrap; gap: .4rem; }
+.gender-opt input { display: none; }
+.gender-opt label { display: inline-flex; align-items: center; padding: .32rem .72rem; border: 1px solid var(--bor); border-radius: 99px; font-size: .8rem; color: var(--tm); cursor: pointer; transition: all var(--tr); }
+.gender-opt input:checked + label { background: var(--am); border-color: var(--a); color: var(--a); font-weight: 500; }
+.gender-opt label:hover { border-color: var(--a); color: var(--a); }
+
+/* Aesthetic / body pills (same style) */
+.pill-grid { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pill-opt input { display: none; }
+.pill-opt label { display: inline-flex; align-items: center; padding: .28rem .65rem; border: 1px solid var(--bor); border-radius: 99px; font-size: .78rem; color: var(--tm); cursor: pointer; transition: all var(--tr); }
+.pill-opt input:checked + label { background: var(--am); border-color: var(--a); color: var(--a); font-weight: 500; }
+.pill-opt label:hover { border-color: var(--a); color: var(--a); }
+
+/* Budget select highlight */
+.budget-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+.budget-opt input { display: none; }
+.budget-opt label { padding: .3rem .75rem; border: 1px solid var(--bor); border-radius: var(--r); font-size: .8rem; color: var(--tm); cursor: pointer; transition: all var(--tr); }
+.budget-opt input:checked + label { background: var(--a); border-color: var(--a); color: #fff; }
+.budget-opt label:hover { border-color: var(--a); color: var(--a); }
+
+.fact { display: flex; justify-content: flex-end; margin-top: 1rem; }
+{% endblock %}
+
+{% block content %}
+<div class="pp"><div class="wrap">
+  <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Retour</a>
+  <h1 class="pp-ttl">Mon <em>profil</em></h1>
+
+  <!-- Hero -->
+  <div class="pp-hero">
+    <div class="pp-av">{{ me.username[:2] }}</div>
+    <div>
+      <div class="pp-av-name">
+        {{ profile.display_name or me.username }}
+        {% if me.gender %}<span style="font-size:.75rem;font-family:var(--sans);color:var(--tm);font-weight:400;margin-left:.4rem">{{ me.gender }}</span>{% endif %}
+      </div>
+      <div class="pp-av-sub">{{ me.email }} · Membre depuis {{ me.created_at.strftime('%B %Y') }}</div>
+      <div class="pp-stats">
+        <div class="pp-stat">
+          <div class="pp-stat-n">{{ me.items.count() }}</div>
+          <div class="pp-stat-l">vêtements</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-n">{{ me.outfits.count() }}</div>
+          <div class="pp-stat-l">tenues</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pp-lay">
+
+    <!-- Identité -->
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="profile">
+      <div class="pc">
+        <p class="pc-ttl">Identité</p>
+
+        <div class="fg">
+          <label class="lbl">Prénom / Surnom affiché</label>
+          <input name="display_name" class="fc" placeholder="{{ me.username }}" value="{{ profile.display_name }}">
+        </div>
+
+        <div class="fg">
+          <label class="lbl" style="margin-bottom:.5rem">Genre</label>
+          <div class="gender-grid">
+            {% for g in genders %}
+            <div class="gender-opt">
+              <input type="radio" name="gender" id="g{{ loop.index }}" value="{{ g }}" {% if me.gender == g %}checked{% endif %}>
+              <label for="g{{ loop.index }}">{{ g }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl">Bio / À propos de mon style</label>
+          <textarea name="bio" class="fc" rows="3" placeholder="Ex : J'aime les tenues minimalistes et les couleurs neutres...">{{ profile.bio }}</textarea>
+        </div>
+
+        <div class="fact">
+          <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Préférences de style -->
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="profile">
+      <!-- On recopie les champs identité pour ne pas les écraser -->
+      <input type="hidden" name="display_name" value="{{ profile.display_name }}">
+      <input type="hidden" name="bio" value="{{ profile.bio }}">
+      <input type="hidden" name="gender" value="{{ me.gender or '' }}">
+      <div class="pc">
+        <p class="pc-ttl">Préférences de style</p>
+
+        <div class="fg">
+          <label class="lbl" style="margin-bottom:.5rem">Esthétique générale</label>
+          <div class="pill-grid">
+            {% for a in aesthetics %}
+            <div class="pill-opt">
+              <input type="radio" name="style_aesthetic" id="ae{{ loop.index }}" value="{{ a }}" {% if profile.style_aesthetic == a %}checked{% endif %}>
+              <label for="ae{{ loop.index }}">{{ a }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl" style="margin-bottom:.5rem">Morphologie</label>
+          <div style="display:flex;gap:1rem">
+            <div style="flex:1">
+              <label for="height" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Taille (cm)</label>
+              <input type="number" id="height" name="height" min="100" max="250"
+                value="{{ profile.height }}" placeholder="ex. 175"
+                style="width:100%;padding:.55rem .75rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);color:var(--tx);font-size:.95rem">
+            </div>
+            <div style="flex:1">
+              <label for="weight" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Poids (kg)</label>
+              <input type="number" id="weight" name="weight" min="30" max="300"
+                value="{{ profile.weight }}" placeholder="ex. 70"
+                style="width:100%;padding:.55rem .75rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);color:var(--tx);font-size:.95rem">
+            </div>
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl" style="margin-bottom:.5rem">Budget moyen par pièce</label>
+          <div class="budget-row">
+            {% for bud in budgets %}
+            <div class="budget-opt">
+              <input type="radio" name="style_budget" id="bu{{ loop.index }}" value="{{ bud }}" {% if profile.style_budget == bud %}checked{% endif %}>
+              <label for="bu{{ loop.index }}">{{ bud }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="lbl">Notes libres sur mon style</label>
+          <textarea name="style_notes" class="fc" rows="3" placeholder="Ex : J'évite le synthétique, je préfère les coupes amples...">{{ profile.style_notes }}</textarea>
+        </div>
+
+        <div class="fact">
+          <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Sécurité -->
+    <form method="POST" style="grid-column: 1 / -1;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="password">
+      <div class="pc">
+        <p class="pc-ttl">Changer le mot de passe</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem">
+          <div class="fg">
+            <label class="lbl">Mot de passe actuel</label>
+            <input type="password" name="current_password" class="fc" autocomplete="current-password">
+          </div>
+          <div class="fg">
+            <label class="lbl">Nouveau mot de passe</label>
+            <input type="password" name="new_password" class="fc" autocomplete="new-password">
+          </div>
+          <div class="fg">
+            <label class="lbl">Confirmer le nouveau</label>
+            <input type="password" name="new_password2" class="fc" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="fact">
+          <button type="submit" class="btn btn-ghost">Changer le mot de passe</button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+</div></div>
+{% endblock %}

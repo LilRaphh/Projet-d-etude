@@ -165,6 +165,7 @@
           Modifier
         </a>
         <form method="POST" action="/outfits/{{ outfit.id }}/delete" onsubmit="return confirm('Supprimer cette tenue ?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-ghost" style="color:#C0392B;border-color:#F0C0C0">Supprimer</button>
         </form>
       </div>
@@ -205,7 +206,7 @@ function generateImage() {
     msgEl.textContent = messages[mi];
   }, 8000);
 
-  fetch("/outfits/" + OUTFIT_ID + "/generate", { method: "POST" })
+  csrfFetch("/outfits/" + OUTFIT_ID + "/generate", { method: "POST" })
     .then(function(response) {
       console.log("HTTP status:", response.status);
       if (!response.ok) {
@@ -267,7 +268,7 @@ function togglePrompt() {
 }
 
 function wornToday() {
-  fetch("/api/outfit-worn/" + OUTFIT_ID, { method: "POST" })
+  csrfFetch("/api/outfit-worn/" + OUTFIT_ID, { method: "POST" })
     .then(function(r) { return r.json(); })
     .then(function(d) {
       document.getElementById("wornCount").textContent =

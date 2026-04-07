@@ -1,5 +1,16 @@
 flask>=3.0
 flask-sqlalchemy>=3.1
+flask-wtf>=1.2
+flask-limiter>=3.5
+flask-caching>=2.1
 pillow>=10.0
 requests>=2.31
-anthropic>=0.25   # optionnel — meilleurs prompts IA si clé fournie
+anthropic>=0.25
+cryptography>=42.0
+filetype>=1.2
+python-dotenv>=1.0
+
+# Briques IA locales (vecteurs stockés dans SQLite natif — pas de ChromaDB)
+torch>=2.1.0
+transformers>=4.40.0
+accelerate>=0.27.0

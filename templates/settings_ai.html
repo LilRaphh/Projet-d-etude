@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Paramètres IA — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.ai-page{max-width:780px;margin:0 auto;padding:2.5rem 1.75rem 4rem}
+.ai-page h1{font-family:var(--serif);font-size:1.9rem;font-weight:300;margin-bottom:.3rem}
+.ai-page .sub{color:var(--tm);font-size:.87rem;margin-bottom:2.2rem}
+.ai-section{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.6rem 1.8rem;margin-bottom:1.6rem}
+.ai-section-title{font-family:var(--serif);font-size:1.25rem;font-weight:400;margin-bottom:1.1rem;display:flex;align-items:center;gap:.6rem}
+.status-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.18rem .6rem;border-radius:99px;font-size:.72rem;font-weight:600}
+.status-badge.ok{background:#F0FBF4;color:#1A6035;border:1px solid #B4E8C4}
+.status-badge.ko{background:#FFF0F0;color:#8A1A1A;border:1px solid #F8C0C0}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-dot.ok{background:#2D9D5E}
+.status-dot.ko{background:#C94040}
+
+/* Radio cards pour les modèles */
+.model-grid{display:grid;gap:.6rem}
+.model-card{display:flex;align-items:flex-start;gap:.75rem;padding:.8rem 1rem;border:1px solid var(--bor);border-radius:var(--r);cursor:pointer;transition:border-color var(--tr),background var(--tr)}
+.model-card:hover{border-color:var(--a);background:var(--am)}
+.model-card input[type=radio]{margin-top:.18rem;accent-color:var(--a);flex-shrink:0}
+.model-card.selected{border-color:var(--a);background:var(--am)}
+.model-card-name{font-size:.88rem;font-weight:500;color:var(--tx)}
+.model-card-desc{font-size:.78rem;color:var(--tm);margin-top:.1rem;line-height:1.45}
+.model-tag{display:inline-block;font-size:.65rem;font-weight:600;padding:.08rem .4rem;border-radius:99px;margin-left:.4rem;vertical-align:middle}
+.tag-fast{background:#FEF3C7;color:#92400E}
+.tag-quality{background:#EDE9FE;color:#5B21B6}
+.tag-ref{background:#DBEAFE;color:#1E40AF}
+.tag-gpt{background:#D1FAE5;color:#065F46}
+.tag-google{background:#FEE2E2;color:#991B1B}
+.tag-free{background:#F0FBF4;color:#1A6035;border:1px solid #B4E8C4}
+.tag-paid{background:#FFF7ED;color:#9A3412;border:1px solid #FED7AA}
+.tag-local{background:#F0F4FF;color:#1E3A8A;border:1px solid #BFDBFE}
+
+/* Select Ollama */
+.ollama-model-list{display:grid;gap:.45rem;margin-bottom:.8rem}
+.ollama-model-item{display:flex;align-items:center;gap:.6rem;padding:.55rem .85rem;border:1px solid var(--bor);border-radius:var(--r);cursor:pointer;transition:border-color var(--tr),background var(--tr)}
+.ollama-model-item:hover{border-color:var(--a);background:var(--am)}
+.ollama-model-item input[type=radio]{accent-color:var(--a);flex-shrink:0}
+.ollama-model-item.selected{border-color:var(--a);background:var(--am)}
+.ollama-model-name{font-size:.86rem;font-weight:500;color:var(--tx);flex:1}
+
+.custom-model-row{display:flex;gap:.5rem;align-items:center;margin-top:.7rem}
+.custom-model-row input[type=radio]{accent-color:var(--a);flex-shrink:0;margin-top:0}
+
+.form-actions{display:flex;gap:.75rem;align-items:center;margin-top:1.8rem}
+.back-link{font-size:.83rem;color:var(--tm);text-decoration:underline;text-underline-offset:3px}
+.back-link:hover{color:var(--a)}
+
+.hint{font-size:.75rem;color:var(--tm);margin-top:.3rem;line-height:1.5}
+.hint a{color:var(--a)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap ai-page">
+  <h1>Paramètres IA avancés</h1>
+  <p class="sub">Configurez les modèles d'indexation et de génération d'image utilisés pour votre garde-robe.</p>
+
+  <form method="POST" action="/settings/ai">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {# ── Section Vision / Indexation ── #}
+    <div class="ai-section">
+      <div class="ai-section-title">
+        Indexation &amp; Vision
+        {% if ollama_info.running %}
+          <span class="status-badge ok"><span class="status-dot ok"></span>Ollama connecté</span>
+        {% else %}
+          <span class="status-badge ko"><span class="status-dot ko"></span>Ollama déconnecté</span>
+        {% endif %}
+      </div>
+
+      <div class="fg">
+        <label class="lbl">Modèle de vision (Ollama)</label>
+
+        {% set saved_vision = current_settings.vision_model %}
+        {% set default_vision = 'qwen2.5vl:7b' %}
+        {% set available = ollama_info.available_models %}
+
+        {% if ollama_info.running and available %}
+          <div class="ollama-model-list">
+            {% for m in available %}
+              {% set is_selected = (saved_vision == m) or (not saved_vision and m == default_vision) %}
+              <label class="ollama-model-item {% if is_selected %}selected{% endif %}" id="lbl-{{ loop.index }}">
+                <input type="radio" name="vision_model" value="{{ m }}"
+                       {% if is_selected %}checked{% endif %}
+                       onchange="syncVisionCustom(this)">
+                <span class="ollama-model-name">{{ m }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          {# Option custom si la valeur sauvegardée n'est pas dans la liste #}
+          {% set is_custom = saved_vision and saved_vision not in available %}
+          <div class="custom-model-row">
+            <input type="radio" name="vision_model" id="vision_custom_radio" value="__custom__"
+                   {% if is_custom %}checked{% endif %}
+                   onchange="syncVisionCustom(this)">
+            <input type="text" class="fc" id="vision_custom_input"
+                   placeholder="Autre modèle, ex: llava:13b"
+                   value="{{ saved_vision if is_custom else '' }}"
+                   style="flex:1"
+                   oninput="document.getElementById('vision_custom_radio').checked=true;updateVisionCustomValue(this.value)">
+          </div>
+        {% else %}
+          {# Ollama non disponible : champ texte libre #}
+          <input type="text" name="vision_model" class="fc"
+                 placeholder="{{ default_vision }}"
+                 value="{{ saved_vision }}">
+          {% if not ollama_info.running %}
+          <p class="hint">Ollama n'est pas accessible. Lancez <code>ollama serve</code> pour voir les modèles disponibles.</p>
+          {% endif %}
+        {% endif %}
+
+        <p class="hint">
+          Modèle par défaut : <strong>{{ default_vision }}</strong>.
+          Laissez vide pour utiliser la valeur de la variable d'environnement <code>VISION_MODEL</code>.
+        </p>
+      </div>
+    </div>
+
+    {# ── Section Génération d'image ── #}
+    <div class="ai-section">
+      <div class="ai-section-title">Génération d'image</div>
+
+      <div class="fg">
+        <label class="lbl">Modèle Pollinations</label>
+        {% set saved_gen = current_settings.image_gen_model %}
+        {# (value, label, desc, style_tag, free) #}
+        {% set pollinations_models = [
+          ('local-a1111',   'Local — AUTOMATIC1111', 'Stable Diffusion local via A1111 (SDXL, FLUX, etc.). Nécessite un serveur A1111 en cours d\'exécution.', 'local', true),
+          ('local-comfyui', 'Local — ComfyUI',        'ComfyUI local — meilleur pour FLUX.1-dev. Nécessite un serveur ComfyUI en cours d\'exécution.',           'local', true),
+          ('flux',           'Flux',            'FLUX.1-schnell — rapide, gratuit, bon rapport qualité/vitesse. Recommandé par défaut.',           'fast',    true),
+          ('flux-2-dev',     'Flux 2 Dev',      'FLUX.1-dev — qualité nettement supérieure, temps plus long (~2-4 min). Nécessite des crédits.',   'quality', false),
+          ('kontext',        'Kontext',          'FLUX.1-Kontext — image+référence visuelle pour reproduire les chaussures. Nécessite des crédits.','ref',     false),
+          ('gptimage',       'GPT-Image',        'Basé sur GPT-Image-1, créatif et polyvalent. Nécessite des crédits.',                             'gpt',     false),
+          ('gptimage-large', 'GPT-Image Large',  'Version haute résolution de GPT-Image. Nécessite des crédits.',                                  'gpt',     false),
+          ('imagen-4',       'Imagen 4',         'Google DeepMind — haute fidélité photographique. Nécessite des crédits.',                         'google',  false),
+          ('seedream-pro',   'Seedream Pro',     'Génération créative orientée mode et esthétique. Nécessite des crédits.',                         'quality', false),
+          ('nanobanana-pro', 'Nanobanana Pro',   'Modèle compact, style artistique et coloré. Nécessite des crédits.',                              'fast',    false),
+          ('z-image-turbo',  'Z-Image Turbo',    'Génération ultra-rapide. Nécessite des crédits.',                                                 'fast',    false),
+        ] %}
+        <div class="model-grid">
+          {% for value, label, desc, style_tag, free in pollinations_models %}
+            {% set is_sel = (saved_gen == value) or (not saved_gen and value == 'flux') %}
+            <label class="model-card {% if is_sel %}selected{% endif %}">
+              <input type="radio" name="image_gen_model" value="{{ value }}"
+                     {% if is_sel %}checked{% endif %}
+                     onchange="document.querySelectorAll('.model-card').forEach(c=>c.classList.remove('selected'));this.closest('.model-card').classList.add('selected')">
+              <div>
+                <div class="model-card-name">
+                  {{ label }}
+                  {% if free %}<span class="model-tag tag-free">Gratuit</span>
+                  {% else %}<span class="model-tag tag-paid">Crédits requis</span>{% endif %}
+                  {% if style_tag == 'fast' %}<span class="model-tag tag-fast">Rapide</span>{% endif %}
+                  {% if style_tag == 'quality' %}<span class="model-tag tag-quality">Qualité</span>{% endif %}
+                  {% if style_tag == 'ref' %}<span class="model-tag tag-ref">Image+Réf.</span>{% endif %}
+                  {% if style_tag == 'gpt' %}<span class="model-tag tag-gpt">GPT</span>{% endif %}
+                  {% if style_tag == 'google' %}<span class="model-tag tag-google">Google</span>{% endif %}
+                  {% if style_tag == 'local' %}<span class="model-tag tag-local">Local</span>{% endif %}
+                </div>
+                <div class="model-card-desc">{{ desc }}</div>
+              </div>
+            </label>
+          {% endfor %}
+        </div>
+        <div id="local-config" style="margin-top:1.1rem;padding:1rem;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r);display:none">
+          <p style="font-size:.8rem;font-weight:600;color:var(--tx);margin-bottom:.75rem">Configuration du serveur local</p>
+          <div class="fg">
+            <label class="lbl">URL du serveur</label>
+            <input type="text" name="local_sd_url" class="fc"
+                   placeholder="http://localhost:7860  (A1111)  ou  http://localhost:8188  (ComfyUI)"
+                   value="{{ current_settings.local_sd_url }}">
+            <p class="hint">A1111 : port 7860 par défaut · ComfyUI : port 8188 par défaut</p>
+          </div>
+          <div class="fg">
+            <label class="lbl">Modèle / Checkpoint</label>
+            <input type="text" name="local_sd_checkpoint" class="fc"
+                   placeholder="ex : flux1-dev-fp8.safetensors  ou  juggernautXL_v9.safetensors"
+                   value="{{ current_settings.local_sd_checkpoint }}">
+            <p class="hint">Laissez vide pour utiliser le modèle chargé par défaut. Pour FLUX.1-dev local, entrez le nom exact du fichier.</p>
+          </div>
+        </div>
+        <p class="hint">Modèle par défaut : <strong>flux</strong> (gratuit). Les modèles marqués "Crédits requis" nécessitent un solde Pollinations — <a href="https://auth.pollinations.ai" target="_blank">recharger ici →</a></p>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--bor);margin:1.2rem 0">
+
+      <div class="fg">
+        <label class="lbl">Clé API Pollinations (optionnel)</label>
+        <input type="password" name="pollinations_key" class="fc"
+               placeholder="Votre clé Pollinations..."
+               value="{{ current_settings.pollinations_key }}">
+        <p class="hint">
+          Sans clé, les requêtes sont anonymes (limite de taux plus stricte).
+          <a href="https://auth.pollinations.ai" target="_blank">Obtenir une clé →</a>
+        </p>
+      </div>
+
+      <div class="fg">
+        <label class="lbl">Clé API Anthropic (optionnel)</label>
+        <input type="password" name="anthropic_key" class="fc"
+               placeholder="sk-ant-..."
+               value="{{ current_settings.anthropic_key }}">
+        <p class="hint">
+          Utilisée pour générer des prompts enrichis via Claude avant la génération d'image.
+          Sans clé, un prompt automatique est utilisé.
+          <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Sauvegarder les paramètres IA</button>
+      <a href="/" class="back-link">Retour à la garde-robe</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Affiche la config locale si un modèle local est sélectionné
+function updateLocalConfig() {
+  var selected = document.querySelector('input[name="image_gen_model"]:checked');
+  var localDiv = document.getElementById('local-config');
+  if (localDiv && selected) {
+    localDiv.style.display = selected.value.startsWith('local-') ? 'block' : 'none';
+  }
+}
+document.querySelectorAll('input[name="image_gen_model"]').forEach(function(r) {
+  r.addEventListener('change', updateLocalConfig);
+});
+updateLocalConfig();
+
+// Synchronise le champ texte "custom" avec la valeur radio réelle soumise
+(function () {
+  var customRadio = document.getElementById('vision_custom_radio');
+  var customInput = document.getElementById('vision_custom_input');
+
+  if (!customRadio || !customInput) return;
+
+  // Au chargement, si la radio custom est cochée, on met la vraie valeur dans le radio
+  if (customRadio.checked && customInput.value) {
+    customRadio.value = customInput.value;
+  }
+
+  // Met à jour la value du radio custom quand on tape dans le champ texte
+  window.updateVisionCustomValue = function(val) {
+    customRadio.value = val || '__custom__';
+  };
+
+  // Quand un autre radio est sélectionné, on remet __custom__ comme value de fallback
+  window.syncVisionCustom = function(el) {
+    if (el !== customRadio) {
+      customRadio.value = customInput.value || '__custom__';
+    } else {
+      customRadio.value = customInput.value || '__custom__';
+    }
+    // Highlight des labels Ollama
+    document.querySelectorAll('.ollama-model-item').forEach(function(lbl) {
+      lbl.classList.remove('selected');
+    });
+    if (el !== customRadio) {
+      el.closest('.ollama-model-item') && el.closest('.ollama-model-item').classList.add('selected');
+    }
+  };
+
+  // Avant la soumission : si custom est coché mais vide, on supprime la sélection
+  customInput.closest('form') && customInput.closest('form').addEventListener('submit', function() {
+    if (customRadio.checked && !customInput.value.trim()) {
+      customRadio.checked = false;
+    }
+  });
+})();
+</script>
+{% endblock %}

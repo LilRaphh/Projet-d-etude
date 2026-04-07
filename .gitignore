@@ -1,9 +1,13 @@
 .venv/
 __pycache__/
 *.pyc
-wardrobe.db
+*.db
+*.db-journal
 .env
 .vscode/
-static/uploads/
 .DS_Store
+static/uploads/
 _archive_old/
+.claude/
+pipeline/output/
+pipeline/logs/

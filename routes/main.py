@@ -1,158 +1,25 @@
 from flask import Blueprint, flash, redirect, render_template, request
-import requests
+from sqlalchemy import distinct
 
-from config import CATEGORIES, COLORS, CONDITIONS, SEASONS, SIZES
+from config import CATEGORIES, COLORS, CONDITIONS, ITEMS_PER_PAGE, SEASONS, SIZES
 from extensions import db
 from models import ClothingItem
 from utils.auth import current_user, get_ctx, login_required
 from utils.images import delete_images, save_image
 from utils.tags import get_tags
+from utils.weather import WeatherService
 
 main_bp = Blueprint('main', __name__)
 
-WMO = {
-    0: "Ciel dégagé",
-    1: "Principalement dégagé",
-    2: "Partiellement nuageux",
-    3: "Couvert",
-    45: "Brouillard",
-    48: "Brouillard givrant",
-    51: "Bruine légère",
-    53: "Bruine modérée",
-    55: "Bruine forte",
-    61: "Pluie légère",
-    63: "Pluie modérée",
-    65: "Pluie forte",
-    71: "Neige légère",
-    73: "Neige modérée",
-    75: "Neige forte",
-    80: "Averses légères",
-    81: "Averses modérées",
-    82: "Averses violentes",
-    95: "Orage",
-    96: "Orage avec grêle",
-    99: "Orage violent",
-}
 
-
-def weather_icon(code):
-    if code == 0:
-        return "☀️"
-    if code <= 2:
-        return "🌤️"
-    if code <= 3:
-        return "☁️"
-    if code <= 48:
-        return "🌫️"
-    if code <= 67:
-        return "🌧️"
-    if code <= 77:
-        return "❄️"
-    if code <= 82:
-        return "🌦️"
-    return "⛈️"
-
-
-def get_forecast(city):
+def _parse_price(raw: str):
+    """Parse un prix utilisateur. Accepte virgule ou point. Retourne None si invalide."""
+    if not raw:
+        return None
     try:
-        geo = requests.get(
-            "https://geocoding-api.open-meteo.com/v1/search",
-            params={"name": city, "count": 1, "language": "fr", "format": "json"},
-            timeout=6,
-        ).json()
-
-        if not geo.get("results"):
-            return None, "Ville introuvable."
-
-        place = geo["results"][0]
-
-        data = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": place["latitude"],
-                "longitude": place["longitude"],
-                "current": "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m",
-                "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max",
-                "hourly": "temperature_2m,weather_code,precipitation_probability,wind_speed_10m",
-                "forecast_days": 7,
-                "timezone": "auto",
-            },
-            timeout=6,
-        ).json()
-
-        current = data.get("current", {})
-        daily = data.get("daily", {})
-        hourly = data.get("hourly", {})
-
-        current_view = {
-            "city": place["name"],
-            "temp": round(current.get("temperature_2m", 0)),
-            "feels": round(current.get("apparent_temperature", 0)),
-            "wind": round(current.get("wind_speed_10m", 0)),
-            "hum": round(current.get("relative_humidity_2m", 0)),
-            "code": current.get("weather_code", 0),
-            "label": WMO.get(current.get("weather_code", 0), "Variable"),
-            "icon": weather_icon(current.get("weather_code", 0)),
-        }
-
-        days = []
-        dates = daily.get("time", [])
-        codes = daily.get("weather_code", [])
-        tmax = daily.get("temperature_2m_max", [])
-        tmin = daily.get("temperature_2m_min", [])
-        rain_prob = daily.get("precipitation_probability_max", [])
-        rain_sum = daily.get("precipitation_sum", [])
-        wind_max = daily.get("wind_speed_10m_max", [])
-
-        for i in range(len(dates)):
-            code = codes[i]
-            days.append({
-                "date": dates[i],
-                "code": code,
-                "label": WMO.get(code, "Variable"),
-                "icon": weather_icon(code),
-                "temp_max": round(tmax[i]) if tmax[i] is not None else None,
-                "temp_min": round(tmin[i]) if tmin[i] is not None else None,
-                "rain_prob": rain_prob[i],
-                "rain_sum": rain_sum[i],
-                "wind_max": round(wind_max[i]) if wind_max[i] is not None else None,
-            })
-
-        hours = []
-        hourly_times = hourly.get("time", [])
-        hourly_temp = hourly.get("temperature_2m", [])
-        hourly_code = hourly.get("weather_code", [])
-        hourly_rain = hourly.get("precipitation_probability", [])
-        hourly_wind = hourly.get("wind_speed_10m", [])
-
-        limit = min(24, len(hourly_times))
-        for i in range(limit):
-            code = hourly_code[i]
-            hours.append({
-                "time": hourly_times[i],
-                "temp": round(hourly_temp[i]) if hourly_temp[i] is not None else None,
-                "code": code,
-                "label": WMO.get(code, "Variable"),
-                "icon": weather_icon(code),
-                "rain_prob": hourly_rain[i],
-                "wind": round(hourly_wind[i]) if hourly_wind[i] is not None else None,
-            })
-
-        return {
-            "place": {
-                "name": place.get("name"),
-                "latitude": place.get("latitude"),
-                "longitude": place.get("longitude"),
-                "country": place.get("country"),
-                "admin1": place.get("admin1"),
-            },
-            "current": current_view,
-            "days": days,
-            "hours": hours,
-        }, None
-
-    except Exception:
-        return None, "Impossible de récupérer les prévisions météo pour le moment."
+        return float(raw.replace(',', '.'))
+    except ValueError:
+        return None
 
 
 @main_bp.route('/')
@@ -206,14 +73,26 @@ def index():
         'worn': ClothingItem.times_worn.desc(),
     }
 
-    items = q.order_by(sort_map.get(af['sort'], ClothingItem.created_at.desc())).all()
-    brands = sorted({it.brand for it in me.items if it.brand})
+    page = request.args.get('page', 1, type=int)
+    pagination = q.order_by(sort_map.get(af['sort'], ClothingItem.created_at.desc())).paginate(
+        page=page, per_page=ITEMS_PER_PAGE, error_out=False
+    )
+
+    # Requêtes distinct pour éviter le N+1 (ne charge pas tous les items)
+    brands = sorted([
+        row[0] for row in
+        db.session.query(distinct(ClothingItem.brand))
+                  .filter(ClothingItem.user_id == me.id, ClothingItem.brand.isnot(None))
+                  .order_by(ClothingItem.brand)
+                  .all()
+    ])
 
     return render_template(
         'index.html',
-        items=items,
+        items=pagination.items,
+        pagination=pagination,
         brands=brands,
-        total=me.items.count(),
+        total=pagination.total,
         cats=CATEGORIES,
         colors=COLORS,
         seasons=SEASONS,
@@ -241,7 +120,7 @@ def add():
             color=request.form.get('color', '') or None,
             season=request.form.get('season', '') or None,
             condition=request.form.get('condition', '') or None,
-            price=float(price_raw) if price_raw else None,
+            price=_parse_price(price_raw),
             notes=request.form.get('notes', '').strip() or None,
             is_favorite=bool(request.form.get('is_favorite')),
             image_path=img,
@@ -275,6 +154,7 @@ def edit(iid):
     item = me.items.filter_by(id=iid).first()
 
     if not item:
+        flash("Vêtement introuvable.", "error")
         return redirect('/')
 
     if request.method == 'POST':
@@ -291,7 +171,10 @@ def edit(iid):
         item.color = request.form.get('color', '') or None
         item.season = request.form.get('season', '') or None
         item.condition = request.form.get('condition', '') or None
-        item.price = float(price_raw) if price_raw else None
+        parsed_price = _parse_price(price_raw)
+        if price_raw and parsed_price is None:
+            flash("Prix invalide, il a été ignoré.", "warning")
+        item.price = parsed_price
         item.notes = request.form.get('notes', '').strip() or None
         item.is_favorite = bool(request.form.get('is_favorite'))
         item.tags = get_tags(request.form.get('tags', ''))
@@ -321,6 +204,7 @@ def detail(iid):
     me = ctx['me']
     item = me.items.filter_by(id=iid).first()
     if not item:
+        flash("Vêtement introuvable.", "error")
         return redirect('/')
     return render_template('item_detail.html', item=item, **ctx)
 
@@ -344,7 +228,13 @@ def save_settings():
     from models import UserSetting
 
     me = current_user()
-    for key in ('app_name', 'accent', 'currency', 'anthropic_key', 'pollinations_key', 'city'):
+    for key in ('app_name', 'accent', 'currency', 'city'):
+        value = request.form.get(key, '').strip()
+        if value:
+            UserSetting.set(me.id, key, value)
+        else:
+            UserSetting.delete(me.id, key)
+    for key in ('anthropic_key', 'pollinations_key'):
         value = request.form.get(key, '').strip()
         if value:
             UserSetting.set(me.id, key, value)
@@ -365,7 +255,7 @@ def forecast():
         flash("Ajoutez d'abord une ville dans les paramètres pour afficher les prévisions.", "info")
         return redirect(request.referrer or '/')
 
-    forecast_data, error = get_forecast(city)
+    forecast_data, error = WeatherService.get_forecast(city)
     return render_template(
         'forecast.html',
         forecast=forecast_data,
@@ -373,6 +263,52 @@ def forecast():
         city=city,
         **ctx,
     )
+
+
+@main_bp.route('/settings/ai', methods=['GET'])
+@login_required
+def settings_ai_get():
+    from models import UserSetting
+    from ai.vision import check_ollama
+
+    ctx = get_ctx()
+    me = ctx['me']
+    ollama_info = check_ollama()
+    current_settings = {
+        'vision_model': UserSetting.get(me.id, 'vision_model', ''),
+        'image_gen_model': UserSetting.get(me.id, 'image_gen_model', ''),
+        'pollinations_key': UserSetting.get(me.id, 'pollinations_key', ''),
+        'anthropic_key': UserSetting.get(me.id, 'anthropic_key', ''),
+        'local_sd_url': UserSetting.get(me.id, 'local_sd_url', ''),
+        'local_sd_checkpoint': UserSetting.get(me.id, 'local_sd_checkpoint', ''),
+    }
+    return render_template(
+        'settings_ai.html',
+        ollama_info=ollama_info,
+        current_settings=current_settings,
+        **ctx,
+    )
+
+
+@main_bp.route('/settings/ai', methods=['POST'])
+@login_required
+def settings_ai_post():
+    from models import UserSetting
+
+    me = current_user()
+    for key in ('vision_model', 'image_gen_model', 'local_sd_url', 'local_sd_checkpoint'):
+        value = request.form.get(key, '').strip()
+        if value:
+            UserSetting.set(me.id, key, value)
+        else:
+            UserSetting.delete(me.id, key)
+    # Clés API : on ne sauvegarde que si non vide pour ne pas écraser une clé existante
+    for key in ('pollinations_key', 'anthropic_key'):
+        value = request.form.get(key, '').strip()
+        if value:
+            UserSetting.set(me.id, key, value)
+    flash('Paramètres IA sauvegardés !', 'success')
+    return redirect('/settings/ai')
 
 
 @main_bp.route('/mentions-legales')

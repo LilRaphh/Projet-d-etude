@@ -1,0 +1,82 @@
+# =============================================================
+#  docker-compose.monitoring.yml — Stack Grafana + Loki + Promtail + Stats
+#
+#  Lance : docker compose -f docker-compose.monitoring.yml up -d
+#  Stop  : docker compose -f docker-compose.monitoring.yml down
+#
+#  Grafana → http://localhost:3000  (admin / admin)
+#  Stats   → http://localhost:8888/stats.json
+# =============================================================
+
+services:
+
+  # ── Loki — agrégation de logs ─────────────────────────────────
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: smartwear_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Promtail — collecte des fichiers de log locaux ────────────
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: smartwear_promtail
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./pipeline/logs:/logs/pipeline:ro
+      - ./logs:/logs/flask:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Serveur stats JSON — expose pipeline/output/ en HTTP ──────
+  stats-server:
+    image: python:3.11-alpine
+    container_name: smartwear_stats
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./pipeline/output:/data:ro
+    working_dir: /data
+    command: python -m http.server 8888
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Grafana — dashboards ───────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: smartwear_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: yesoreyeram-infinity-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+      - stats-server
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+volumes:
+  loki_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge

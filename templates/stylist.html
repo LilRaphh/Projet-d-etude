@@ -7,6 +7,19 @@
 .sty-h em{color:var(--a);font-style:italic}
 .sty-sub{color:var(--tm);font-size:.86rem;margin-bottom:1.5rem}
 
+/* Mode toggle */
+.mode-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap}
+.mode-seg{display:flex;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden}
+.mode-seg input[type=radio]{display:none}
+.mode-seg label{padding:.38rem .9rem;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--tm);transition:all .15s;white-space:nowrap}
+.mode-seg input:checked + label{background:var(--a);color:#fff}
+.mode-seg label:hover{color:var(--tx)}
+
+/* Status bar IA locale */
+.ai-status{display:flex;align-items:center;gap:.5rem;padding:.45rem .85rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);font-size:.76rem;color:var(--tm);flex-wrap:wrap}
+.ai-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ai-dot.ok{background:#4CAF50}.ai-dot.warn{background:#FF9800}.ai-dot.err{background:#F44336}
+
 /* Nudge clé API */
 .key-nudge{background:#f5f3ff;border:1px solid #d8b4fe;border-radius:var(--rl);padding:1.1rem 1.3rem;margin-bottom:1.4rem;display:flex;gap:.85rem;align-items:flex-start}
 .key-nudge-ico{font-size:1.4rem;flex-shrink:0;line-height:1.4}
@@ -14,7 +27,7 @@
 .key-nudge p{font-size:.79rem;color:#7c3aed;line-height:1.55}
 .key-nudge a{color:#6d28d9;text-decoration:underline}
 
-/* Barre météo */
+/* Météo */
 .wx{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:.85rem 1.1rem;margin-bottom:1.25rem}
 .wx-main{display:flex;align-items:center;gap:.6rem}
 .wx-ico{font-size:2rem;line-height:1}
@@ -26,7 +39,7 @@
 .wx-form input{padding:.32rem .6rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);font-size:.79rem;color:var(--tx);width:130px}
 .wx-form input:focus{outline:none;border-color:var(--a)}
 
-/* Prompt */
+/* Formulaire commun */
 .pcard{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.25rem;margin-bottom:1.4rem}
 .prow{display:flex;gap:.5rem;align-items:flex-end}
 .pta{flex:1;padding:.68rem .8rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:.9rem;font-family:var(--sans);resize:none;line-height:1.55;min-height:50px;max-height:150px;transition:border-color .15s}
@@ -71,27 +84,52 @@
 .si-name{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .si-meta{font-size:.69rem;color:var(--tl)}
 .sc-reason{padding:.7rem 1.1rem .85rem;font-size:.81rem;color:var(--tm);line-height:1.65;border-top:1px solid var(--bor)}
+.sc-reason em{font-style:italic}
 .wx-note{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;color:var(--a);background:var(--am);padding:.14rem .5rem;border-radius:99px;margin-bottom:.4rem}
-.sc-foot{display:flex;gap:.4rem;padding:.7rem 1.1rem;border-top:1px solid var(--bor)}
+.sc-foot{display:flex;gap:.4rem;padding:.7rem 1.1rem;border-top:1px solid var(--bor);align-items:center;flex-wrap:wrap}
 .miss{margin:0 1.1rem .4rem;padding:.3rem .6rem;background:#FFF8F0;border:1px solid #FFD0A0;border-radius:var(--r);font-size:.72rem;color:#9A5B00}
+
+/* Score breakdown (IA locale) */
+.sc-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:.25rem;padding:.5rem 1.1rem .55rem;border-top:1px solid var(--bor)}
+.ss{text-align:center}
+.ss-v{font-size:.76rem;font-weight:600;color:var(--tx)}
+.ss-l{font-size:.6rem;color:var(--tl);margin-top:.05rem}
 {% endblock %}
 
 {% block content %}
 <div class="sty"><div class="wrap">
   <h1 class="sty-h">Mon <em>styliste</em> IA</h1>
-  <p class="sty-sub">Décris l'occasion — je compose 3 tenues depuis ta garde-robe.</p>
+  <p class="sty-sub">Compose des tenues depuis ta garde-robe — choisis ton moteur.</p>
 
-  {% if not has_api_key %}
-  <div class="key-nudge">
-    <div class="key-nudge-ico">🔑</div>
-    <div>
-      <h3>Clé API Anthropic requise</h3>
-      <p>Lance l'app avec <code>set ANTHROPIC_API_KEY=sk-ant-...</code> (Windows) ou
-      entre-la dans les Paramètres ⚙️.<br>
-      <a href="https://console.anthropic.com" target="_blank">Obtenir une clé gratuitement →</a></p>
+  <!-- Toggle de mode -->
+  <div class="mode-bar">
+    <div class="mode-seg">
+      <input type="radio" name="mode_ui" id="m-local" value="local" {% if active_mode != 'claude' %}checked{% endif %}>
+      <label for="m-local">IA Locale</label>
+      <input type="radio" name="mode_ui" id="m-claude" value="claude" {% if active_mode == 'claude' %}checked{% endif %}>
+      <label for="m-claude">Claude API</label>
+    </div>
+
+    <!-- Status IA locale (affiché dans les deux modes) -->
+    <div class="ai-status" id="aiStatus">
+      <div class="ai-dot {% if ai_status.ollama_running and ai_status.model_available %}ok{% elif ai_status.ollama_running %}warn{% else %}err{% endif %}"></div>
+      {% if ai_status.ollama_running and ai_status.model_available %}
+        Ollama actif — {{ ai_status.vision_model }}
+      {% elif ai_status.ollama_running %}
+        Modèle manquant — <code>ollama pull {{ ai_status.vision_model }}</code>
+      {% else %}
+        Ollama hors ligne — <code>ollama serve</code>
+      {% endif %}
+      &nbsp;·&nbsp; {{ ai_status.indexed }} / {{ total_items }} indexés
+      {% if analyzed_count < total_items %}
+        &nbsp;·&nbsp;
+        <button class="btn btn-ghost btn-sm" id="analyzeAllBtn" onclick="analyzeAll()" style="padding:.15rem .5rem;font-size:.72rem">
+          Analyser les {{ total_items - analyzed_count }} restants
+        </button>
+        <span id="analyzeAllStatus" style="font-size:.72rem;color:var(--tm)"></span>
+      {% endif %}
     </div>
   </div>
-  {% endif %}
 
   {% if not item_count %}
   <div style="text-align:center;padding:4rem 1rem;color:var(--tm)">
@@ -101,6 +139,20 @@
     <a href="/add" class="btn btn-primary">Ajouter un vêtement</a>
   </div>
   {% else %}
+
+  <!-- Nudge clé API (mode Claude uniquement) -->
+  <div id="keyNudge" style="display:none">
+    {% if not has_api_key %}
+    <div class="key-nudge">
+      <div class="key-nudge-ico">🔑</div>
+      <div>
+        <h3>Clé API Anthropic requise</h3>
+        <p>Entrez-la dans les Paramètres ⚙️ ou via <code>export ANTHROPIC_API_KEY=sk-ant-...</code><br>
+        <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a></p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 
   <!-- Météo -->
   <div class="wx">
@@ -117,39 +169,65 @@
       </div>
       <div class="wx-layer">{{ weather.layer }}</div>
     {% else %}
-      <span style="font-size:.82rem;color:var(--tm)">📍 Entrez votre ville pour adapter les suggestions à la météo</span>
+      <span style="font-size:.82rem;color:var(--tm)">Entrez votre ville pour adapter les suggestions à la météo</span>
     {% endif %}
     <form method="POST" class="wx-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="mode" id="wxMode" value="{{ active_mode }}">
       <input type="hidden" name="prompt" value="{{ user_prompt }}">
+      <input type="hidden" name="occasion" value="{{ occasion }}">
       <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
       <button type="submit" class="btn btn-ghost btn-sm">Mettre à jour</button>
     </form>
   </div>
 
-  <!-- Prompt -->
+  <!-- Formulaire principal -->
   <div class="pcard">
     <form method="POST" id="sugForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="mode" id="formMode" value="{{ active_mode }}">
       <input type="hidden" name="city" value="{{ city }}">
-      <div class="prow">
-        <textarea name="prompt" id="pta" class="pta"
-          placeholder="Ex : Soirée décontractée chez des amis, pas trop habillé…"
-          rows="2">{{ user_prompt }}</textarea>
-        <button type="submit" class="btn btn-ai btn-ai-wrap" id="subBtn"
-          {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Générer
-        </button>
+
+      <!-- Mode IA Locale -->
+      <div id="localSection">
+        <div class="prow">
+          <select name="occasion" id="occSelect" class="fc" style="flex:1">
+            <option value="">— Toutes occasions —</option>
+            {% for occ in occasions %}
+            <option value="{{ occ }}" {% if occasion == occ %}selected{% endif %}>{{ occ }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-primary btn-ai-wrap" id="localBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Générer
+          </button>
+        </div>
+        <p class="ptip" style="margin-top:.55rem">{{ ai_status.indexed }} vêtements indexés · Scoring local couleur + style + formalisme{% if weather %} · Météo prise en compte{% endif %}</p>
       </div>
-      <div class="chips">
-        <span class="chip">☀️ Journée décontractée</span>
-        <span class="chip">💼 Réunion pro</span>
-        <span class="chip">🌙 Soirée élégante</span>
-        <span class="chip">🏃 Week-end actif</span>
-        <span class="chip">☕ Brunch du dimanche</span>
-        <span class="chip">🎉 Fête entre amis</span>
-        <span class="chip">✈️ Voyage confortable</span>
+
+      <!-- Mode Claude API -->
+      <div id="claudeSection" style="display:none">
+        <div class="prow">
+          <textarea name="prompt" id="pta" class="pta"
+            placeholder="Ex : Soirée décontractée chez des amis, pas trop habillé…"
+            rows="2">{{ user_prompt }}</textarea>
+          <button type="submit" class="btn btn-primary btn-ai-wrap" id="subBtn"
+            {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Générer
+          </button>
+        </div>
+        <div class="chips">
+          <span class="chip">Journée décontractée</span>
+          <span class="chip">Réunion pro</span>
+          <span class="chip">Soirée élégante</span>
+          <span class="chip">Week-end actif</span>
+          <span class="chip">Brunch du dimanche</span>
+          <span class="chip">Fête entre amis</span>
+          <span class="chip">Voyage confortable</span>
+        </div>
+        <p class="ptip">{{ item_count }} pièce{{ 's' if item_count != 1 }} · Claude compose 3 tenues variées{% if weather %} · Météo prise en compte{% endif %}</p>
       </div>
-      <p class="ptip">{{ item_count }} pièce{{ 's' if item_count != 1 }} dans ta garde-robe{% if weather %} · Météo prise en compte{% endif %} · Claude compose 3 tenues variées</p>
     </form>
   </div>
 
@@ -159,18 +237,78 @@
     <div class="loading-msg" id="ldgMsg">Analyse de ta garde-robe…</div>
   </div>
 
-  {% if error %}<div class="err">⚠ {{ error }}</div>{% endif %}
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
 
-  {% if suggestions %}
+  {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜','Sport':'🏃','top':'👕','bottom':'👖','shoes':'👟','outer':'🧥','accessory':'👜'} %}
+
+  <!-- Résultats IA Locale -->
+  {% if suggestions_local %}
   <div class="res-hdr">
-    <span class="res-ttl">Mes suggestions</span>
+    <span class="res-ttl">Suggestions locales</span>
+    {% if occasion %}<span class="res-for">{{ occasion }}</span>
+    {% elif weather %}<span class="res-for">{{ weather.city }} · {{ weather.temp }}°C</span>{% endif %}
+  </div>
+  <div class="sgrid">
+  {% for s in suggestions_local %}
+  <div class="sc">
+    <div class="sc-head">
+      <div>
+        <div class="sc-vibe">IA Locale · {{ (s.score * 100)|round|int }}%</div>
+        <div class="sc-name">Tenue {{ loop.index }}</div>
+      </div>
+      <div class="sc-num">{{ loop.index }}</div>
+    </div>
+    <div class="sc-items">
+      {% for it in s['items'] %}
+      <div class="si">
+        <div class="si-thumb">
+          {% set db_item = items_map.get(it.item_id) %}
+          {% if db_item and db_item.thumb_path %}
+            <img src="/static/{{ db_item.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+          {% else %}
+            <div class="si-ph">{{ emo.get(it.slot, emo.get(it.category, '👗')) }}</div>
+          {% endif %}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="si-cat">{{ it.category }}</div>
+          <div class="si-name">{{ it.name }}</div>
+          <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}</div>
+        </div>
+        {% if it.item_id %}
+        <a href="/item/{{ it.item_id }}" style="font-size:.7rem;color:var(--a);flex-shrink:0;text-decoration:none">→</a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="sc-scores">
+      <div class="ss"><div class="ss-v">{{ (s.breakdown.color*100)|round|int }}%</div><div class="ss-l">Couleur</div></div>
+      <div class="ss"><div class="ss-v">{{ (s.breakdown.style*100)|round|int }}%</div><div class="ss-l">Style</div></div>
+      <div class="ss"><div class="ss-v">{{ (s.breakdown.formality*100)|round|int }}%</div><div class="ss-l">Formalisme</div></div>
+      <div class="ss"><div class="ss-v">{{ (s.breakdown.occasion*100)|round|int }}%</div><div class="ss-l">Occasion</div></div>
+    </div>
+    {% if s.explanation %}
+    <div class="sc-reason"><em>"{{ s.explanation }}"</em></div>
+    {% endif %}
+    <div class="sc-foot">
+      <button class="btn btn-ghost btn-sm"
+        onclick='saveLocal(this, {{ s|tojson }})'>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Sauvegarder
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Résultats Claude -->
+  {% if suggestions_claude %}
+  <div class="res-hdr">
+    <span class="res-ttl">Suggestions Claude</span>
     {% if user_prompt %}<span class="res-for" title="{{ user_prompt }}">{{ user_prompt }}</span>{% endif %}
   </div>
-
-  {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜','Sport':'🏃'} %}
-
   <div class="sgrid">
-  {% for s in suggestions %}
+  {% for s in suggestions_claude %}
   <div class="sc">
     <div class="sc-head">
       <div>
@@ -197,14 +335,14 @@
         </div>
         {% else %}{% set _ = missing.append(iid) %}{% endif %}
       {% endfor %}
-      {% if missing %}<div class="miss">⚠ ID introuvable : {{ missing|join(', ') }}</div>{% endif %}
+      {% if missing %}<div class="miss">ID introuvable : {{ missing|join(', ') }}</div>{% endif %}
     </div>
     <div class="sc-reason">
-      {% if s.weather_note %}<div class="wx-note">🌡 {{ s.weather_note }}</div>{% endif %}
+      {% if s.weather_note %}<div class="wx-note">{{ s.weather_note }}</div>{% endif %}
       {{ s.reasoning }}
     </div>
     <div class="sc-foot">
-      <button class="btn btn-ghost btn-sm" onclick="save(this, {{ s|tojson }})">
+      <button class="btn btn-ghost btn-sm" onclick='saveClaude(this, {{ s|tojson }})'>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Sauvegarder
       </button>
@@ -214,57 +352,125 @@
   </div>
   {% endif %}
 
-  {% endif %}
+  {% endif %}{# end item_count #}
 </div></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-var ta   = document.getElementById("pta");
-var form = document.getElementById("sugForm");
-var ldg  = document.getElementById("ldg");
-var ldgM = document.getElementById("ldgMsg");
-var sub  = document.getElementById("subBtn");
+var activeMode = "{{ active_mode }}";
 
-/* Auto-resize textarea */
+// -- Init affichage selon mode --
+function applyMode(mode) {
+  activeMode = mode;
+  document.getElementById("formMode").value = mode;
+  var wxM = document.getElementById("wxMode");
+  if (wxM) wxM.value = mode;
+
+  document.getElementById("localSection").style.display  = (mode === "local")  ? "" : "none";
+  document.getElementById("claudeSection").style.display = (mode === "claude") ? "" : "none";
+  document.getElementById("keyNudge").style.display      = (mode === "claude") ? "" : "none";
+}
+
+// Toggle mode
+document.getElementById("m-local").addEventListener("change",  function() { applyMode("local"); });
+document.getElementById("m-claude").addEventListener("change", function() { applyMode("claude"); });
+
+// Init au chargement
+applyMode(activeMode);
+
+// -- Textarea auto-resize --
+var ta = document.getElementById("pta");
 if (ta) ta.addEventListener("input", function() {
   this.style.height = "auto";
   this.style.height = Math.min(this.scrollHeight, 150) + "px";
 });
 
-/* Chips */
+// -- Chips --
 document.querySelectorAll(".chip").forEach(function(c) {
   c.addEventListener("click", function() {
     if (!ta) return;
-    ta.value = this.textContent.trim().replace(/^[\u{1F300}-\u{1FFFF}\u2600-\u27BF]\s*/u, "");
+    ta.value = this.textContent.trim();
     ta.focus(); ta.dispatchEvent(new Event("input"));
   });
 });
 
-/* Loading */
-var msgs = ["Analyse de ta garde-robe…","Prise en compte de la météo…","Composition des tenues…","Accord des couleurs…","Finalisation…"];
+// -- Loading animation --
+var msgs = [
+  "Analyse de ta garde-robe…","Prise en compte de la météo…",
+  "Composition des tenues…","Accord des couleurs…","Finalisation…"
+];
+var msgsLocal = [
+  "Filtrage par saison et météo…","Calcul des harmonies de couleurs…",
+  "Score de compatibilité stylistique…","Sélection des meilleures tenues…","Génération des explications…"
+];
+var form = document.getElementById("sugForm");
+var ldg  = document.getElementById("ldg");
+var ldgM = document.getElementById("ldgMsg");
 if (form) form.addEventListener("submit", function() {
-  if (!ta || !ta.value.trim()) return;
+  var list = activeMode === "local" ? msgsLocal : msgs;
+  if (activeMode === "claude") {
+    if (!ta || !ta.value.trim()) return;
+  }
   if (ldg) ldg.classList.add("on");
-  if (sub) sub.disabled = true;
   var i = 0;
-  setInterval(function() { i=(i+1)%msgs.length; if(ldgM) ldgM.textContent=msgs[i]; }, 3000);
+  setInterval(function() { i = (i+1) % list.length; if (ldgM) ldgM.textContent = list[i]; }, 3000);
 });
 
-/* Sauvegarder */
-function save(btn, data) {
+// -- Sauvegarder tenue Claude --
+function saveClaude(btn, data) {
   btn.disabled = true; btn.textContent = "Sauvegarde…";
-  fetch("/api/stylist/save", {
+  csrfFetch("/api/stylist/save", {
     method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({name:data.name, reasoning:data.reasoning, item_ids:data.item_ids})
-  }).then(function(r){return r.json();}).then(function(d){
+    body: JSON.stringify({name: data.name, reasoning: data.reasoning, item_ids: data.item_ids})
+  }).then(function(r){ return r.json(); }).then(function(d){
     if (d.ok) {
-      btn.textContent = "✓ Sauvegardée"; btn.style.color = "var(--a)";
-      var a = document.createElement("a"); a.href="/outfits/"+d.outfit_id;
-      a.className="btn btn-primary btn-sm"; a.textContent="Voir →";
+      btn.textContent = "Sauvegardée";
+      var a = document.createElement("a"); a.href = "/outfits/" + d.outfit_id;
+      a.className = "btn btn-primary btn-sm"; a.textContent = "Voir →";
       btn.parentElement.appendChild(a);
-    } else { btn.textContent="Erreur"; btn.disabled=false; }
-  }).catch(function(){ btn.textContent="Erreur réseau"; btn.disabled=false; });
+    } else { btn.textContent = "Erreur"; btn.disabled = false; }
+  }).catch(function(){ btn.textContent = "Erreur réseau"; btn.disabled = false; });
+}
+
+// -- Sauvegarder tenue IA Locale --
+function saveLocal(btn, data) {
+  btn.disabled = true; btn.textContent = "Sauvegarde…";
+  var item_ids = data.items.map(function(i) { return i.item_id; }).filter(Boolean);
+  csrfFetch("/api/stylist/save", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({name: data.items.map(function(i){ return i.name; }).filter(Boolean).join(' · ') || "Tenue IA locale", reasoning: data.explanation || "", item_ids: item_ids})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) {
+      btn.textContent = "Sauvegardée";
+      var a = document.createElement("a"); a.href = "/outfits/" + d.outfit_id;
+      a.className = "btn btn-primary btn-sm"; a.textContent = "Voir →";
+      btn.parentElement.appendChild(a);
+    } else { btn.textContent = "Erreur"; btn.disabled = false; }
+  }).catch(function(){ btn.textContent = "Erreur réseau"; btn.disabled = false; });
+}
+
+// -- Analyser tous les vêtements --
+function analyzeAll() {
+  var btn = document.getElementById("analyzeAllBtn");
+  var status = document.getElementById("analyzeAllStatus");
+  if (!btn) return;
+  btn.disabled = true; btn.textContent = "En cours…";
+  if (status) status.textContent = "Peut prendre plusieurs minutes…";
+  csrfFetch("/ai/analyze-all", { method: "POST" })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      btn.textContent = "Terminé";
+      var msg = d.success + " analysé(s)";
+      if (d.skipped > 0) msg += ", " + d.skipped + " sans photo";
+      if (d.failed > 0) msg += ", " + d.failed + " échoué(s)";
+      if (status) status.textContent = msg + " · rechargement…";
+      setTimeout(function(){ location.reload(); }, 1800);
+    })
+    .catch(function(e){
+      btn.disabled = false; btn.textContent = "Réessayer";
+      if (status) status.textContent = "Erreur : " + e;
+    });
 }
 </script>
 {% endblock %}

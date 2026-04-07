@@ -1,0 +1,54 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # ── Logs pipeline SmartWear (JSON structuré) ──────────────────
+  - job_name: smartwear_pipeline
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: smartwear_pipeline
+          app: smartwear
+          __path__: /logs/pipeline/*.jsonl
+
+    pipeline_stages:
+      # Parse le JSON de chaque ligne
+      - json:
+          expressions:
+            ts:      ts
+            level:   level
+            logger:  logger
+            scraper: scraper
+            msg:     msg
+
+      # Promouvoir les champs JSON en labels Loki (indexés, filtrables)
+      - labels:
+          level:
+          scraper:
+
+      # Utiliser le timestamp du log (pas celui d'ingestion)
+      - timestamp:
+          source: ts
+          format: RFC3339Nano
+
+      # Définir le message final affiché dans Grafana
+      - output:
+          source: msg
+
+  # ── Logs app Flask (format texte standard) ───────────────────
+  - job_name: smartwear_flask
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: smartwear_flask
+          app: smartwear
+          __path__: /logs/flask/*.log

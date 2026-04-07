@@ -23,6 +23,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(60), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    gender = db.Column(db.String(30), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship('ClothingItem', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
@@ -40,21 +41,39 @@ class ClothingItem(db.Model):
     __tablename__ = 'clothing_items'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     name = db.Column(db.String(120), nullable=False)
-    category = db.Column(db.String(60), nullable=False)
+    category = db.Column(db.String(60), nullable=False, index=True)
     brand = db.Column(db.String(80))
     size = db.Column(db.String(20))
     color = db.Column(db.String(40))
-    season = db.Column(db.String(30))
+    season = db.Column(db.String(30), index=True)
     condition = db.Column(db.String(30))
     price = db.Column(db.Float)
     notes = db.Column(db.Text)
-    is_favorite = db.Column(db.Boolean, default=False)
+    is_favorite = db.Column(db.Boolean, default=False, index=True)
     times_worn = db.Column(db.Integer, default=0)
     image_path = db.Column(db.String(255))
     thumb_path = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Attributs extraits par l'IA locale (Qwen2.5-VL + FashionCLIP)
+    ai_subcategory = db.Column(db.String(80))
+    ai_style = db.Column(db.String(40))
+    ai_formality = db.Column(db.Integer)
+    ai_pattern = db.Column(db.String(40))
+    ai_material = db.Column(db.String(40))
+    ai_fit = db.Column(db.String(20))
+    ai_secondary_color = db.Column(db.String(40))
+    ai_thickness = db.Column(db.String(20))
+    ai_length = db.Column(db.String(20))
+    ai_description = db.Column(db.Text)
+    ai_analyzed = db.Column(db.Boolean, default=False, index=True)
+
+    __table_args__ = (
+        db.Index('ix_clothing_user_category', 'user_id', 'category'),
+        db.Index('ix_clothing_user_season', 'user_id', 'season'),
+    )
 
     owner = db.relationship('User', back_populates='items')
     tags = db.relationship('Tag', secondary=item_tags, back_populates='items', lazy='dynamic')
@@ -89,6 +108,23 @@ class Tag(db.Model):
     items = db.relationship('ClothingItem', secondary=item_tags, back_populates='tags', lazy='dynamic')
 
 
+class ItemEmbedding(db.Model):
+    """Stockage local des embeddings FashionCLIP — remplace ChromaDB."""
+    __tablename__ = 'item_embeddings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('clothing_items.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    embedding_json = db.Column(db.Text, nullable=False)   # JSON list[float]
+    metadata_json = db.Column(db.Text, nullable=False, default='{}')
+    description = db.Column(db.Text, default='')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('item_id', 'user_id', name='uq_embedding_item_user'),
+    )
+
+
 class UserSetting(db.Model):
     __tablename__ = 'user_settings'
 
@@ -98,16 +134,35 @@ class UserSetting(db.Model):
 
     owner = db.relationship('User', back_populates='user_settings')
 
+    # Clés dont la valeur est chiffrée en base
+    ENCRYPTED_KEYS = {'anthropic_key', 'pollinations_key'}
+
     @classmethod
     def get(cls, user_id, key, default=''):
         row = cls.query.filter_by(user_id=user_id, key=key).first()
-        return row.value if row else default
+        if not row:
+            return default
+        value = row.value
+        if key in cls.ENCRYPTED_KEYS and value:
+            from utils.crypto import decrypt
+            value = decrypt(value) or default
+        return value
 
     @classmethod
     def set(cls, user_id, key, value):
+        if key in cls.ENCRYPTED_KEYS and value:
+            from utils.crypto import encrypt
+            value = encrypt(value)
         row = cls.query.filter_by(user_id=user_id, key=key).first()
         if row:
             row.value = value
         else:
             db.session.add(cls(user_id=user_id, key=key, value=value))
         db.session.commit()
+
+    @classmethod
+    def delete(cls, user_id, key):
+        row = cls.query.filter_by(user_id=user_id, key=key).first()
+        if row:
+            db.session.delete(row)
+            db.session.commit()

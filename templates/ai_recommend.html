@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block title %}Recommandation IA — {{ app_name }}{% endblock %}
+{% block extra_css %}
+.rp { padding: 2rem 0 5rem; }
+.rp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: .35rem; }
+.rp-ttl em { color: var(--a); font-style: italic; }
+.rp-sub { font-size: .83rem; color: var(--tm); margin-bottom: 1.8rem; }
+
+/* Status bar */
+.ai-status { display: flex; align-items: center; gap: .55rem; padding: .55rem .9rem; border-radius: var(--r); border: 1px solid var(--bor); background: var(--bg); font-size: .78rem; color: var(--tm); margin-bottom: 1.4rem; flex-wrap: wrap; }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ai-dot.ok { background: #4CAF50; }
+.ai-dot.warn { background: #FF9800; }
+.ai-dot.err { background: #F44336; }
+.ai-stat-sep { color: var(--bor); }
+
+/* Form */
+.rf { display: flex; gap: .6rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 2rem; }
+.rf .fg { margin: 0; flex: 1; min-width: 180px; }
+.rf .btn { flex-shrink: 0; }
+
+/* Weather strip */
+.w-strip { display: flex; align-items: center; gap: .7rem; padding: .6rem 1rem; background: var(--am); border: 1px solid var(--a); border-radius: var(--r); font-size: .82rem; color: var(--tx); margin-bottom: 1.4rem; }
+.w-icon { font-size: 1.2rem; }
+
+/* Outfit cards */
+.outfits-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; }
+.oc { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); overflow: hidden; }
+.oc-head { padding: .85rem 1rem .5rem; display: flex; align-items: center; justify-content: space-between; }
+.oc-num { font-family: var(--serif); font-size: 1.1rem; font-weight: 400; color: var(--tx); }
+.oc-score { font-size: .72rem; font-weight: 600; color: var(--a); background: var(--am); padding: .18rem .5rem; border-radius: 99px; }
+
+/* Items list */
+.oc-items { padding: 0 1rem .8rem; }
+.oi { display: flex; align-items: center; gap: .7rem; padding: .55rem 0; border-bottom: 1px solid var(--bor); }
+.oi:last-child { border-bottom: none; }
+.oi-slot { width: 28px; height: 28px; border-radius: var(--r); background: var(--bg); border: 1px solid var(--bor); display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+.oi-info { flex: 1; min-width: 0; }
+.oi-name { font-size: .84rem; font-weight: 500; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oi-meta { font-size: .72rem; color: var(--tm); }
+.oi-link { font-size: .72rem; color: var(--a); flex-shrink: 0; text-decoration: none; }
+.oi-link:hover { text-decoration: underline; }
+
+/* Score breakdown */
+.oc-scores { display: grid; grid-template-columns: repeat(4,1fr); gap: .3rem; padding: .5rem 1rem .6rem; border-top: 1px solid var(--bor); }
+.os { text-align: center; }
+.os-v { font-size: .78rem; font-weight: 600; color: var(--tx); }
+.os-l { font-size: .62rem; color: var(--tl); margin-top: .05rem; }
+
+/* Explanation */
+.oc-expl { padding: .7rem 1rem .9rem; border-top: 1px solid var(--bor); font-size: .81rem; color: var(--tm); line-height: 1.6; font-style: italic; }
+
+/* Empty / error states */
+.ai-empty { text-align: center; padding: 3rem 1rem; color: var(--tm); }
+.ai-empty-icon { font-size: 2.8rem; opacity: .18; margin-bottom: .8rem; }
+.ai-empty-ttl { font-family: var(--serif); font-size: 1.3rem; font-weight: 300; margin-bottom: .5rem; }
+.ai-empty-txt { font-size: .84rem; line-height: 1.6; }
+
+/* Progress bar (lors de l'analyse en lot) */
+.analyze-all-wrap { margin-bottom: 1.2rem; }
+{% endblock %}
+
+{% block content %}
+<div class="rp"><div class="wrap">
+  <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Garde-robe</a>
+  <h1 class="rp-ttl">Recommandation <em>IA locale</em></h1>
+  <p class="rp-sub">Tenues générées à partir de votre garde-robe — Qwen2.5-VL + FashionCLIP, 100 % local.</p>
+
+  <!-- Barre de statut -->
+  <div class="ai-status">
+    <div class="ai-dot {% if ollama_running and model_available %}ok{% elif ollama_running %}warn{% else %}err{% endif %}"></div>
+    {% if ollama_running and model_available %}
+      Ollama actif — {{ vision_model }}
+    {% elif ollama_running %}
+      Ollama actif mais modèle <strong>{{ vision_model }}</strong> non trouvé —
+      <code>ollama pull {{ vision_model }}</code>
+    {% else %}
+      Ollama hors ligne — lancez <code>ollama serve</code>
+    {% endif %}
+    <span class="ai-stat-sep">|</span>
+    {{ indexed }} / {{ total_items }} vêtements indexés
+    {% if analyzed < total_items %}
+      <span class="ai-stat-sep">|</span>
+      <span style="color:var(--a)">{{ total_items - analyzed }} sans analyse</span>
+    {% endif %}
+  </div>
+
+  <!-- Bouton analyse en lot si nécessaire -->
+  {% if analyzed < total_items %}
+  <div class="analyze-all-wrap">
+    <button class="btn btn-ghost btn-sm" id="analyzeAllBtn" onclick="analyzeAll()">
+      Analyser les {{ total_items - analyzed }} vêtements restants
+    </button>
+    <span id="analyzeAllStatus" style="font-size:.78rem;color:var(--tm);margin-left:.7rem"></span>
+  </div>
+  {% endif %}
+
+  <!-- Météo -->
+  {% if weather %}
+  <div class="w-strip">
+    <span class="w-icon">{{ weather.icon }}</span>
+    <span>
+      <strong>{{ weather.city }}</strong> — {{ weather.temp }}°C, {{ weather.label }}.
+      <span style="color:var(--tm)">{{ weather.layer }}</span>
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- Formulaire occasion -->
+  <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="rf">
+      <div class="fg">
+        <label class="lbl">Occasion</label>
+        <select name="occasion" class="fc">
+          <option value="">— Sans filtre —</option>
+          {% for occ in occasions %}
+          <option value="{{ occ }}" {% if occasion == occ %}selected{% endif %}>{{ occ }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Générer des tenues</button>
+    </div>
+  </form>
+
+  <!-- Erreur -->
+  {% if error %}
+  <div class="flash error" style="margin-bottom:1.4rem">{{ error }}</div>
+  {% endif %}
+
+  <!-- Résultats -->
+  {% if outfits %}
+  <div class="outfits-grid">
+    {% for outfit in outfits %}
+    <div class="oc">
+      <div class="oc-head">
+        <span class="oc-num">Tenue {{ loop.index }}</span>
+        <span class="oc-score">{{ (outfit.score * 100) | round | int }}%</span>
+      </div>
+
+      <div class="oc-items">
+        {% set slot_icons = {'top': '👕', 'bottom': '👖', 'shoes': '👟', 'outer': '🧥', 'accessory': '👜'} %}
+        {% for item in outfit.items %}
+        <div class="oi">
+          <div class="oi-slot">{{ slot_icons.get(item.slot, '👗') }}</div>
+          <div class="oi-info">
+            <div class="oi-name">{{ item.name }}</div>
+            <div class="oi-meta">
+              {{ item.category }}{% if item.color %} · {{ item.color }}{% endif %}
+            </div>
+          </div>
+          {% if item.item_id %}
+          <a href="/item/{{ item.item_id }}" class="oi-link">Voir →</a>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="oc-scores">
+        <div class="os">
+          <div class="os-v">{{ (outfit.breakdown.color * 100) | round | int }}%</div>
+          <div class="os-l">Couleur</div>
+        </div>
+        <div class="os">
+          <div class="os-v">{{ (outfit.breakdown.style * 100) | round | int }}%</div>
+          <div class="os-l">Style</div>
+        </div>
+        <div class="os">
+          <div class="os-v">{{ (outfit.breakdown.formality * 100) | round | int }}%</div>
+          <div class="os-l">Formalisme</div>
+        </div>
+        <div class="os">
+          <div class="os-v">{{ (outfit.breakdown.occasion * 100) | round | int }}%</div>
+          <div class="os-l">Occasion</div>
+        </div>
+      </div>
+
+      {% if outfit.explanation %}
+      <div class="oc-expl">"{{ outfit.explanation }}"</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% elif request.method == 'POST' and not error %}
+  <div class="ai-empty">
+    <div class="ai-empty-icon">🎨</div>
+    <div class="ai-empty-ttl">Aucune tenue générée</div>
+    <div class="ai-empty-txt">Les filtres actifs sont peut-être trop restrictifs. Essayez sans occasion.</div>
+  </div>
+
+  {% elif not outfits and analyzed == 0 %}
+  <div class="ai-empty">
+    <div class="ai-empty-icon">🤖</div>
+    <div class="ai-empty-ttl">Commencez par analyser vos vêtements</div>
+    <div class="ai-empty-txt">
+      Ouvrez la page de chaque vêtement et cliquez sur <strong>Analyser avec l'IA</strong>,<br>
+      ou cliquez sur <strong>Analyser tous les vêtements</strong> ci-dessus.
+    </div>
+  </div>
+  {% endif %}
+
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function analyzeAll() {
+  var btn = document.getElementById("analyzeAllBtn");
+  var status = document.getElementById("analyzeAllStatus");
+  if (!btn) return;
+
+  btn.disabled = true;
+  btn.textContent = "Analyse en cours…";
+  status.textContent = "Cela peut prendre plusieurs minutes selon la taille de la garde-robe.";
+
+  csrfFetch("/ai/analyze-all", { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      btn.textContent = "Analyse terminée";
+      var msg = d.success + " analysé(s)";
+      if (d.skipped > 0) msg += ", " + d.skipped + " sans photo";
+      if (d.failed > 0) msg += ", " + d.failed + " échoué(s)";
+      status.textContent = msg + ". Rechargez la page.";
+      setTimeout(function() { location.reload(); }, 2000);
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = "Réessayer";
+      status.textContent = "Erreur : " + e;
+    });
+}
+</script>
+{% endblock %}

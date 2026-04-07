@@ -1,17 +1,29 @@
 import os
 import uuid
 
+import filetype
 from PIL import Image, ImageOps
 
 from config import ALLOWED_EXT, BASE_DIR, THUMB_FOLDER, THUMB_SIZE, UPLOAD_FOLDER
 
+ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}
 
-def allowed(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
+
+def allowed(filename, stream=None):
+    if not ('.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT):
+        return False
+    if stream is not None:
+        kind = filetype.guess(stream)
+        stream.seek(0)  # rembobiner pour PIL après lecture
+        if kind is None or kind.mime not in ALLOWED_MIME:
+            return False
+    return True
 
 
 def save_image(file_obj):
-    if not file_obj or not file_obj.filename or not allowed(file_obj.filename):
+    if not file_obj or not file_obj.filename:
+        return None, None
+    if not allowed(file_obj.filename, file_obj.stream):
         return None, None
 
     ext = file_obj.filename.rsplit('.', 1)[1].lower()

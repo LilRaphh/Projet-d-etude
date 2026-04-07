@@ -1,64 +1,63 @@
-# 👗 Wardrobe v4 — Garde-robe + Tenues + IA
+# SmartWear — Garde-robe intelligente
+
+Application Flask de gestion de garde-robe personnelle, couplée à un pipeline de scraping de données mode.
+
+---
+
+## Deux modules, une base de code
+
+| Module | Rôle |
+|--------|------|
+| **App Flask** (racine) | Gestion de la garde-robe, tenues, IA stylist, météo |
+| **pipeline/** | Scraping de catalogues mode, normalisation, export MongoDB |
+
+---
+
+## App Flask
+
+### Fonctionnalités
+
+- **Garde-robe** — ajout de vêtements (photo, catégorie, marque, taille, couleur, saison, condition, prix, notes, tags)
+- **Tenues** — créez des combinaisons, notez-les, suivez le nombre de ports
+- **Génération IA** — image mannequin générée pour chaque tenue via Flux (Pollinations.ai, gratuit) ou Claude (optionnel)
+- **Styliste IA** — suggestions de tenues adaptées à la météo et à l'occasion, powered by Claude + Ollama
+- **Recommandation IA locale** — moteur de recommandation par similarité d'embeddings (FashionCLIP), sans cloud
+- **Météo** — prévisions 7 jours intégrées (Open-Meteo, sans clé API)
+- **Paramètres** — nom de l'app, couleur d'accent, devise, ville, clés API
+
+### Architecture
+
+```
+app.py              ← point d'entrée Flask
+config.py           ← constantes et classe Config
+extensions.py       ← instances SQLAlchemy, CSRF, cache, limiter
+models.py           ← modèles SQLAlchemy (User, ClothingItem, Outfit…)
+routes/             ← blueprints Flask (auth, main, outfits, stylist, api…)
+ai/                 ← moteur IA local (embeddings, scoring, pipeline)
+utils/              ← services partagés (météo, crypto, images, tags)
+templates/          ← templates Jinja2
+static/             ← CSS, JS, uploads photos
+```
+
+### Sécurité
+
+- `SECRET_KEY` obligatoire au démarrage
+- Clés API chiffrées en base (Fernet / AES-256)
+- Protection CSRF sur tous les formulaires et appels AJAX
+- Rate limiting sur login (10/min) et register (5/min)
+- Validation des uploads par magic bytes
+- Passwords hashés (werkzeug)
+
+---
+
+## Pipeline de scraping
+
+Collecte automatisée depuis 7 marques (Mango, Nike, Jules, Le Coq Sportif, Sergio Tacchini, Kappa, Lotto), avec normalisation du schéma, déduplication, export JSON / MongoDB.
+
+Pilotable en CLI ou via Apache Airflow. Voir [pipeline/README.md](pipeline/README.md).
+
+---
 
 ## Installation
 
-```bash
-pip install flask flask-sqlalchemy pillow requests
-pip install anthropic   # optionnel, améliore la génération IA
-```
-
-## Lancement
-
-```bash
-python app.py            # localhost seulement
-python app.py --host     # PC + téléphone (même WiFi)
-python app.py --debug    # mode développeur
-```
-
----
-
-## Génération d'images IA
-
-### Sans clé (gratuit, automatique)
-L'app génère automatiquement un prompt basique et utilise **Flux AI via Pollinations.ai** (gratuit, sans inscription).
-
-### Avec clé Claude (optionnel, meilleurs résultats)
-Claude analyse votre tenue et génère un prompt optimisé avant l'image.
-
-```bash
-# Windows
-set ANTHROPIC_API_KEY=sk-ant-...
-
-# Mac/Linux
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Ou entrez votre clé directement dans **⚙️ Paramètres** de l'application.
-
-Obtenez une clé sur : https://console.anthropic.com
-
----
-
-## Nouvelles fonctionnalités v4
-
-- **Page Tenues** (`/outfits`) — créez des combinaisons de vêtements
-- **Sélecteur visuel** — cliquez sur vos pièces pour les ajouter à une tenue
-- **Métadonnées tenues** — occasion, saison, note 1-5 étoiles, commentaires
-- **Génération IA** — image mannequin générée depuis la page détail d'une tenue
-- **Compteur de port** — suivez combien de fois vous avez mis une tenue
-- **Navigation améliorée** — onglet Tenues avec compteur dans le header
-
----
-
-## Architecture de génération
-
-```
-Bouton "Générer" 
-    → POST /outfits/<id>/generate
-    → Claude API (si clé dispo) → prompt fashion optimisé
-        OU fallback → prompt basique auto-construit
-    → Pollinations.ai Flux (gratuit) → image JPG 512×768
-    → Sauvegarde dans static/uploads/outfits/
-    → Mis à jour dans wardrobe.db
-    → Affiché instantanément sans rechargement
-```
+Voir [INSTALL.md](INSTALL.md).
