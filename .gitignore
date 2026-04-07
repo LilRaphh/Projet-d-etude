@@ -10,3 +10,5 @@ _archive_old/
 .claude/
 *.db
 *.db-journal
+pipeline/output/
+pipeline/logs/

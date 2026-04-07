@@ -1,0 +1,21 @@
+# =============================================================
+#  pipeline/requirements.txt — Dépendances SmartWear Scraper
+# =============================================================
+
+# HTTP & Parsing
+requests>=2.31
+beautifulsoup4>=4.12
+lxml>=5.2
+
+# Scraping JS (Jules, Nike)
+playwright>=1.44
+
+# MongoDB
+pymongo>=4.7
+
+# Airflow (optionnel — déjà présent si environnement Airflow)
+# apache-airflow>=2.9
+
+# Utilitaires
+python-dotenv>=1.0
+tqdm>=4.66
