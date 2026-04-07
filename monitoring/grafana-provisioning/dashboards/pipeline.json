@@ -1,0 +1,65 @@
+{
+  "title": "SmartWear Pipeline",
+  "uid": "smartwear-pipeline",
+  "schemaVersion": 38,
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Logs pipeline (temps réel)",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "options": { "dedupStrategy": "none", "showTime": true, "sortOrder": "Descending" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"smartwear_pipeline\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Logs par scraper",
+      "type": "logs",
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 8 },
+      "options": { "dedupStrategy": "none", "showTime": true, "sortOrder": "Descending" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"smartwear_pipeline\"} | json | scraper=~\".+\"",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Erreurs uniquement",
+      "type": "logs",
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 8 },
+      "options": { "dedupStrategy": "none", "showTime": true, "sortOrder": "Descending" },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"smartwear_pipeline\", level=\"ERROR\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Volume de logs / 5min",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 6 },
+      "targets": [
+        {
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (scraper) (count_over_time({job=\"smartwear_pipeline\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{scraper}}"
+        }
+      ]
+    }
+  ]
+}

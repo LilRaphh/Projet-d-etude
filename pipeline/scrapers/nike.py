@@ -7,7 +7,10 @@ import json
 import logging
 from typing import List, Optional
 
-from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+try:
+    from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
+except ImportError as e:
+    raise ImportError("playwright requis : pip install playwright && playwright install chromium") from e
 
 from pipeline.scrapers.base import BaseScraper
 from pipeline.models import Product

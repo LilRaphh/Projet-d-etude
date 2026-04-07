@@ -16,6 +16,7 @@ from pipeline import logging_config
 from pipeline.scrapers import (
     MangoScraper, NikeScraper, JulesScraper,
     LeCoqSportifScraper, TacchiniScraper, KappaScraper, LottoScraper,
+    _PLAYWRIGHT_AVAILABLE,
 )
 from pipeline.models import Product
 from pipeline.pipeline import SmartWearPipeline
@@ -24,13 +25,14 @@ from pipeline.check import run_check
 
 SCRAPERS = {
     "mango":        MangoScraper,
-    "nike":         NikeScraper,
-    "jules":        JulesScraper,
     "lecoqsportif": LeCoqSportifScraper,
     "tacchini":     TacchiniScraper,
     "kappa":        KappaScraper,
     "lotto":        LottoScraper,
 }
+if _PLAYWRIGHT_AVAILABLE:
+    SCRAPERS["nike"]  = NikeScraper
+    SCRAPERS["jules"] = JulesScraper
 
 
 def run(scraper_names: List[str], log_level: str = "INFO") -> dict:

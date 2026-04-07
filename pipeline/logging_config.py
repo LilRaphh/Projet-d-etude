@@ -9,6 +9,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
+from typing import Optional
 
 from pipeline.config import LOG_DIR
 
@@ -35,7 +36,7 @@ class _JsonFormatter(logging.Formatter):
         return parts[-1] if parts else logger_name
 
 
-def setup(level: str = "INFO", run_id: str | None = None) -> None:
+def setup(level: str = "INFO", run_id: Optional[str] = None) -> None:
     """
     Configure le logging global du pipeline.
 

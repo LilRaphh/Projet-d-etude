@@ -1,0 +1,69 @@
+# =============================================================
+#  docker-compose.monitoring.yml — Stack Grafana + Loki + Promtail
+#
+#  Lance : docker compose -f docker-compose.monitoring.yml up -d
+#  Stop  : docker compose -f docker-compose.monitoring.yml down
+#
+#  Grafana → http://localhost:3000  (admin / admin)
+# =============================================================
+
+services:
+
+  # ── Loki — agrégation de logs ─────────────────────────────────
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: smartwear_loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/tmp/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Promtail — collecte des fichiers de log locaux ────────────
+  promtail:
+    image: grafana/promtail:3.4.2
+    container_name: smartwear_promtail
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      # Logs pipeline (JSON structuré)
+      - ./pipeline/logs:/logs/pipeline:ro
+      # Logs Flask (texte, si LOG_DIR est configuré)
+      - ./logs:/logs/flask:ro
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # ── Grafana — dashboards ───────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: smartwear_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Provisionne Loki automatiquement comme datasource
+      GF_DATASOURCES_DEFAULT_URL: http://loki:3100
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+volumes:
+  loki_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge
