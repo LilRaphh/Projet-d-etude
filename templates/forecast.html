@@ -2,9 +2,11 @@
 
 {% block title %}Prévisions — {{ app_name }}{% endblock %}
 
-{% block extra_css %}
+{% block extra_head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% endblock %}
 
+{% block extra_css %}
 .fc-shell{padding:2.2rem 0 3.5rem}
 .fc-head{margin-bottom:1.4rem}
 .fc-kicker{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:99px;font-size:.7rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;background:var(--am);color:var(--a);margin-bottom:.85rem}

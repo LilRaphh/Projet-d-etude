@@ -58,6 +58,7 @@
       <div class="d-acts">
         <button type="button" class="btn btn-ghost" onclick="worn({{ item.id }})">Porté aujourd'hui</button>
         <a href="/edit/{{ item.id }}" class="btn btn-primary">Modifier</a>
+        <a href="/complete/{{ item.id }}" class="btn btn-ai">✦ Compléter ma tenue</a>
         <button type="button" class="btn btn-ghost" id="aiBtn" onclick="analyzeItem({{ item.id }})"
           {% if not item.image_path %}disabled title="Ajoutez une photo pour analyser"{% endif %}>
           {% if item.ai_analyzed %}Re-analyser IA{% else %}Analyser avec l'IA{% endif %}

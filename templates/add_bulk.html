@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+{% block extra_css %}
+.bp { padding: 1.75rem 0 5rem; }
+.bp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: .4rem; }
+.bp-ttl em { color: var(--a); font-style: italic; }
+.bp-sub { font-size: .83rem; color: var(--tm); margin-bottom: 1.4rem; }
+
+/* Drop zone principale */
+.bulk-dz {
+  border: 2px dashed var(--bor);
+  border-radius: var(--rl);
+  background: var(--bg);
+  padding: 2.8rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .7rem;
+  cursor: pointer;
+  transition: all var(--tr);
+  text-align: center;
+  margin-bottom: 1.6rem;
+}
+.bulk-dz:hover, .bulk-dz.drag { border-color: var(--a); background: var(--am); }
+.bulk-dz-ico { font-size: 2.6rem; opacity: .25; }
+.bulk-dz-ttl { font-size: 1rem; font-weight: 500; color: var(--tx); }
+.bulk-dz-hint { font-size: .78rem; color: var(--tl); }
+#bulkIn { display: none; }
+
+/* Options bar */
+.bulk-opts {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+  padding: .65rem .9rem;
+  background: var(--bg);
+  border: 1px solid var(--bor);
+  border-radius: var(--r);
+  flex-wrap: wrap;
+}
+.bulk-opt-lbl { font-size: .8rem; color: var(--tm); display: flex; align-items: center; gap: .42rem; cursor: pointer; }
+.bulk-opt-lbl input[type=checkbox] { accent-color: var(--a); width: 14px; height: 14px; }
+.bulk-count-badge {
+  margin-left: auto;
+  font-size: .78rem;
+  color: var(--tm);
+  font-weight: 500;
+}
+.bulk-count-badge strong { color: var(--tx); }
+
+/* Grille de cartes */
+.bulk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+
+/* Carte individuelle */
+.bc {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--tr);
+}
+.bc:hover { box-shadow: var(--sh); }
+.bc-img {
+  aspect-ratio: 1;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+.bc-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bc-img .no-img {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3.5rem; opacity: .12;
+}
+.bc-rm {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.52);
+  color: #fff;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; line-height: 1;
+  transition: background var(--tr);
+}
+.bc-rm:hover { background: #C0392B; }
+.bc-badge {
+  position: absolute; bottom: .42rem; left: .42rem;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 600;
+  padding: .18rem .46rem;
+  border-radius: 99px;
+}
+.bc-fields { padding: .7rem .78rem .82rem; display: flex; flex-direction: column; gap: .4rem; }
+.bc-fields input, .bc-fields select {
+  width: 100%;
+  padding: .34rem .5rem;
+  border: 1px solid var(--bor);
+  border-radius: var(--r);
+  background: var(--bg);
+  font-size: .78rem;
+  color: var(--tx);
+  font-family: inherit;
+  transition: border-color var(--tr);
+}
+.bc-fields input:focus, .bc-fields select:focus {
+  outline: none; border-color: var(--a);
+}
+.bc-fields input.err { border-color: #C0392B; }
+.bc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .32rem; }
+
+/* AI spinner per card */
+.bc-ai-status {
+  font-size: .68rem;
+  color: var(--tm);
+  text-align: center;
+  padding: 0 .78rem .55rem;
+  font-style: italic;
+  min-height: 1rem;
+}
+
+/* Bottom action bar */
+.bulk-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--sur);
+  border-top: 1px solid var(--bor);
+  padding: .9rem 0;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.bulk-bar-info { font-size: .83rem; color: var(--tm); flex: 1; }
+.bulk-bar-info strong { color: var(--tx); }
+.bulk-progress {
+  display: none;
+  width: 100%;
+  height: 4px;
+  background: var(--bor);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: .5rem;
+}
+.bulk-progress-bar {
+  height: 100%;
+  background: var(--a);
+  border-radius: 2px;
+  transition: width .3s ease;
+  width: 0%;
+}
+{% endblock %}
+
+{% block content %}
+<div class="bp"><div class="wrap">
+  <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Garde-robe</a>
+  <h1 class="bp-ttl">Import <em>multiple</em></h1>
+  <p class="bp-sub">Glissez plusieurs photos en une fois — chaque image devient un vêtement.</p>
+
+  <!-- Drop zone -->
+  <div class="bulk-dz" id="bulkDz">
+    <div class="bulk-dz-ico">📸</div>
+    <div class="bulk-dz-ttl">Glissez vos photos ici</div>
+    <div class="bulk-dz-hint">ou cliquez pour sélectionner — PNG, JPG, WEBP · jusqu'à 40 fichiers</div>
+    <input type="file" id="bulkIn" accept="image/*" multiple>
+  </div>
+
+  <!-- Options -->
+  <div class="bulk-opts" id="bulkOpts" style="display:none">
+    <label class="bulk-opt-lbl">
+      <input type="checkbox" id="autoAi">
+      ✦ Analyser avec l'IA après ajout
+    </label>
+    <span class="bulk-count-badge"><strong id="bulkCountTxt">0</strong> photo(s) sélectionnée(s)</span>
+  </div>
+
+  <!-- Cards grid -->
+  <div class="bulk-grid" id="bulkGrid"></div>
+
+  <!-- Empty state placeholder (visible before any drop) -->
+  <div id="bulkEmpty" style="text-align:center;padding:3rem 1rem;color:var(--tl);font-size:.85rem">
+    Aucune photo sélectionnée — commencez par glisser vos images ci-dessus.
+  </div>
+
+  <!-- Sticky bottom bar -->
+  <div class="bulk-bar" id="bulkBar" style="display:none">
+    <div class="bulk-bar-info">
+      <strong id="barCount">0</strong> vêtement(s) à ajouter
+      <div class="bulk-progress" id="bulkProgress">
+        <div class="bulk-progress-bar" id="bulkProgressBar"></div>
+      </div>
+    </div>
+    <a href="/" class="btn btn-ghost btn-sm">Annuler</a>
+    <button type="button" class="btn btn-primary" id="bulkSubmit" onclick="submitBulk()">
+      Tout ajouter
+    </button>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CATS = {{ cats | tojson }};
+var COLORS = {{ colors | tojson }};
+var SEASONS = {{ seasons | tojson }};
+
+var cards = [];  // [{file, name, category, color, season}]
+
+function catEmoji(cat) {
+  var m = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜'};
+  return m[cat] || '👗';
+}
+
+function buildCatOptions(selected) {
+  return CATS.map(function(c) {
+    return '<option value="' + c + '"' + (c === selected ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+}
+
+function buildColorOptions(selected) {
+  var opts = '<option value="">Couleur —</option>';
+  opts += COLORS.map(function(c) {
+    return '<option value="' + c + '"' + (c === selected ? ' selected' : '') + '>' + c + '</option>';
+  }).join('');
+  return opts;
+}
+
+function buildSeasonOptions(selected) {
+  var opts = '<option value="">Saison —</option>';
+  opts += SEASONS.map(function(s) {
+    return '<option value="' + s + '"' + (s === selected ? ' selected' : '') + '>' + s + '</option>';
+  }).join('');
+  return opts;
+}
+
+function guessName(filename) {
+  var base = filename.replace(/\.[^/.]+$/, '');
+  base = base.replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // Strip leading numbers/dates (e.g. "IMG_20231104_")
+  base = base.replace(/^(img|dsc|photo|pic|image)[_\s\-]?\d*/i, '').trim();
+  if (!base) return '';
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function addFiles(files) {
+  for (var i = 0; i < files.length; i++) {
+    if (cards.length >= 40) break;
+    var f = files[i];
+    if (!f.type.startsWith('image/')) continue;
+    cards.push({ file: f, objectUrl: URL.createObjectURL(f) });
+  }
+  renderGrid();
+}
+
+function removeCard(idx) {
+  URL.revokeObjectURL(cards[idx].objectUrl);
+  cards.splice(idx, 1);
+  renderGrid();
+}
+
+function renderGrid() {
+  var grid = document.getElementById('bulkGrid');
+  var empty = document.getElementById('bulkEmpty');
+  var opts = document.getElementById('bulkOpts');
+  var bar = document.getElementById('bulkBar');
+  var countTxt = document.getElementById('bulkCountTxt');
+  var barCount = document.getElementById('barCount');
+
+  if (cards.length === 0) {
+    grid.innerHTML = '';
+    empty.style.display = '';
+    opts.style.display = 'none';
+    bar.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  opts.style.display = '';
+  bar.style.display = '';
+  countTxt.textContent = cards.length;
+  barCount.textContent = cards.length;
+
+  var html = '';
+  for (var i = 0; i < cards.length; i++) {
+    var c = cards[i];
+    var defaultName = guessName(c.file.name);
+    var defaultCat = CATS[0];
+    html += '<div class="bc" id="bc_' + i + '">';
+    html += '<div class="bc-img">';
+    html += '<img src="' + c.objectUrl + '" alt="">';
+    html += '<span class="bc-badge">#' + (i+1) + '</span>';
+    html += '<button type="button" class="bc-rm" onclick="removeCard(' + i + ')" title="Retirer">✕</button>';
+    html += '</div>';
+    html += '<div class="bc-fields">';
+    html += '<input type="text" id="name_' + i + '" placeholder="Nom du vêtement *" value="' + defaultName.replace(/"/g, '&quot;') + '" required>';
+    html += '<select id="cat_' + i + '">' + buildCatOptions(defaultCat) + '</select>';
+    html += '<div class="bc-row2">';
+    html += '<select id="color_' + i + '">' + buildColorOptions('') + '</select>';
+    html += '<select id="season_' + i + '">' + buildSeasonOptions('') + '</select>';
+    html += '</div>';
+    html += '</div>';
+    html += '<div class="bc-ai-status" id="ai_' + i + '"></div>';
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// Drop zone wiring
+var dz = document.getElementById('bulkDz');
+var inp = document.getElementById('bulkIn');
+
+dz.addEventListener('click', function() { inp.click(); });
+inp.addEventListener('change', function() { addFiles(this.files); });
+
+dz.addEventListener('dragover', function(e) { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  addFiles(e.dataTransfer.files);
+});
+
+// Paste support
+document.addEventListener('paste', function(e) {
+  if (e.clipboardData && e.clipboardData.files.length > 0) {
+    addFiles(e.clipboardData.files);
+  }
+});
+
+// Submit
+function submitBulk() {
+  if (cards.length === 0) return;
+
+  // Validate names
+  var valid = true;
+  for (var i = 0; i < cards.length; i++) {
+    var nameEl = document.getElementById('name_' + i);
+    var n = nameEl ? nameEl.value.trim() : '';
+    if (!n) {
+      nameEl.classList.add('err');
+      nameEl.focus();
+      valid = false;
+      break;
+    } else {
+      nameEl.classList.remove('err');
+    }
+  }
+  if (!valid) return;
+
+  var btn = document.getElementById('bulkSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Ajout en cours…';
+
+  var progress = document.getElementById('bulkProgress');
+  var progressBar = document.getElementById('bulkProgressBar');
+  progress.style.display = '';
+
+  var fd = new FormData();
+  fd.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
+  fd.append('count', cards.length);
+
+  for (var i = 0; i < cards.length; i++) {
+    fd.append('image_' + i, cards[i].file);
+    fd.append('name_' + i, document.getElementById('name_' + i).value.trim());
+    fd.append('category_' + i, document.getElementById('cat_' + i).value);
+    fd.append('color_' + i, document.getElementById('color_' + i).value);
+    fd.append('season_' + i, document.getElementById('season_' + i).value);
+  }
+
+  progressBar.style.width = '30%';
+
+  fetch('/api/add-bulk', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      progressBar.style.width = '70%';
+
+      if (data.error) {
+        btn.disabled = false;
+        btn.textContent = 'Tout ajouter';
+        progress.style.display = 'none';
+        alert('Erreur : ' + data.error);
+        return;
+      }
+
+      var created = data.created || [];
+      var doAI = document.getElementById('autoAi').checked;
+
+      if (doAI && created.length > 0) {
+        analyzeSequentially(created, 0, function() {
+          progressBar.style.width = '100%';
+          setTimeout(function() { window.location.href = '/'; }, 400);
+        });
+      } else {
+        progressBar.style.width = '100%';
+        setTimeout(function() { window.location.href = '/'; }, 400);
+      }
+    })
+    .catch(function(e) {
+      btn.disabled = false;
+      btn.textContent = 'Tout ajouter';
+      progress.style.display = 'none';
+      alert('Erreur réseau : ' + e);
+    });
+}
+
+function analyzeSequentially(items, idx, done) {
+  if (idx >= items.length) { done(); return; }
+
+  var item = items[idx];
+  // Find the card display element — by now grid has been replaced but we can use ai_idx fallback
+  var statusEl = document.getElementById('ai_' + idx);
+  if (statusEl) statusEl.textContent = 'Analyse IA en cours…';
+
+  csrfFetch('/ai/analyze/' + item.id, { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      if (statusEl) statusEl.textContent = '✓ Analysé';
+      var pct = Math.round(70 + (idx + 1) / items.length * 28);
+      document.getElementById('bulkProgressBar').style.width = pct + '%';
+      analyzeSequentially(items, idx + 1, done);
+    })
+    .catch(function() {
+      if (statusEl) statusEl.textContent = '⚠ Analyse échouée';
+      analyzeSequentially(items, idx + 1, done);
+    });
+}
+</script>
+{% endblock %}
