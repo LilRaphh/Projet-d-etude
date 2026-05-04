@@ -2,116 +2,375 @@
 {% block title %}Styliste — {{ app_name }}{% endblock %}
 
 {% block extra_css %}
-.sty{padding:2.5rem 0 5rem}
-.sty-h{font-family:var(--serif);font-size:clamp(1.9rem,4vw,2.8rem);font-weight:300;line-height:1.1;margin-bottom:.25rem}
-.sty-h em{color:var(--a);font-style:italic}
-.sty-sub{color:var(--tm);font-size:.86rem;margin-bottom:1.5rem}
+.sty { padding: 2.5rem 0 5rem; }
 
-/* Mode toggle */
-.mode-bar{display:flex;align-items:center;gap:.5rem;margin-bottom:1.4rem;flex-wrap:wrap}
-.mode-seg{display:flex;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r);overflow:hidden}
-.mode-seg input[type=radio]{display:none}
-.mode-seg label{padding:.38rem .9rem;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--tm);transition:all .15s;white-space:nowrap}
-.mode-seg input:checked + label{background:var(--a);color:#fff}
-.mode-seg label:hover{color:var(--tx)}
+/* ── Header ── */
+.sty-h { font-family: var(--serif); font-size: clamp(1.9rem,4vw,2.8rem); font-weight: 300; line-height: 1.1; margin-bottom: .2rem; }
+.sty-h em { color: var(--a); font-style: italic; }
+.sty-sub { color: var(--tm); font-size: .86rem; margin-bottom: 1.5rem; }
 
-/* Status bar IA locale */
-.ai-status{display:flex;align-items:center;gap:.5rem;padding:.45rem .85rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);font-size:.76rem;color:var(--tm);flex-wrap:wrap}
-.ai-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.ai-dot.ok{background:#4CAF50}.ai-dot.warn{background:#FF9800}.ai-dot.err{background:#F44336}
+/* ── Tabs ── */
+.tabs { display: flex; gap: 0; border: 1px solid var(--bor); border-radius: var(--r); overflow: hidden; background: var(--bg); margin-bottom: 1.75rem; width: fit-content; }
+.tab { padding: .42rem 1rem; font-size: .81rem; font-weight: 500; color: var(--tm); cursor: pointer; transition: all .15s; border: none; background: transparent; white-space: nowrap; }
+.tab:hover { color: var(--tx); background: var(--bor); }
+.tab.active { background: var(--a); color: #fff; }
 
-/* Nudge clé API */
-.key-nudge{background:#f5f3ff;border:1px solid #d8b4fe;border-radius:var(--rl);padding:1.1rem 1.3rem;margin-bottom:1.4rem;display:flex;gap:.85rem;align-items:flex-start}
-.key-nudge-ico{font-size:1.4rem;flex-shrink:0;line-height:1.4}
-.key-nudge h3{font-size:.88rem;font-weight:600;color:#6d28d9;margin-bottom:.2rem}
-.key-nudge p{font-size:.79rem;color:#7c3aed;line-height:1.55}
-.key-nudge a{color:#6d28d9;text-decoration:underline}
+/* ── Weather widget (partagé) ── */
+.wx { display: flex; align-items: center; gap: .85rem; flex-wrap: wrap; background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: .85rem 1.1rem; margin-bottom: 1.25rem; }
+.wx-main { display: flex; align-items: center; gap: .6rem; }
+.wx-ico { font-size: 2rem; line-height: 1; }
+.wx-tmp { font-family: var(--serif); font-size: 1.8rem; font-weight: 300; }
+.wx-desc { font-size: .78rem; color: var(--tm); }
+.wx-feels { font-size: .72rem; color: var(--tl); }
+.wx-layer { flex: 1; min-width: 150px; background: var(--am); border-radius: var(--r); padding: .38rem .75rem; font-size: .77rem; color: var(--a); line-height: 1.45; }
+.wx-form { display: flex; align-items: center; gap: .38rem; margin-left: auto; }
+.wx-form input { padding: .32rem .6rem; border: 1px solid var(--bor); border-radius: var(--r); background: var(--bg); font-size: .79rem; color: var(--tx); width: 130px; }
+.wx-form input:focus { outline: none; border-color: var(--a); }
 
-/* Météo */
-.wx{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:.85rem 1.1rem;margin-bottom:1.25rem}
-.wx-main{display:flex;align-items:center;gap:.6rem}
-.wx-ico{font-size:2rem;line-height:1}
-.wx-tmp{font-family:var(--serif);font-size:1.8rem;font-weight:300}
-.wx-desc{font-size:.78rem;color:var(--tm)}
-.wx-feels{font-size:.72rem;color:var(--tl)}
-.wx-layer{flex:1;min-width:150px;background:var(--am);border-radius:var(--r);padding:.38rem .75rem;font-size:.77rem;color:var(--a);line-height:1.45}
-.wx-form{display:flex;align-items:center;gap:.38rem;margin-left:auto}
-.wx-form input{padding:.32rem .6rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);font-size:.79rem;color:var(--tx);width:130px}
-.wx-form input:focus{outline:none;border-color:var(--a)}
+/* ── Occasion pills (partagées) ── */
+.occ-lbl { font-size: .72rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--tm); margin-bottom: .5rem; }
+.occ-pills { display: flex; flex-wrap: wrap; gap: .32rem; margin-bottom: 1.25rem; }
+.occ-pill { padding: .28rem .7rem; border-radius: 99px; border: 1px solid var(--bor); background: var(--bg); color: var(--tm); font-size: .78rem; cursor: pointer; transition: all .15s; user-select: none; }
+.occ-pill:hover { border-color: var(--a); color: var(--a); background: var(--am); }
+.occ-pill.active { border-color: var(--a); background: var(--a); color: #fff; }
 
-/* Formulaire commun */
-.pcard{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.25rem;margin-bottom:1.4rem}
-.prow{display:flex;gap:.5rem;align-items:flex-end}
-.pta{flex:1;padding:.68rem .8rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg);color:var(--tx);font-size:.9rem;font-family:var(--sans);resize:none;line-height:1.55;min-height:50px;max-height:150px;transition:border-color .15s}
-.pta:focus{outline:none;border-color:var(--a);box-shadow:0 0 0 3px var(--am)}
-.btn-ai-wrap{height:50px}
-.chips{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.65rem}
-.chip{padding:.22rem .62rem;border-radius:99px;border:1px solid var(--bor);background:var(--bg);color:var(--tm);font-size:.74rem;cursor:pointer;transition:all .15s;font-family:var(--sans)}
-.chip:hover{border-color:var(--a);color:var(--a);background:var(--am)}
-.ptip{font-size:.72rem;color:var(--tl);margin-top:.55rem;line-height:1.5}
+/* ── Loading (partagé) ── */
+.loading { display: none; text-align: center; padding: 3rem 1rem; }
+.loading.on { display: block; }
+.dots { display: inline-flex; gap: .35rem; margin-bottom: .65rem; }
+.dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--a); animation: ld .9s ease-in-out infinite; }
+.dots span:nth-child(2) { animation-delay: .15s; }
+.dots span:nth-child(3) { animation-delay: .30s; }
+@keyframes ld { 0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1} }
+.loading-msg { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; color: var(--tm); }
 
-/* Loading */
-.loading{display:none;text-align:center;padding:3rem 1rem}
-.loading.on{display:block}
-.dots{display:inline-flex;gap:.35rem;margin-bottom:.65rem}
-.dots span{width:9px;height:9px;border-radius:50%;background:var(--a);animation:ld .9s ease-in-out infinite}
-.dots span:nth-child(2){animation-delay:.15s}
-.dots span:nth-child(3){animation-delay:.30s}
-@keyframes ld{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
-.loading-msg{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:var(--tm)}
+/* ── Erreur (partagée) ── */
+.err { background: #FFF0F0; border: 1px solid #F8C0C0; color: #8A1A1A; border-radius: var(--r); padding: .8rem 1rem; font-size: .83rem; line-height: 1.6; margin-bottom: 1.1rem; }
 
-/* Erreur */
-.err{background:#FFF0F0;border:1px solid #F8C0C0;color:#8A1A1A;border-radius:var(--r);padding:.8rem 1rem;font-size:.83rem;line-height:1.6;margin-bottom:1.1rem}
+/* ── Nudge API ── */
+.key-nudge { background: #f5f3ff; border: 1px solid #d8b4fe; border-radius: var(--rl); padding: 1.1rem 1.3rem; margin-bottom: 1.25rem; display: flex; gap: .85rem; align-items: flex-start; }
+.key-nudge-ico { font-size: 1.4rem; flex-shrink: 0; line-height: 1.4; }
+.key-nudge h3 { font-size: .88rem; font-weight: 600; color: #6d28d9; margin-bottom: .2rem; }
+.key-nudge p { font-size: .79rem; color: #7c3aed; line-height: 1.55; }
+.key-nudge a { color: #6d28d9; text-decoration: underline; }
 
-/* Résultats */
-.res-hdr{display:flex;align-items:baseline;gap:.65rem;margin-bottom:1.1rem;flex-wrap:wrap}
-.res-ttl{font-family:var(--serif);font-size:1.45rem;font-weight:300}
-.res-for{font-style:italic;font-size:.79rem;color:var(--tm);background:var(--am);padding:.18rem .65rem;border-radius:99px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1.1rem}
-@media(max-width:700px){.sgrid{grid-template-columns:1fr}}
-.sc{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden;transition:box-shadow var(--tr),transform var(--tr)}
-.sc:hover{box-shadow:var(--shh);transform:translateY(-2px)}
-.sc-head{padding:1rem 1.1rem .85rem;border-bottom:1px solid var(--bor);display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem}
-.sc-vibe{font-size:.65rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--a);margin-bottom:.18rem}
-.sc-name{font-family:var(--serif);font-size:1.15rem;font-weight:400;line-height:1.2}
-.sc-num{width:26px;height:26px;border-radius:50%;background:var(--am);color:var(--a);font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sc-items{padding:.8rem 1.1rem;display:flex;flex-direction:column;gap:.4rem}
-.si{display:flex;align-items:center;gap:.6rem;padding:.38rem .6rem;background:var(--bg);border:1px solid var(--bor);border-radius:var(--r)}
-.si-thumb{width:42px;height:42px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--bor)}
-.si-thumb img{width:100%;height:100%;object-fit:cover}
-.si-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.15rem;opacity:.2}
-.si-cat{font-size:.62rem;color:var(--a);font-weight:500;text-transform:uppercase;letter-spacing:.05em}
-.si-name{font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.si-meta{font-size:.69rem;color:var(--tl)}
-.sc-reason{padding:.7rem 1.1rem .85rem;font-size:.81rem;color:var(--tm);line-height:1.65;border-top:1px solid var(--bor)}
-.sc-reason em{font-style:italic}
-.wx-note{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;color:var(--a);background:var(--am);padding:.14rem .5rem;border-radius:99px;margin-bottom:.4rem}
-.sc-foot{display:flex;gap:.4rem;padding:.7rem 1.1rem;border-top:1px solid var(--bor);align-items:center;flex-wrap:wrap}
-.miss{margin:0 1.1rem .4rem;padding:.3rem .6rem;background:#FFF8F0;border:1px solid #FFD0A0;border-radius:var(--r);font-size:.72rem;color:#9A5B00}
+/* ── Status IA locale ── */
+.ai-status { display: flex; align-items: center; gap: .5rem; padding: .45rem .85rem; border-radius: var(--r); border: 1px solid var(--bor); background: var(--bg); font-size: .76rem; color: var(--tm); flex-wrap: wrap; margin-bottom: 1.1rem; }
+.ai-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ai-dot.ok { background: #4CAF50; } .ai-dot.warn { background: #FF9800; } .ai-dot.err { background: #F44336; }
 
-/* Score breakdown (IA locale) */
-.sc-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:.25rem;padding:.5rem 1.1rem .55rem;border-top:1px solid var(--bor)}
-.ss{text-align:center}
-.ss-v{font-size:.76rem;font-weight:600;color:var(--tx)}
-.ss-l{font-size:.6rem;color:var(--tl);margin-top:.05rem}
+/* ── Tab Aujourd'hui : hero date ── */
+.td-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.td-date { font-family: var(--serif); font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 300; line-height: 1.05; }
+.td-date em { color: var(--a); font-style: italic; }
+.td-greeting { font-size: .78rem; color: var(--tm); font-weight: 500; letter-spacing: .04em; text-transform: uppercase; margin-bottom: .15rem; }
+
+/* ── Tab Aujourd'hui : suggestion card ── */
+.sug-card { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); overflow: hidden; box-shadow: var(--sh); }
+.sug-head { padding: 1.3rem 1.5rem 1rem; border-bottom: 1px solid var(--bor); display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.sug-vibe { font-size: .65rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--a); margin-bottom: .2rem; }
+.sug-name { font-family: var(--serif); font-size: clamp(1.3rem,3vw,1.9rem); font-weight: 300; line-height: 1.15; }
+.sug-spark { width: 36px; height: 36px; border-radius: 50%; background: var(--am); color: var(--a); display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.sug-items { padding: 1.1rem 1.5rem; display: flex; gap: .85rem; flex-wrap: wrap; border-bottom: 1px solid var(--bor); }
+.sug-item { display: flex; flex-direction: column; align-items: center; gap: .35rem; text-decoration: none; }
+.sug-item-img { width: 80px; height: 80px; border-radius: var(--r); border: 1px solid var(--bor); overflow: hidden; background: var(--bg); transition: box-shadow var(--tr), transform var(--tr); }
+.sug-item:hover .sug-item-img { box-shadow: var(--shh); transform: translateY(-2px); }
+.sug-item-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sug-item-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.7rem; opacity: .18; }
+.sug-item-name { font-size: .67rem; color: var(--tm); text-align: center; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-item-worn { font-size: .6rem; color: var(--tl); }
+.sug-body { padding: 1rem 1.5rem; }
+.sug-reasoning { font-size: .85rem; color: var(--tm); line-height: 1.7; margin-bottom: .7rem; }
+.sug-wx-note { display: flex; align-items: flex-start; gap: .45rem; background: var(--am); border-radius: var(--r); padding: .55rem .8rem; font-size: .78rem; color: var(--a); line-height: 1.5; }
+.sug-actions { padding: .9rem 1.5rem 1.1rem; display: flex; gap: .45rem; flex-wrap: wrap; border-top: 1px solid var(--bor); }
+.btn-worn { background: #F0FBF4; color: #1A6035; border: 1px solid #B4E8C4; }
+.btn-worn:hover { background: #dcf5e5; }
+.btn-worn.done { background: #1A6035; color: #fff; border-color: #1A6035; cursor: default; }
+
+/* ── Tab Claude : prompt ── */
+.pcard { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.25rem; margin-bottom: 1.25rem; }
+.prow { display: flex; gap: .5rem; align-items: flex-end; }
+.pta { flex: 1; padding: .68rem .8rem; border: 1px solid var(--bor); border-radius: var(--r); background: var(--bg); color: var(--tx); font-size: .9rem; font-family: var(--sans); resize: none; line-height: 1.55; min-height: 50px; max-height: 150px; transition: border-color .15s; }
+.pta:focus { outline: none; border-color: var(--a); box-shadow: 0 0 0 3px var(--am); }
+.btn-ai-wrap { height: 50px; }
+.chips { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .65rem; }
+.chip { padding: .22rem .62rem; border-radius: 99px; border: 1px solid var(--bor); background: var(--bg); color: var(--tm); font-size: .74rem; cursor: pointer; transition: all .15s; }
+.chip:hover { border-color: var(--a); color: var(--a); background: var(--am); }
+.ptip { font-size: .72rem; color: var(--tl); margin-top: .55rem; line-height: 1.5; }
+
+/* ── Cards résultats (Claude + IA Locale) ── */
+.res-hdr { display: flex; align-items: baseline; gap: .65rem; margin-bottom: 1.1rem; flex-wrap: wrap; }
+.res-ttl { font-family: var(--serif); font-size: 1.45rem; font-weight: 300; }
+.res-for { font-style: italic; font-size: .79rem; color: var(--tm); background: var(--am); padding: .18rem .65rem; border-radius: 99px; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 1.1rem; }
+@media (max-width: 700px) { .sgrid { grid-template-columns: 1fr; } }
+.sc { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); overflow: hidden; transition: box-shadow var(--tr), transform var(--tr); }
+.sc:hover { box-shadow: var(--shh); transform: translateY(-2px); }
+.sc-head { padding: 1rem 1.1rem .85rem; border-bottom: 1px solid var(--bor); display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+.sc-vibe { font-size: .65rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--a); margin-bottom: .18rem; }
+.sc-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 400; line-height: 1.2; }
+.sc-num { width: 26px; height: 26px; border-radius: 50%; background: var(--am); color: var(--a); font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sc-items { padding: .8rem 1.1rem; display: flex; flex-direction: column; gap: .4rem; }
+.si { display: flex; align-items: center; gap: .6rem; padding: .38rem .6rem; background: var(--bg); border: 1px solid var(--bor); border-radius: var(--r); }
+.si-thumb { width: 42px; height: 42px; border-radius: 4px; overflow: hidden; flex-shrink: 0; background: var(--bor); }
+.si-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.si-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; opacity: .2; }
+.si-cat { font-size: .62rem; color: var(--a); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+.si-name { font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.si-meta { font-size: .69rem; color: var(--tl); }
+.sc-reason { padding: .7rem 1.1rem .85rem; font-size: .81rem; color: var(--tm); line-height: 1.65; border-top: 1px solid var(--bor); }
+.sc-reason em { font-style: italic; }
+.wx-note { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; color: var(--a); background: var(--am); padding: .14rem .5rem; border-radius: 99px; margin-bottom: .4rem; }
+.sc-foot { display: flex; gap: .4rem; padding: .7rem 1.1rem; border-top: 1px solid var(--bor); align-items: center; flex-wrap: wrap; }
+.miss { margin: 0 1.1rem .4rem; padding: .3rem .6rem; background: #FFF8F0; border: 1px solid #FFD0A0; border-radius: var(--r); font-size: .72rem; color: #9A5B00; }
+.sc-scores { display: grid; grid-template-columns: repeat(4,1fr); gap: .25rem; padding: .5rem 1.1rem .55rem; border-top: 1px solid var(--bor); }
+.ss { text-align: center; }
+.ss-v { font-size: .76rem; font-weight: 600; color: var(--tx); }
+.ss-l { font-size: .6rem; color: var(--tl); margin-top: .05rem; }
+
+@media (max-width: 700px) {
+  .td-hero { flex-direction: column; }
+  .sug-actions { flex-direction: column; }
+  .sug-actions .btn { width: 100%; justify-content: center; }
+}
 {% endblock %}
 
 {% block content %}
 <div class="sty"><div class="wrap">
-  <h1 class="sty-h">Mon <em>styliste</em> IA</h1>
-  <p class="sty-sub">Compose des tenues depuis ta garde-robe — choisis ton moteur.</p>
 
-  <!-- Toggle de mode -->
-  <div class="mode-bar">
-    <div class="mode-seg">
-      <input type="radio" name="mode_ui" id="m-local" value="local" {% if active_mode != 'claude' %}checked{% endif %}>
-      <label for="m-local">IA Locale</label>
-      <input type="radio" name="mode_ui" id="m-claude" value="claude" {% if active_mode == 'claude' %}checked{% endif %}>
-      <label for="m-claude">Claude API</label>
+  <h1 class="sty-h">Mon <em>styliste</em> IA</h1>
+  <p class="sty-sub">Compose des tenues depuis ta garde-robe.</p>
+
+  {# ── Tabs ── #}
+  <div class="tabs" role="tablist">
+    <button class="tab" data-tab="today" role="tab">✦ Aujourd'hui</button>
+    <button class="tab" data-tab="claude" role="tab">Claude</button>
+    <button class="tab" data-tab="local" role="tab">IA Locale</button>
+  </div>
+
+  {# ── Garde-robe vide ── #}
+  {% if not item_count %}
+  <div style="text-align:center;padding:4rem 1rem;color:var(--tm)">
+    <div style="font-size:3rem;opacity:.15;margin-bottom:.6rem">👗</div>
+    <p style="font-family:var(--serif);font-size:1.3rem;font-weight:300;margin-bottom:.4rem">Garde-robe vide</p>
+    <p style="margin-bottom:1rem">Ajoutez des vêtements pour utiliser le styliste.</p>
+    <a href="/add" class="btn btn-primary">Ajouter un vêtement</a>
+  </div>
+  {% else %}
+
+  {# ════════════════════════════════════════════════════════
+     TAB : AUJOURD'HUI
+  ════════════════════════════════════════════════════════ #}
+  <div id="tab-today">
+
+    <div class="td-hero">
+      <div>
+        <div class="td-greeting">Bonjour, {{ me.username }} ✦</div>
+        <div class="td-date" id="tdDate">…</div>
+      </div>
+      {% if weather %}
+      <div class="wx" style="margin:0;flex-shrink:0;min-width:0">
+        <div class="wx-main">
+          <div class="wx-ico">{{ weather.icon }}</div>
+          <div>
+            <div style="display:flex;align-items:baseline;gap:.4rem">
+              <span class="wx-tmp">{{ weather.temp }}°</span>
+              <span class="wx-desc">{{ weather.desc }} · {{ weather.city }}</span>
+            </div>
+            <div class="wx-feels">Ressenti {{ weather.feels }}°C · {{ weather.wind }} km/h</div>
+          </div>
+        </div>
+        <div class="wx-layer" style="min-width:0;flex:unset">{{ weather.layer }}</div>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- Status IA locale (affiché dans les deux modes) -->
-    <div class="ai-status" id="aiStatus">
+    {% if not has_api_key %}
+    <div class="key-nudge">
+      <div class="key-nudge-ico">🔑</div>
+      <div>
+        <h3>Clé API Anthropic requise</h3>
+        <p>Ajoutez-la dans les <a href="#" onclick="document.getElementById('sBtn').click();return false">Paramètres ⚙️</a> pour activer la suggestion du jour.<br>
+        <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a></p>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="occ-lbl">Pour quelle occasion ?</div>
+    <div class="occ-pills" id="tdOccPills">
+      {% for occ in occasions %}
+      <div class="occ-pill {% if loop.first %}active{% endif %}" data-occ="{{ occ }}">{{ occ }}</div>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:2rem;flex-wrap:wrap">
+      <button class="btn btn-ai" id="tdGenBtn" {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Générer ma tenue du jour
+      </button>
+      <button class="btn btn-ghost" id="tdRegenBtn" style="display:none" onclick="tdGenerate()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+        Régénérer
+      </button>
+    </div>
+
+    <div class="loading" id="tdLoading">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="loading-msg" id="tdLoadingMsg">Claude compose ta tenue…</div>
+    </div>
+    <div class="err" id="tdErr" style="display:none"></div>
+
+    <div id="tdResult" style="display:none">
+      <div class="sug-card">
+        <div class="sug-head">
+          <div><div class="sug-vibe" id="sugVibe"></div><div class="sug-name" id="sugName"></div></div>
+          <div class="sug-spark">✦</div>
+        </div>
+        <div class="sug-items" id="sugItems"></div>
+        <div class="sug-body">
+          <div class="sug-reasoning" id="sugReasoning"></div>
+          <div class="sug-wx-note" id="sugWxNote" style="display:none">
+            <span id="sugWxIco"></span><span id="sugWxText"></span>
+          </div>
+        </div>
+        <div class="sug-actions">
+          <button class="btn btn-primary" id="btnSave" onclick="tdSave(false)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Sauvegarder
+          </button>
+          <button class="btn btn-worn" id="btnWorn" onclick="tdSave(true)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            J'ai porté ça aujourd'hui
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>{# /tab-today #}
+
+  {# ════════════════════════════════════════════════════════
+     TAB : CLAUDE
+  ════════════════════════════════════════════════════════ #}
+  <div id="tab-claude" style="display:none">
+
+    <div class="key-nudge" {% if has_api_key %}style="display:none"{% endif %}>
+      <div class="key-nudge-ico">🔑</div>
+      <div>
+        <h3>Clé API Anthropic requise</h3>
+        <p>Entrez-la dans les Paramètres ⚙️ ou via <code>export ANTHROPIC_API_KEY=sk-ant-...</code><br>
+        <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a></p>
+      </div>
+    </div>
+
+    <div class="wx">
+      {% if weather %}
+      <div class="wx-main">
+        <div class="wx-ico">{{ weather.icon }}</div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:.4rem">
+            <span class="wx-tmp">{{ weather.temp }}°</span>
+            <span class="wx-desc">{{ weather.desc }} · {{ weather.city }}</span>
+          </div>
+          <div class="wx-feels">Ressenti {{ weather.feels }}°C · {{ weather.hum }}% hum.</div>
+        </div>
+      </div>
+      <div class="wx-layer">{{ weather.layer }}</div>
+      {% else %}
+      <span style="font-size:.82rem;color:var(--tm)">Entrez votre ville pour adapter les suggestions</span>
+      {% endif %}
+      <form method="POST" class="wx-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="claude">
+        <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
+        <button type="submit" class="btn btn-ghost btn-sm">OK</button>
+      </form>
+    </div>
+
+    <div class="pcard">
+      <form method="POST" id="claudeForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="claude">
+        <input type="hidden" name="city" value="{{ city }}">
+        <div class="prow">
+          <textarea name="prompt" id="pta" class="pta"
+            placeholder="Ex : Soirée décontractée chez des amis…"
+            rows="2">{{ user_prompt }}</textarea>
+          <button type="submit" class="btn btn-primary btn-ai-wrap" {% if not has_api_key %}disabled{% endif %}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Générer
+          </button>
+        </div>
+        <div class="chips">
+          <span class="chip">Journée décontractée</span>
+          <span class="chip">Réunion pro</span>
+          <span class="chip">Soirée élégante</span>
+          <span class="chip">Week-end actif</span>
+          <span class="chip">Brunch du dimanche</span>
+          <span class="chip">Voyage confortable</span>
+        </div>
+        <p class="ptip">{{ item_count }} pièce{{ 's' if item_count != 1 }} · 3 tenues variées{% if weather %} · Météo prise en compte{% endif %}</p>
+      </form>
+    </div>
+
+    <div class="loading" id="claudeLoading"><div class="dots"><span></span><span></span><span></span></div><div class="loading-msg" id="claudeLoadingMsg">Analyse de ta garde-robe…</div></div>
+    {% if error and active_mode == 'claude' %}<div class="err">{{ error }}</div>{% endif %}
+
+    {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜','Sport':'🏃'} %}
+    {% if suggestions_claude %}
+    <div class="res-hdr">
+      <span class="res-ttl">Suggestions Claude</span>
+      {% if user_prompt %}<span class="res-for" title="{{ user_prompt }}">{{ user_prompt }}</span>{% endif %}
+    </div>
+    <div class="sgrid">
+    {% for s in suggestions_claude %}
+    <div class="sc">
+      <div class="sc-head">
+        <div><div class="sc-vibe">{{ s.vibe }}</div><div class="sc-name">{{ s.name }}</div></div>
+        <div class="sc-num">{{ loop.index }}</div>
+      </div>
+      <div class="sc-items">
+        {% set missing = [] %}
+        {% for iid in s.item_ids %}
+          {% set it = items_map.get(iid) %}
+          {% if it %}
+          <div class="si">
+            <div class="si-thumb">
+              {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+              {% else %}<div class="si-ph">{{ emo.get(it.category,'👗') }}</div>{% endif %}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div class="si-cat">{{ it.category }}</div>
+              <div class="si-name">{{ it.name }}</div>
+              <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}{% if it.brand %} · {{ it.brand }}{% endif %}</div>
+            </div>
+          </div>
+          {% else %}{% set _ = missing.append(iid) %}{% endif %}
+        {% endfor %}
+        {% if missing %}<div class="miss">ID introuvable : {{ missing|join(', ') }}</div>{% endif %}
+      </div>
+      <div class="sc-reason">
+        {% if s.weather_note %}<div class="wx-note">{{ s.weather_note }}</div>{% endif %}
+        {{ s.reasoning }}
+      </div>
+      <div class="sc-foot">
+        <button class="btn btn-ghost btn-sm" onclick='saveClaude(this, {{ s|tojson }})'>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Sauvegarder
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>{# /tab-claude #}
+
+  {# ════════════════════════════════════════════════════════
+     TAB : IA LOCALE
+  ════════════════════════════════════════════════════════ #}
+  <div id="tab-local" style="display:none">
+
+    <div class="ai-status">
       <div class="ai-dot {% if ai_status.ollama_running and ai_status.model_available %}ok{% elif ai_status.ollama_running %}warn{% else %}err{% endif %}"></div>
       {% if ai_status.ollama_running and ai_status.model_available %}
         Ollama actif — {{ ai_status.vision_model }}
@@ -123,40 +382,15 @@
       &nbsp;·&nbsp; {{ ai_status.indexed }} / {{ total_items }} indexés
       {% if analyzed_count < total_items %}
         &nbsp;·&nbsp;
-        <button class="btn btn-ghost btn-sm" id="analyzeAllBtn" onclick="analyzeAll()" style="padding:.15rem .5rem;font-size:.72rem">
+        <button class="btn btn-ghost btn-sm" onclick="analyzeAll()" style="padding:.15rem .5rem;font-size:.72rem">
           Analyser les {{ total_items - analyzed_count }} restants
         </button>
         <span id="analyzeAllStatus" style="font-size:.72rem;color:var(--tm)"></span>
       {% endif %}
     </div>
-  </div>
 
-  {% if not item_count %}
-  <div style="text-align:center;padding:4rem 1rem;color:var(--tm)">
-    <div style="font-size:3rem;opacity:.15;margin-bottom:.6rem">👗</div>
-    <p style="font-family:var(--serif);font-size:1.3rem;font-weight:300;margin-bottom:.4rem">Garde-robe vide</p>
-    <p style="margin-bottom:1rem">Ajoutez des vêtements pour utiliser le styliste.</p>
-    <a href="/add" class="btn btn-primary">Ajouter un vêtement</a>
-  </div>
-  {% else %}
-
-  <!-- Nudge clé API (mode Claude uniquement) -->
-  <div id="keyNudge" style="display:none">
-    {% if not has_api_key %}
-    <div class="key-nudge">
-      <div class="key-nudge-ico">🔑</div>
-      <div>
-        <h3>Clé API Anthropic requise</h3>
-        <p>Entrez-la dans les Paramètres ⚙️ ou via <code>export ANTHROPIC_API_KEY=sk-ant-...</code><br>
-        <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a></p>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- Météo -->
-  <div class="wx">
-    {% if weather %}
+    <div class="wx">
+      {% if weather %}
       <div class="wx-main">
         <div class="wx-ico">{{ weather.icon }}</div>
         <div>
@@ -164,313 +398,306 @@
             <span class="wx-tmp">{{ weather.temp }}°</span>
             <span class="wx-desc">{{ weather.desc }} · {{ weather.city }}</span>
           </div>
-          <div class="wx-feels">Ressenti {{ weather.feels }}°C · {{ weather.hum }}% hum. · {{ weather.wind }} km/h</div>
+          <div class="wx-feels">Ressenti {{ weather.feels }}°C · {{ weather.wind }} km/h</div>
         </div>
       </div>
       <div class="wx-layer">{{ weather.layer }}</div>
-    {% else %}
-      <span style="font-size:.82rem;color:var(--tm)">Entrez votre ville pour adapter les suggestions à la météo</span>
-    {% endif %}
-    <form method="POST" class="wx-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="mode" id="wxMode" value="{{ active_mode }}">
-      <input type="hidden" name="prompt" value="{{ user_prompt }}">
-      <input type="hidden" name="occasion" value="{{ occasion }}">
-      <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
-      <button type="submit" class="btn btn-ghost btn-sm">Mettre à jour</button>
-    </form>
-  </div>
-
-  <!-- Formulaire principal -->
-  <div class="pcard">
-    <form method="POST" id="sugForm">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="mode" id="formMode" value="{{ active_mode }}">
-      <input type="hidden" name="city" value="{{ city }}">
-
-      <!-- Mode IA Locale -->
-      <div id="localSection">
-        <div class="prow">
-          <select name="occasion" id="occSelect" class="fc" style="flex:1">
-            <option value="">— Toutes occasions —</option>
-            {% for occ in occasions %}
-            <option value="{{ occ }}" {% if occasion == occ %}selected{% endif %}>{{ occ }}</option>
-            {% endfor %}
-          </select>
-          <button type="submit" class="btn btn-primary btn-ai-wrap" id="localBtn">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Générer
-          </button>
-        </div>
-        <p class="ptip" style="margin-top:.55rem">{{ ai_status.indexed }} vêtements indexés · Scoring local couleur + style + formalisme{% if weather %} · Météo prise en compte{% endif %}</p>
-      </div>
-
-      <!-- Mode Claude API -->
-      <div id="claudeSection" style="display:none">
-        <div class="prow">
-          <textarea name="prompt" id="pta" class="pta"
-            placeholder="Ex : Soirée décontractée chez des amis, pas trop habillé…"
-            rows="2">{{ user_prompt }}</textarea>
-          <button type="submit" class="btn btn-primary btn-ai-wrap" id="subBtn"
-            {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Générer
-          </button>
-        </div>
-        <div class="chips">
-          <span class="chip">Journée décontractée</span>
-          <span class="chip">Réunion pro</span>
-          <span class="chip">Soirée élégante</span>
-          <span class="chip">Week-end actif</span>
-          <span class="chip">Brunch du dimanche</span>
-          <span class="chip">Fête entre amis</span>
-          <span class="chip">Voyage confortable</span>
-        </div>
-        <p class="ptip">{{ item_count }} pièce{{ 's' if item_count != 1 }} · Claude compose 3 tenues variées{% if weather %} · Météo prise en compte{% endif %}</p>
-      </div>
-    </form>
-  </div>
-
-  <!-- Loading -->
-  <div class="loading" id="ldg">
-    <div class="dots"><span></span><span></span><span></span></div>
-    <div class="loading-msg" id="ldgMsg">Analyse de ta garde-robe…</div>
-  </div>
-
-  {% if error %}<div class="err">{{ error }}</div>{% endif %}
-
-  {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜','Sport':'🏃','top':'👕','bottom':'👖','shoes':'👟','outer':'🧥','accessory':'👜'} %}
-
-  <!-- Résultats IA Locale -->
-  {% if suggestions_local %}
-  <div class="res-hdr">
-    <span class="res-ttl">Suggestions locales</span>
-    {% if occasion %}<span class="res-for">{{ occasion }}</span>
-    {% elif weather %}<span class="res-for">{{ weather.city }} · {{ weather.temp }}°C</span>{% endif %}
-  </div>
-  <div class="sgrid">
-  {% for s in suggestions_local %}
-  <div class="sc">
-    <div class="sc-head">
-      <div>
-        <div class="sc-vibe">IA Locale · {{ (s.score * 100)|round|int }}%</div>
-        <div class="sc-name">Tenue {{ loop.index }}</div>
-      </div>
-      <div class="sc-num">{{ loop.index }}</div>
+      {% else %}
+      <span style="font-size:.82rem;color:var(--tm)">Entrez votre ville pour adapter les suggestions</span>
+      {% endif %}
+      <form method="POST" class="wx-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="mode" value="local">
+        <input type="text" name="city" value="{{ city }}" placeholder="Paris, Lyon…" autocomplete="off">
+        <button type="submit" class="btn btn-ghost btn-sm">OK</button>
+      </form>
     </div>
-    <div class="sc-items">
-      {% for it in s['items'] %}
-      <div class="si">
-        <div class="si-thumb">
-          {% set db_item = items_map.get(it.item_id) %}
-          {% if db_item and db_item.thumb_path %}
-            <img src="/static/{{ db_item.thumb_path }}" alt="{{ it.name }}" loading="lazy">
-          {% else %}
-            <div class="si-ph">{{ emo.get(it.slot, emo.get(it.category, '👗')) }}</div>
-          {% endif %}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div class="si-cat">{{ it.category }}</div>
-          <div class="si-name">{{ it.name }}</div>
-          <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}</div>
-        </div>
-        {% if it.item_id %}
-        <a href="/item/{{ it.item_id }}" style="font-size:.7rem;color:var(--a);flex-shrink:0;text-decoration:none">→</a>
-        {% endif %}
-      </div>
+
+    <div class="occ-lbl">Occasion</div>
+    <div class="occ-pills" id="localOccPills" style="margin-bottom:.6rem">
+      <div class="occ-pill {% if not occasion %}active{% endif %}" data-occ="">Toutes</div>
+      {% for occ in occasions %}
+      <div class="occ-pill {% if occasion == occ %}active{% endif %}" data-occ="{{ occ }}">{{ occ }}</div>
       {% endfor %}
     </div>
-    <div class="sc-scores">
-      <div class="ss"><div class="ss-v">{{ (s.breakdown.color*100)|round|int }}%</div><div class="ss-l">Couleur</div></div>
-      <div class="ss"><div class="ss-v">{{ (s.breakdown.style*100)|round|int }}%</div><div class="ss-l">Style</div></div>
-      <div class="ss"><div class="ss-v">{{ (s.breakdown.formality*100)|round|int }}%</div><div class="ss-l">Formalisme</div></div>
-      <div class="ss"><div class="ss-v">{{ (s.breakdown.occasion*100)|round|int }}%</div><div class="ss-l">Occasion</div></div>
-    </div>
-    {% if s.explanation %}
-    <div class="sc-reason"><em>"{{ s.explanation }}"</em></div>
-    {% endif %}
-    <div class="sc-foot">
-      <button class="btn btn-ghost btn-sm"
-        onclick='saveLocal(this, {{ s|tojson }})'>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Sauvegarder
-      </button>
-    </div>
-  </div>
-  {% endfor %}
-  </div>
-  {% endif %}
 
-  <!-- Résultats Claude -->
-  {% if suggestions_claude %}
-  <div class="res-hdr">
-    <span class="res-ttl">Suggestions Claude</span>
-    {% if user_prompt %}<span class="res-for" title="{{ user_prompt }}">{{ user_prompt }}</span>{% endif %}
-  </div>
-  <div class="sgrid">
-  {% for s in suggestions_claude %}
-  <div class="sc">
-    <div class="sc-head">
-      <div>
-        <div class="sc-vibe">{{ s.vibe }}</div>
-        <div class="sc-name">{{ s.name }}</div>
-      </div>
-      <div class="sc-num">{{ loop.index }}</div>
+    <form method="POST" id="localForm" style="margin-bottom:1.25rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="mode" value="local">
+      <input type="hidden" name="city" value="{{ city }}">
+      <input type="hidden" name="occasion" id="localOccInput" value="{{ occasion }}">
+      <button type="submit" class="btn btn-primary">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Générer
+      </button>
+      <span style="font-size:.72rem;color:var(--tl);margin-left:.5rem">{{ ai_status.indexed }} indexés · scoring couleur + style + formalisme{% if weather %} · météo{% endif %}</span>
+    </form>
+
+    <div class="loading" id="localLoading"><div class="dots"><span></span><span></span><span></span></div><div class="loading-msg" id="localLoadingMsg">Calcul des harmonies…</div></div>
+    {% if error and active_mode == 'local' %}<div class="err">{{ error }}</div>{% endif %}
+
+    {% if suggestions_local %}
+    <div class="res-hdr">
+      <span class="res-ttl">Suggestions locales</span>
+      {% if occasion %}<span class="res-for">{{ occasion }}</span>
+      {% elif weather %}<span class="res-for">{{ weather.city }} · {{ weather.temp }}°C</span>{% endif %}
     </div>
-    <div class="sc-items">
-      {% set missing = [] %}
-      {% for iid in s.item_ids %}
-        {% set it = items_map.get(iid) %}
-        {% if it %}
+    <div class="sgrid">
+    {% for s in suggestions_local %}
+    <div class="sc">
+      <div class="sc-head">
+        <div><div class="sc-vibe">IA Locale · {{ (s.score * 100)|round|int }}%</div><div class="sc-name">Tenue {{ loop.index }}</div></div>
+        <div class="sc-num">{{ loop.index }}</div>
+      </div>
+      <div class="sc-items">
+        {% for it in s['items'] %}
         <div class="si">
           <div class="si-thumb">
-            {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
-            {% else %}<div class="si-ph">{{ emo.get(it.category, '👗') }}</div>{% endif %}
+            {% set db_item = items_map.get(it.item_id) %}
+            {% if db_item and db_item.thumb_path %}
+              <img src="/static/{{ db_item.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+            {% else %}
+              <div class="si-ph">{{ emo.get(it.slot, emo.get(it.category,'👗')) }}</div>
+            {% endif %}
           </div>
           <div style="flex:1;min-width:0">
             <div class="si-cat">{{ it.category }}</div>
             <div class="si-name">{{ it.name }}</div>
-            <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}{% if it.brand %} · {{ it.brand }}{% endif %}</div>
+            <div class="si-meta">{% if it.color %}{{ it.color }}{% endif %}</div>
           </div>
+          {% if it.item_id %}<a href="/item/{{ it.item_id }}" style="font-size:.7rem;color:var(--a);flex-shrink:0">→</a>{% endif %}
         </div>
-        {% else %}{% set _ = missing.append(iid) %}{% endif %}
-      {% endfor %}
-      {% if missing %}<div class="miss">ID introuvable : {{ missing|join(', ') }}</div>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="sc-scores">
+        <div class="ss"><div class="ss-v">{{ (s.breakdown.color*100)|round|int }}%</div><div class="ss-l">Couleur</div></div>
+        <div class="ss"><div class="ss-v">{{ (s.breakdown.style*100)|round|int }}%</div><div class="ss-l">Style</div></div>
+        <div class="ss"><div class="ss-v">{{ (s.breakdown.formality*100)|round|int }}%</div><div class="ss-l">Formalisme</div></div>
+        <div class="ss"><div class="ss-v">{{ (s.breakdown.occasion*100)|round|int }}%</div><div class="ss-l">Occasion</div></div>
+      </div>
+      {% if s.explanation %}<div class="sc-reason"><em>"{{ s.explanation }}"</em></div>{% endif %}
+      <div class="sc-foot">
+        <button class="btn btn-ghost btn-sm" onclick='saveLocal(this, {{ s|tojson }})'>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Sauvegarder
+        </button>
+      </div>
     </div>
-    <div class="sc-reason">
-      {% if s.weather_note %}<div class="wx-note">{{ s.weather_note }}</div>{% endif %}
-      {{ s.reasoning }}
+    {% endfor %}
     </div>
-    <div class="sc-foot">
-      <button class="btn btn-ghost btn-sm" onclick='saveClaude(this, {{ s|tojson }})'>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Sauvegarder
-      </button>
-    </div>
-  </div>
-  {% endfor %}
-  </div>
-  {% endif %}
+    {% endif %}
 
-  {% endif %}{# end item_count #}
+  </div>{# /tab-local #}
+
+  {% endif %}{# /item_count #}
 </div></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-var activeMode = "{{ active_mode }}";
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+var ACTIVE_MODE = "{{ active_mode }}";
 
-// -- Init affichage selon mode --
-function applyMode(mode) {
-  activeMode = mode;
-  document.getElementById("formMode").value = mode;
-  var wxM = document.getElementById("wxMode");
-  if (wxM) wxM.value = mode;
-
-  document.getElementById("localSection").style.display  = (mode === "local")  ? "" : "none";
-  document.getElementById("claudeSection").style.display = (mode === "claude") ? "" : "none";
-  document.getElementById("keyNudge").style.display      = (mode === "claude") ? "" : "none";
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.dataset.tab === name); });
+  ['today','claude','local'].forEach(function(id){ document.getElementById('tab-' + id).style.display = id === name ? '' : 'none'; });
+  ACTIVE_MODE = name;
 }
 
-// Toggle mode
-document.getElementById("m-local").addEventListener("change",  function() { applyMode("local"); });
-document.getElementById("m-claude").addEventListener("change", function() { applyMode("claude"); });
-
-// Init au chargement
-applyMode(activeMode);
-
-// -- Textarea auto-resize --
-var ta = document.getElementById("pta");
-if (ta) ta.addEventListener("input", function() {
-  this.style.height = "auto";
-  this.style.height = Math.min(this.scrollHeight, 150) + "px";
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){ switchTab(t.dataset.tab); });
 });
 
-// -- Chips --
-document.querySelectorAll(".chip").forEach(function(c) {
-  c.addEventListener("click", function() {
-    if (!ta) return;
-    ta.value = this.textContent.trim();
-    ta.focus(); ta.dispatchEvent(new Event("input"));
+// Restaure le bon onglet selon le mode retourné par le serveur
+switchTab(ACTIVE_MODE);
+
+// ── Date française ────────────────────────────────────────────────────────────
+(function(){
+  var J=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var M=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var d=new Date();
+  document.getElementById('tdDate').innerHTML = J[d.getDay()]+' <em>'+d.getDate()+' '+M[d.getMonth()]+'</em> '+d.getFullYear();
+})();
+
+// ── Occasion pills Aujourd'hui ────────────────────────────────────────────────
+var _tdOccasion = '{{ occasions[0] if occasions else "Quotidien" }}';
+document.querySelectorAll('#tdOccPills .occ-pill').forEach(function(p){
+  p.addEventListener('click', function(){
+    document.querySelectorAll('#tdOccPills .occ-pill').forEach(function(x){ x.classList.remove('active'); });
+    p.classList.add('active');
+    _tdOccasion = p.dataset.occ;
   });
 });
 
-// -- Loading animation --
-var msgs = [
-  "Analyse de ta garde-robe…","Prise en compte de la météo…",
-  "Composition des tenues…","Accord des couleurs…","Finalisation…"
-];
-var msgsLocal = [
-  "Filtrage par saison et météo…","Calcul des harmonies de couleurs…",
-  "Score de compatibilité stylistique…","Sélection des meilleures tenues…","Génération des explications…"
-];
-var form = document.getElementById("sugForm");
-var ldg  = document.getElementById("ldg");
-var ldgM = document.getElementById("ldgMsg");
-if (form) form.addEventListener("submit", function() {
-  var list = activeMode === "local" ? msgsLocal : msgs;
-  if (activeMode === "claude") {
-    if (!ta || !ta.value.trim()) return;
-  }
-  if (ldg) ldg.classList.add("on");
-  var i = 0;
-  setInterval(function() { i = (i+1) % list.length; if (ldgM) ldgM.textContent = list[i]; }, 3000);
+// ── Occasion pills IA Locale ──────────────────────────────────────────────────
+document.querySelectorAll('#localOccPills .occ-pill').forEach(function(p){
+  p.addEventListener('click', function(){
+    document.querySelectorAll('#localOccPills .occ-pill').forEach(function(x){ x.classList.remove('active'); });
+    p.classList.add('active');
+    document.getElementById('localOccInput').value = p.dataset.occ;
+  });
 });
 
-// -- Sauvegarder tenue Claude --
+// ── Today : génération AJAX ───────────────────────────────────────────────────
+var _tdSuggestion = null;
+var tdGenBtn  = document.getElementById('tdGenBtn');
+var tdRegenBtn = document.getElementById('tdRegenBtn');
+if (tdGenBtn) tdGenBtn.addEventListener('click', tdGenerate);
+
+function tdGenerate() {
+  document.getElementById('tdLoading').classList.add('on');
+  document.getElementById('tdResult').style.display = 'none';
+  document.getElementById('tdErr').style.display = 'none';
+  tdGenBtn.disabled = true;
+
+  var msgs = ['Claude compose ta tenue…','Analyse météo…','Accord des couleurs…','Touche finale…'];
+  var mi = 0;
+  var ticker = setInterval(function(){ mi=(mi+1)%msgs.length; document.getElementById('tdLoadingMsg').textContent=msgs[mi]; }, 1800);
+
+  csrfFetch('/api/today/suggest', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({occasion: _tdOccasion})
+  }).then(function(r){ return r.json(); })
+  .then(function(d){
+    clearInterval(ticker);
+    document.getElementById('tdLoading').classList.remove('on');
+    tdGenBtn.disabled = false;
+    if (!d.ok) { showTdErr(d.error||'Erreur inconnue.'); return; }
+    _tdSuggestion = d.suggestion;
+    renderTdSuggestion(d.suggestion, d.weather);
+  })
+  .catch(function(){
+    clearInterval(ticker);
+    document.getElementById('tdLoading').classList.remove('on');
+    tdGenBtn.disabled = false;
+    showTdErr('Erreur réseau. Réessayez.');
+  });
+}
+
+var CAT_ICONS = {'Hauts':'👕','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'🧢','Sport':'🏋️'};
+
+function renderTdSuggestion(s, weather) {
+  document.getElementById('sugVibe').textContent = s.vibe || '';
+  document.getElementById('sugName').textContent = s.name || 'Tenue du jour';
+  document.getElementById('sugReasoning').textContent = s.reasoning || '';
+  var wxNote = document.getElementById('sugWxNote');
+  if (s.weather_note) {
+    document.getElementById('sugWxIco').textContent = (weather&&weather.icon)||'🌤️';
+    document.getElementById('sugWxText').textContent = s.weather_note;
+    wxNote.style.display = 'flex';
+  } else { wxNote.style.display = 'none'; }
+
+  var container = document.getElementById('sugItems');
+  container.innerHTML = '';
+  (s.items||[]).forEach(function(item){
+    var icon = CAT_ICONS[item.category]||'👗';
+    var imgHTML = item.thumb
+      ? '<img src="/static/uploads/'+item.thumb+'" alt="'+esc(item.name)+'" loading="lazy">'
+      : '<div class="sug-item-ph">'+icon+'</div>';
+    var a = document.createElement('a');
+    a.className = 'sug-item'; a.href = '/item/'+item.id; a.target='_blank'; a.rel='noopener';
+    a.innerHTML = '<div class="sug-item-img">'+imgHTML+'</div>'
+      +'<div class="sug-item-name">'+esc(item.name)+'</div>'
+      +'<div class="sug-item-worn">'+(item.times_worn===0?'Jamais porté':'Porté '+item.times_worn+'x')+'</div>';
+    container.appendChild(a);
+  });
+
+  var btnSave = document.getElementById('btnSave');
+  var btnWorn = document.getElementById('btnWorn');
+  btnSave.disabled=false; btnSave.className='btn btn-primary';
+  btnSave.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Sauvegarder';
+  btnWorn.disabled=false; btnWorn.className='btn btn-worn';
+  btnWorn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> J\'ai porté ça aujourd\'hui';
+
+  document.getElementById('tdResult').style.display = '';
+  tdRegenBtn.style.display = 'inline-flex';
+  tdGenBtn.style.display = 'none';
+}
+
+function tdSave(markWorn) {
+  if (!_tdSuggestion) return;
+  var btn = markWorn ? document.getElementById('btnWorn') : document.getElementById('btnSave');
+  btn.disabled = true;
+  csrfFetch('/api/today/save', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({name:_tdSuggestion.name, reasoning:_tdSuggestion.reasoning, occasion:_tdOccasion, item_ids:_tdSuggestion.item_ids, mark_worn:markWorn})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) {
+      btn.classList.add('done');
+      btn.innerHTML = markWorn ? '✓ Porté aujourd\'hui' : '✓ Sauvegardée';
+    } else { btn.disabled=false; showTdErr(d.error||'Erreur.'); }
+  }).catch(function(){ btn.disabled=false; showTdErr('Erreur réseau.'); });
+}
+
+function showTdErr(msg){ var e=document.getElementById('tdErr'); e.textContent=msg; e.style.display=''; }
+
+// ── Claude : textarea + chips + loading ──────────────────────────────────────
+var ta = document.getElementById('pta');
+if (ta) {
+  ta.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,150)+'px'; });
+}
+document.querySelectorAll('.chip').forEach(function(c){
+  c.addEventListener('click', function(){
+    if (!ta) return;
+    ta.value = this.textContent.trim();
+    ta.focus(); ta.dispatchEvent(new Event('input'));
+  });
+});
+var claudeForm = document.getElementById('claudeForm');
+if (claudeForm) claudeForm.addEventListener('submit', function(){
+  if (!ta||!ta.value.trim()) return;
+  document.getElementById('claudeLoading').classList.add('on');
+  var msgs=['Analyse de ta garde-robe…','Accord des couleurs…','Finalisation…'];
+  var i=0; setInterval(function(){ i=(i+1)%msgs.length; document.getElementById('claudeLoadingMsg').textContent=msgs[i]; }, 2500);
+});
+
+// ── IA Locale : loading ───────────────────────────────────────────────────────
+var localForm = document.getElementById('localForm');
+if (localForm) localForm.addEventListener('submit', function(){
+  document.getElementById('localLoading').classList.add('on');
+  var msgs=['Filtrage saison/météo…','Harmonies couleurs…','Score compatibilité…','Sélection…'];
+  var i=0; setInterval(function(){ i=(i+1)%msgs.length; document.getElementById('localLoadingMsg').textContent=msgs[i]; }, 2500);
+});
+
+// ── Sauvegardes (Claude / Local) ─────────────────────────────────────────────
 function saveClaude(btn, data) {
-  btn.disabled = true; btn.textContent = "Sauvegarde…";
-  csrfFetch("/api/stylist/save", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({name: data.name, reasoning: data.reasoning, item_ids: data.item_ids})
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) {
-      btn.textContent = "Sauvegardée";
-      var a = document.createElement("a"); a.href = "/outfits/" + d.outfit_id;
-      a.className = "btn btn-primary btn-sm"; a.textContent = "Voir →";
-      btn.parentElement.appendChild(a);
-    } else { btn.textContent = "Erreur"; btn.disabled = false; }
-  }).catch(function(){ btn.textContent = "Erreur réseau"; btn.disabled = false; });
+  btn.disabled=true; btn.textContent='Sauvegarde…';
+  csrfFetch('/api/stylist/save', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:data.name,reasoning:data.reasoning,item_ids:data.item_ids})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok){ btn.textContent='Sauvegardée ✓'; var a=document.createElement('a'); a.href='/outfits/'+d.outfit_id; a.className='btn btn-primary btn-sm'; a.textContent='Voir →'; btn.parentElement.appendChild(a); }
+    else { btn.textContent='Erreur'; btn.disabled=false; }
+  }).catch(function(){ btn.textContent='Erreur réseau'; btn.disabled=false; });
 }
 
-// -- Sauvegarder tenue IA Locale --
 function saveLocal(btn, data) {
-  btn.disabled = true; btn.textContent = "Sauvegarde…";
-  var item_ids = data.items.map(function(i) { return i.item_id; }).filter(Boolean);
-  csrfFetch("/api/stylist/save", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({name: data.items.map(function(i){ return i.name; }).filter(Boolean).join(' · ') || "Tenue IA locale", reasoning: data.explanation || "", item_ids: item_ids})
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) {
-      btn.textContent = "Sauvegardée";
-      var a = document.createElement("a"); a.href = "/outfits/" + d.outfit_id;
-      a.className = "btn btn-primary btn-sm"; a.textContent = "Voir →";
-      btn.parentElement.appendChild(a);
-    } else { btn.textContent = "Erreur"; btn.disabled = false; }
-  }).catch(function(){ btn.textContent = "Erreur réseau"; btn.disabled = false; });
+  btn.disabled=true; btn.textContent='Sauvegarde…';
+  var ids=data.items.map(function(i){return i.item_id;}).filter(Boolean);
+  csrfFetch('/api/stylist/save', {method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:data.items.map(function(i){return i.name;}).filter(Boolean).join(' · ')||'Tenue IA locale',reasoning:data.explanation||'',item_ids:ids})
+  }).then(function(r){return r.json();}).then(function(d){
+    if(d.ok){ btn.textContent='Sauvegardée ✓'; var a=document.createElement('a'); a.href='/outfits/'+d.outfit_id; a.className='btn btn-primary btn-sm'; a.textContent='Voir →'; btn.parentElement.appendChild(a); }
+    else { btn.textContent='Erreur'; btn.disabled=false; }
+  }).catch(function(){ btn.textContent='Erreur réseau'; btn.disabled=false; });
 }
 
-// -- Analyser tous les vêtements --
+// ── Analyser tous ────────────────────────────────────────────────────────────
 function analyzeAll() {
-  var btn = document.getElementById("analyzeAllBtn");
-  var status = document.getElementById("analyzeAllStatus");
-  if (!btn) return;
-  btn.disabled = true; btn.textContent = "En cours…";
-  if (status) status.textContent = "Peut prendre plusieurs minutes…";
-  csrfFetch("/ai/analyze-all", { method: "POST" })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      btn.textContent = "Terminé";
-      var msg = d.success + " analysé(s)";
-      if (d.skipped > 0) msg += ", " + d.skipped + " sans photo";
-      if (d.failed > 0) msg += ", " + d.failed + " échoué(s)";
-      if (status) status.textContent = msg + " · rechargement…";
-      setTimeout(function(){ location.reload(); }, 1800);
-    })
-    .catch(function(e){
-      btn.disabled = false; btn.textContent = "Réessayer";
-      if (status) status.textContent = "Erreur : " + e;
-    });
+  var btn = event.target; var status = document.getElementById('analyzeAllStatus');
+  btn.disabled=true; btn.textContent='En cours…';
+  if(status) status.textContent='Peut prendre plusieurs minutes…';
+  csrfFetch('/ai/analyze-all',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+    btn.textContent='Terminé';
+    var msg=d.success+' analysé(s)';
+    if(d.skipped>0) msg+=', '+d.skipped+' sans photo';
+    if(d.failed>0) msg+=', '+d.failed+' échoué(s)';
+    if(status) status.textContent=msg+' · rechargement…';
+    setTimeout(function(){location.reload();},1800);
+  }).catch(function(e){ btn.disabled=false; btn.textContent='Réessayer'; if(status) status.textContent='Erreur : '+e; });
 }
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function esc(str){ var d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
 </script>
 {% endblock %}

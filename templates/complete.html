@@ -1,0 +1,594 @@
+{% extends "base.html" %}
+{% block title %}Complète ma tenue — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+/* ── Layout ── */
+.cp { padding: 2.5rem 0 5rem; }
+.cp-back { margin-bottom: 1.5rem; }
+
+/* ── Anchor card ── */
+.cp-anchor {
+  display: flex; align-items: center; gap: 1.25rem;
+  background: var(--sur); border: 1px solid var(--bor);
+  border-radius: var(--rl); padding: 1.1rem 1.4rem;
+  margin-bottom: 1.75rem;
+}
+.cp-anchor-img {
+  width: 72px; height: 72px; border-radius: var(--r);
+  overflow: hidden; background: var(--bg); border: 1px solid var(--bor);
+  flex-shrink: 0;
+}
+.cp-anchor-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cp-anchor-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; opacity: .18; }
+.cp-anchor-info {}
+.cp-anchor-eyebrow {
+  font-size: .65rem; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--a); margin-bottom: .2rem;
+}
+.cp-anchor-name {
+  font-family: var(--serif); font-size: 1.35rem; font-weight: 300; line-height: 1.2;
+  margin-bottom: .2rem;
+}
+.cp-anchor-meta { font-size: .78rem; color: var(--tm); display: flex; gap: .5rem; flex-wrap: wrap; }
+.cp-anchor-badge {
+  padding: .15rem .5rem; border-radius: 99px;
+  background: var(--am); color: var(--a);
+  font-size: .68rem; font-weight: 500;
+}
+.cp-anchor-badge.indexed { background: #F0FBF4; color: #1A6035; }
+.cp-anchor-badge.not-indexed { background: #FFF8E6; color: #8A5C00; }
+
+/* ── Controls bar ── */
+.cp-controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.cp-occ-label { font-size: .72rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--tm); white-space: nowrap; }
+.cp-pills { display: flex; flex-wrap: wrap; gap: .3rem; }
+.occ-pill {
+  padding: .28rem .68rem; border-radius: 99px;
+  border: 1px solid var(--bor); background: var(--bg);
+  color: var(--tm); font-size: .78rem; cursor: pointer;
+  transition: all .15s; user-select: none;
+}
+.occ-pill:hover { border-color: var(--a); color: var(--a); background: var(--am); }
+.occ-pill.active { border-color: var(--a); background: var(--a); color: #fff; }
+
+/* ── Mode badge ── */
+.cp-mode-info {
+  display: flex; align-items: center; gap: .35rem;
+  font-size: .73rem; color: var(--tm);
+  padding: .3rem .75rem; border-radius: 99px;
+  border: 1px solid var(--bor); background: var(--bg); white-space: nowrap;
+}
+.cp-mode-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cp-mode-dot.local { background: #4CAF50; }
+.cp-mode-dot.claude { background: var(--a); }
+
+/* ── Generate button zone ── */
+.cp-gen-zone { margin-bottom: 2rem; display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+/* ── Loading ── */
+.cp-loading { display: none; padding: 3rem 1rem; text-align: center; }
+.cp-loading.on { display: block; }
+.cp-dots { display: inline-flex; gap: .4rem; margin-bottom: .75rem; }
+.cp-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--a); animation: cpld .9s ease-in-out infinite; }
+.cp-dots span:nth-child(2) { animation-delay: .15s; }
+.cp-dots span:nth-child(3) { animation-delay: .30s; }
+@keyframes cpld { 0%,80%,100%{transform:scale(.5);opacity:.3}40%{transform:scale(1);opacity:1} }
+.cp-loading-txt { font-family: var(--serif); font-size: 1.1rem; font-weight: 300; color: var(--tm); }
+
+/* ── Error ── */
+.cp-err { display: none; background: #FFF0F0; border: 1px solid #F8C0C0; color: #8A1A1A; border-radius: var(--r); padding: .85rem 1rem; font-size: .83rem; margin-bottom: 1.25rem; }
+.cp-err.on { display: block; }
+
+/* ── Nudge ── */
+.cp-nudge {
+  background: #FFF8E6; border: 1px solid #F5D77A;
+  border-radius: var(--rl); padding: 1rem 1.25rem;
+  display: flex; gap: .8rem; align-items: flex-start; margin-bottom: 1.5rem;
+}
+.cp-nudge-ico { font-size: 1.3rem; flex-shrink: 0; line-height: 1.3; }
+.cp-nudge p { font-size: .8rem; color: #7A5A00; line-height: 1.6; }
+.cp-nudge a { color: #7A5A00; font-weight: 600; text-decoration: underline; }
+
+/* ── Results ── */
+.cp-results { display: none; }
+.cp-results.on { display: block; }
+
+.cp-results-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem;
+}
+.cp-results-ttl { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; }
+
+/* ── Slot section ── */
+.slot-section { margin-bottom: 2rem; }
+.slot-hdr {
+  display: flex; align-items: center; gap: .55rem;
+  margin-bottom: .75rem;
+}
+.slot-ico { font-size: 1.1rem; line-height: 1; }
+.slot-label { font-size: .78rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--tm); }
+.slot-count { font-size: .7rem; color: var(--tl); margin-left: .15rem; }
+
+/* ── Item cards (horizontal scroll) ── */
+.slot-cards {
+  display: flex; gap: .85rem; overflow-x: auto; padding-bottom: .5rem;
+  scrollbar-width: thin; scrollbar-color: var(--bor) transparent;
+}
+.slot-cards::-webkit-scrollbar { height: 4px; }
+.slot-cards::-webkit-scrollbar-track { background: transparent; }
+.slot-cards::-webkit-scrollbar-thumb { background: var(--bor); border-radius: 2px; }
+
+.cp-card {
+  flex: 0 0 160px; border: 2px solid var(--bor); border-radius: var(--rl);
+  background: var(--sur); cursor: pointer; transition: all .15s;
+  overflow: hidden; position: relative; user-select: none;
+}
+.cp-card:hover { border-color: var(--a); box-shadow: var(--sh); transform: translateY(-2px); }
+.cp-card.selected { border-color: var(--a); background: #fff; box-shadow: 0 0 0 3px var(--am); }
+.cp-card.selected .cp-card-check { opacity: 1; transform: scale(1); }
+
+/* Checkmark badge */
+.cp-card-check {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--a); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700;
+  opacity: 0; transform: scale(.6); transition: all .15s;
+  z-index: 2;
+}
+
+/* Rank badge */
+.cp-card-rank {
+  position: absolute; top: .45rem; left: .45rem;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--bor);
+  color: var(--tm); font-size: .65rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2;
+}
+
+.cp-card-img {
+  width: 100%; aspect-ratio: 1; overflow: hidden;
+  background: var(--bg); border-bottom: 1px solid var(--bor);
+}
+.cp-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cp-card-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; opacity: .15; }
+
+.cp-card-body { padding: .6rem .65rem .7rem; }
+.cp-card-name { font-size: .8rem; font-weight: 500; color: var(--tx); line-height: 1.3; margin-bottom: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-card-cat { font-size: .68rem; color: var(--tm); margin-bottom: .35rem; }
+
+/* Score bar */
+.cp-score-bar-wrap { margin-bottom: .3rem; }
+.cp-score-label { display: flex; align-items: center; justify-content: space-between; font-size: .62rem; color: var(--tl); margin-bottom: .2rem; }
+.cp-score-bar { height: 3px; border-radius: 2px; background: var(--bor); overflow: hidden; }
+.cp-score-fill { height: 100%; border-radius: 2px; background: var(--a); transition: width .4s ease; }
+
+/* Breakdown mini dots */
+.cp-breakdown { display: flex; gap: .3rem; margin-top: .3rem; }
+.cp-bd-dot { display: flex; align-items: center; gap: .2rem; font-size: .58rem; color: var(--tl); }
+.cp-bd-ico { font-size: .65rem; }
+
+/* ── Actions bottom ── */
+.cp-actions-bar {
+  position: sticky; bottom: 0;
+  background: var(--sur); border-top: 1px solid var(--bor);
+  padding: .85rem 0; margin-top: 2rem;
+  display: none;
+}
+.cp-actions-bar.on { display: block; }
+.cp-actions-in {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.cp-selection-summary { font-size: .82rem; color: var(--tm); line-height: 1.5; }
+.cp-selection-summary strong { color: var(--tx); }
+.cp-actions-btns { display: flex; gap: .5rem; }
+
+@media (max-width: 680px) {
+  .cp-anchor { flex-direction: column; align-items: flex-start; }
+  .cp-controls { flex-direction: column; align-items: flex-start; }
+  .cp-actions-in { flex-direction: column; }
+  .cp-actions-btns { width: 100%; }
+  .cp-actions-btns .btn { flex: 1; justify-content: center; }
+}
+{% endblock %}
+
+{% block content %}
+<section class="cp">
+  <div class="wrap">
+    <div class="cp-back">
+      <a href="/item/{{ anchor.id }}" class="btn btn-ghost btn-sm">← {{ anchor.name }}</a>
+    </div>
+
+    {# ── Vêtement ancre ── #}
+    <div class="cp-anchor">
+      <div class="cp-anchor-img">
+        {% if anchor.image_path %}
+          <img src="/static/{{ anchor.image_path }}" alt="{{ anchor.name }}">
+        {% else %}
+          <div class="cp-anchor-ph">
+            {{ {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜'}.get(anchor.category, '👗') }}
+          </div>
+        {% endif %}
+      </div>
+      <div class="cp-anchor-info">
+        <div class="cp-anchor-eyebrow">Pièce ancre · {{ anchor_slot_label or anchor.category }}</div>
+        <div class="cp-anchor-name">{{ anchor.name }}</div>
+        <div class="cp-anchor-meta">
+          {% if anchor.brand %}<span>{{ anchor.brand }}</span>{% endif %}
+          {% if anchor.color %}<span>{{ anchor.color }}</span>{% endif %}
+          {% if anchor.ai_style %}<span>{{ anchor.ai_style }}</span>{% endif %}
+          <span class="cp-anchor-badge {% if anchor_indexed %}indexed{% else %}not-indexed{% endif %}">
+            {% if anchor_indexed %}✓ Indexé{% else %}Non indexé{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {# ── Nudges ── #}
+    {% if not anchor_indexed and indexed_count < 3 and not has_api_key %}
+    <div class="cp-nudge">
+      <div class="cp-nudge-ico">💡</div>
+      <p>
+        Pour activer les suggestions :
+        <a href="/ai/status">analysez vos vêtements</a> avec l'IA locale (Ollama requis),
+        ou ajoutez une <a href="#" onclick="document.getElementById('sBtn').click();return false">clé API Anthropic</a>
+        dans les Paramètres ⚙️.
+      </p>
+    </div>
+    {% endif %}
+
+    {# ── Occasion + Generate ── #}
+    <div class="cp-controls">
+      <span class="cp-occ-label">Occasion :</span>
+      <div class="cp-pills" id="occPills">
+        {% for occ in occasions %}
+        <div class="occ-pill {% if loop.first %}active{% endif %}" data-occ="{{ occ }}">{{ occ }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="cp-gen-zone">
+      <button class="btn btn-ai" id="genBtn"
+        {% if not has_api_key and indexed_count < 3 %}disabled title="Indexez vos vêtements ou ajoutez une clé API"{% endif %}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        Trouver les pièces complémentaires
+      </button>
+      <span class="btn btn-ghost" id="regenBtn" style="display:none" onclick="generate()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/>
+        </svg>
+        Relancer
+      </span>
+      <div class="cp-mode-info" id="modeInfo" style="display:none">
+        <div class="cp-mode-dot" id="modeDot"></div>
+        <span id="modeLabel"></span>
+      </div>
+    </div>
+
+    {# ── États ── #}
+    <div class="cp-loading" id="cpLoading">
+      <div class="cp-dots"><span></span><span></span><span></span></div>
+      <div class="cp-loading-txt">Analyse des compatibilités…</div>
+    </div>
+    <div class="cp-err" id="cpErr"></div>
+
+    {# ── Résultats ── #}
+    <div class="cp-results" id="cpResults">
+      <div class="cp-results-hdr">
+        <div class="cp-results-ttl">Pièces compatibles</div>
+      </div>
+      <div id="slotsContainer"></div>
+    </div>
+
+  </div>{# /wrap #}
+</section>
+
+{# ── Barre d'actions sticky ── #}
+<div class="cp-actions-bar" id="actionsBar">
+  <div class="wrap cp-actions-in">
+    <div class="cp-selection-summary" id="selSummary"></div>
+    <div class="cp-actions-btns">
+      <button class="btn btn-ghost" onclick="clearSelection()">Tout désélectionner</button>
+      <button class="btn btn-primary" id="btnCreate" onclick="createOutfit()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Créer la tenue
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var ANCHOR_ID  = {{ anchor.id }};
+var ANCHOR_NAME = {{ anchor.name | tojson }};
+var _occasion  = '{{ occasions[0] if occasions else "Quotidien" }}';
+var _selected  = {};   // slot → item_id
+var _slotData  = {};   // slot → [items]
+
+// ── Occasion pills ────────────────────────────────────────────────────────────
+document.querySelectorAll('.occ-pill').forEach(function(p) {
+  p.addEventListener('click', function() {
+    document.querySelectorAll('.occ-pill').forEach(function(x){ x.classList.remove('active'); });
+    p.classList.add('active');
+    _occasion = p.dataset.occ;
+  });
+});
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+var genBtn = document.getElementById('genBtn');
+if (genBtn) genBtn.addEventListener('click', generate);
+
+function generate() {
+  document.getElementById('cpLoading').classList.add('on');
+  document.getElementById('cpResults').classList.remove('on');
+  document.getElementById('cpErr').classList.remove('on');
+  document.getElementById('actionsBar').classList.remove('on');
+  document.getElementById('modeInfo').style.display = 'none';
+  document.getElementById('regenBtn').style.display = 'none';
+  genBtn.disabled = true;
+  _selected = {};
+
+  csrfFetch('/api/complete/' + ANCHOR_ID, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ occasion: _occasion })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    document.getElementById('cpLoading').classList.remove('on');
+    genBtn.disabled = false;
+
+    if (!d.ok) {
+      showErr(d.error || 'Erreur inconnue.');
+      return;
+    }
+
+    _slotData = d.slots || {};
+    renderResults(d);
+
+    // Mode badge
+    var modeDot   = document.getElementById('modeDot');
+    var modeLabel = document.getElementById('modeLabel');
+    var modeInfo  = document.getElementById('modeInfo');
+    modeDot.className = 'cp-mode-dot ' + d.mode;
+    modeLabel.textContent = d.mode === 'local' ? 'IA Locale (FashionCLIP)' : 'Claude AI';
+    modeInfo.style.display = 'flex';
+    document.getElementById('regenBtn').style.display = 'inline-flex';
+    genBtn.style.display = 'none';
+  })
+  .catch(function() {
+    document.getElementById('cpLoading').classList.remove('on');
+    genBtn.disabled = false;
+    showErr('Erreur réseau. Réessayez.');
+  });
+}
+
+// ── Render results ────────────────────────────────────────────────────────────
+var CAT_ICONS = {
+  'Hauts':'👕','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥',
+  'Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗',
+  'Chaussures':'👟','Accessoires':'🧢','Sport':'🏋️','Autre':'🪡'
+};
+var SLOT_ICONS  = {{ slot_icons | tojson }};
+var SLOT_LABELS = {{ slot_labels | tojson }};
+var SLOT_ORDER  = {{ slot_order | tojson }};
+
+function renderResults(d) {
+  var container = document.getElementById('slotsContainer');
+  container.innerHTML = '';
+
+  var slots = d.slots || {};
+  var hasAny = false;
+
+  SLOT_ORDER.forEach(function(slot) {
+    var items = slots[slot];
+    if (!items || !items.length) return;
+    hasAny = true;
+
+    var section = document.createElement('div');
+    section.className = 'slot-section';
+    section.dataset.slot = slot;
+
+    var hdr = '<div class="slot-hdr">'
+      + '<span class="slot-ico">' + (SLOT_ICONS[slot] || '👗') + '</span>'
+      + '<span class="slot-label">' + (SLOT_LABELS[slot] || slot) + '</span>'
+      + '<span class="slot-count">(' + items.length + ' suggestions)</span>'
+      + '</div>';
+
+    var cards = '<div class="slot-cards">';
+    items.forEach(function(item, idx) {
+      cards += buildCard(item, slot, idx);
+    });
+    cards += '</div>';
+
+    section.innerHTML = hdr + cards;
+    container.appendChild(section);
+
+    // Auto-select top item per slot
+    if (items.length) {
+      _selected[slot] = items[0].id;
+    }
+  });
+
+  if (!hasAny) {
+    container.innerHTML = '<p style="color:var(--tm);font-size:.85rem;padding:1rem 0">Aucune pièce complémentaire trouvée. Ajoutez plus de vêtements à votre garde-robe.</p>';
+    document.getElementById('cpResults').classList.add('on');
+    return;
+  }
+
+  document.getElementById('cpResults').classList.add('on');
+
+  // Bind card clicks
+  document.querySelectorAll('.cp-card').forEach(function(card) {
+    card.addEventListener('click', function() { toggleCard(card); });
+  });
+
+  // Highlight pre-selected
+  Object.keys(_selected).forEach(function(slot) {
+    var card = document.querySelector('[data-slot="' + slot + '"][data-item-id="' + _selected[slot] + '"]');
+    if (card) card.classList.add('selected');
+  });
+
+  updateActionBar();
+}
+
+function buildCard(item, slot, idx) {
+  var icon = CAT_ICONS[item.category] || '👗';
+  var imgHTML = item.thumb
+    ? '<img src="/static/uploads/' + item.thumb + '" alt="' + escHtml(item.name) + '" loading="lazy">'
+    : '<div class="cp-card-ph">' + icon + '</div>';
+
+  var scorePct = item.score_pct;
+  var scoreBar = '';
+  var breakdown = '';
+  if (scorePct !== null && scorePct !== undefined) {
+    var color = scorePct >= 80 ? '#4CAF50' : scorePct >= 60 ? 'var(--a)' : '#FF9800';
+    scoreBar = '<div class="cp-score-bar-wrap">'
+      + '<div class="cp-score-label"><span>Compatibilité</span><span>' + scorePct + '%</span></div>'
+      + '<div class="cp-score-bar"><div class="cp-score-fill" style="width:' + scorePct + '%;background:' + color + '"></div></div>'
+      + '</div>';
+
+    if (item.breakdown) {
+      breakdown = '<div class="cp-breakdown">'
+        + '<span class="cp-bd-dot"><span class="cp-bd-ico">🎨</span>' + item.breakdown.color + '%</span>'
+        + '<span class="cp-bd-dot"><span class="cp-bd-ico">✦</span>' + item.breakdown.style + '%</span>'
+        + '<span class="cp-bd-dot"><span class="cp-bd-ico">👔</span>' + item.breakdown.formality + '%</span>'
+        + '</div>';
+    }
+  } else {
+    scoreBar = '<div style="font-size:.65rem;color:var(--tl);margin-top:.25rem">Sélection Claude</div>';
+  }
+
+  var worn = item.times_worn === 0
+    ? '<div style="font-size:.62rem;color:var(--tl);margin-top:.2rem">Jamais porté</div>'
+    : '<div style="font-size:.62rem;color:var(--tl);margin-top:.2rem">Porté ' + item.times_worn + 'x</div>';
+
+  return '<div class="cp-card" data-slot="' + slot + '" data-item-id="' + item.id + '">'
+    + '<div class="cp-card-rank">' + (idx + 1) + '</div>'
+    + '<div class="cp-card-check">✓</div>'
+    + '<div class="cp-card-img">' + imgHTML + '</div>'
+    + '<div class="cp-card-body">'
+    + '<div class="cp-card-name">' + escHtml(item.name) + '</div>'
+    + '<div class="cp-card-cat">' + escHtml(item.color || item.category) + '</div>'
+    + scoreBar
+    + breakdown
+    + worn
+    + '</div></div>';
+}
+
+// ── Card selection ─────────────────────────────────────────────────────────────
+function toggleCard(card) {
+  var slot   = card.dataset.slot;
+  var itemId = parseInt(card.dataset.itemId);
+
+  var wasSelected = card.classList.contains('selected');
+
+  // Désélectionner tous les cards du même slot
+  document.querySelectorAll('[data-slot="' + slot + '"]').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+
+  if (!wasSelected) {
+    card.classList.add('selected');
+    _selected[slot] = itemId;
+  } else {
+    delete _selected[slot];
+  }
+
+  updateActionBar();
+}
+
+function clearSelection() {
+  document.querySelectorAll('.cp-card.selected').forEach(function(c) {
+    c.classList.remove('selected');
+  });
+  _selected = {};
+  updateActionBar();
+}
+
+function updateActionBar() {
+  var bar     = document.getElementById('actionsBar');
+  var summary = document.getElementById('selSummary');
+  var count   = Object.keys(_selected).length;
+
+  if (count === 0) {
+    bar.classList.remove('on');
+    return;
+  }
+
+  bar.classList.add('on');
+
+  var names = [ANCHOR_NAME];
+  Object.keys(_selected).forEach(function(slot) {
+    var iid = _selected[slot];
+    var items = _slotData[slot] || [];
+    var item = items.find(function(i){ return i.id === iid; });
+    if (item) names.push(item.name);
+  });
+
+  summary.innerHTML = '<strong>' + (count + 1) + ' pièces</strong> sélectionnées : '
+    + names.map(escHtml).join(', ');
+}
+
+// ── Create outfit ──────────────────────────────────────────────────────────────
+function createOutfit() {
+  var selectedIds = Object.values(_selected).map(Number);
+  if (!selectedIds.length) return;
+
+  var btn = document.getElementById('btnCreate');
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement…';
+
+  // Construire un nom depuis la pièce ancre + vibe
+  var outfitName = 'Tenue autour de ' + ANCHOR_NAME;
+
+  csrfFetch('/api/complete/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      anchor_id:   ANCHOR_ID,
+      item_ids:    selectedIds,
+      name:        outfitName,
+      description: 'Générée par "Complète ma tenue" — occasion : ' + _occasion,
+      occasion:    _occasion,
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      window.location.href = '/outfits/' + d.outfit_id;
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Créer la tenue';
+      showErr(d.error || 'Erreur lors de la sauvegarde.');
+    }
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.innerHTML = 'Créer la tenue';
+    showErr('Erreur réseau.');
+  });
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showErr(msg) {
+  var el = document.getElementById('cpErr');
+  el.textContent = msg;
+  el.classList.add('on');
+}
+function escHtml(str) {
+  var d = document.createElement('div');
+  d.appendChild(document.createTextNode(str || ''));
+  return d.innerHTML;
+}
+</script>
+{% endblock %}
