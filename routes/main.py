@@ -311,6 +311,68 @@ def settings_ai_post():
     return redirect('/settings/ai')
 
 
+@main_bp.route('/add-bulk', methods=['GET'])
+@login_required
+def add_bulk():
+    ctx = get_ctx()
+    return render_template(
+        'add_bulk.html',
+        cats=CATEGORIES,
+        colors=COLORS,
+        seasons=SEASONS,
+        **ctx,
+    )
+
+
+@main_bp.route('/api/add-bulk', methods=['POST'])
+@login_required
+def add_bulk_post():
+    from flask import jsonify
+    me = current_user()
+
+    count = request.form.get('count', '0')
+    try:
+        count = int(count)
+    except ValueError:
+        return jsonify({'error': 'Paramètre count invalide'}), 400
+
+    if count < 1 or count > 40:
+        return jsonify({'error': 'Entre 1 et 40 vêtements par import'}), 400
+
+    created = []
+    errors = []
+
+    for i in range(count):
+        name = request.form.get(f'name_{i}', '').strip()
+        if not name:
+            errors.append({'index': i, 'error': 'Nom requis'})
+            continue
+
+        category = request.form.get(f'category_{i}', '') or CATEGORIES[0]
+        color = request.form.get(f'color_{i}', '') or None
+        season = request.form.get(f'season_{i}', '') or None
+        brand = request.form.get(f'brand_{i}', '').strip() or None
+
+        img, th = save_image(request.files.get(f'image_{i}'))
+
+        item = ClothingItem(
+            user_id=me.id,
+            name=name,
+            category=category,
+            brand=brand,
+            color=color,
+            season=season,
+            image_path=img,
+            thumb_path=th,
+        )
+        db.session.add(item)
+        db.session.flush()  # get item.id before commit
+        created.append({'id': item.id, 'name': name, 'has_image': bool(img)})
+
+    db.session.commit()
+    return jsonify({'created': created, 'errors': errors})
+
+
 @main_bp.route('/mentions-legales')
 def mentions_legales():
     return render_template('mentions_legales.html', **get_ctx())
