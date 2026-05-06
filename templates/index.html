@@ -66,12 +66,44 @@
       <h1 class="hero-h">Ma <em>garde-robe</em></h1>
       <p class="hero-sub">{{ total }} pièce{{ 's' if total != 1 else '' }}</p>
     </div>
-    <a href="/add" class="btn btn-primary">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Ajouter un vêtement
-    </a>
+    <div style="display:flex;gap:.55rem;flex-wrap:wrap;align-items:center">
+      <a href="/add" class="btn btn-primary">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Ajouter un vêtement
+      </a>
+      <button class="btn btn-ghost" id="analyzeAllBtn" onclick="openAnalyzeModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+        Analyser tous mes vêtements
+      </button>
+    </div>
   </div>
 </div></section>
+
+<!-- Modal analyse IA -->
+<div id="analyzeModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);align-items:center;justify-content:center">
+  <div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.8rem 2rem;max-width:460px;width:92%;box-shadow:var(--shh)">
+    <h3 style="font-family:var(--serif);font-size:1.25rem;font-weight:400;margin-bottom:.3rem">Analyse IA de la garde-robe</h3>
+    <p id="analyzeSubtitle" style="font-size:.82rem;color:var(--tm);margin-bottom:1.2rem">Analyse chaque vêtement via Qwen2.5-VL (Ollama local).</p>
+
+    <div id="analyzeProgressWrap" style="display:none;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--tm);margin-bottom:.35rem">
+        <span id="analyzeProgressLabel">Démarrage…</span>
+        <span id="analyzeProgressCount"></span>
+      </div>
+      <div style="background:var(--bg);border-radius:99px;height:6px;overflow:hidden;border:1px solid var(--bor)">
+        <div id="analyzeProgressBar" style="height:100%;width:0%;background:var(--a);border-radius:99px;transition:width .3s ease"></div>
+      </div>
+      <div id="analyzeLog" style="margin-top:.75rem;max-height:140px;overflow-y:auto;font-size:.75rem;color:var(--tm);display:flex;flex-direction:column;gap:.2rem"></div>
+    </div>
+
+    <div id="analyzeDoneMsg" style="display:none;padding:.75rem;border-radius:var(--r);background:var(--bg);border:1px solid var(--bor);font-size:.83rem;margin-bottom:1rem"></div>
+
+    <div style="display:flex;gap:.55rem;justify-content:flex-end">
+      <button class="btn btn-ghost btn-sm" id="analyzeCancelBtn" onclick="closeAnalyzeModal()">Annuler</button>
+      <button class="btn btn-primary btn-sm" id="analyzeStartBtn" onclick="startAnalyzeAll()">Lancer l'analyse</button>
+    </div>
+  </div>
+</div>
 
 <div class="filters"><div class="wrap fi">
   <form method="GET" style="display:contents" id="ff">
@@ -222,6 +254,128 @@ function worn(id, btn) {
     btn.style.color = "var(--a)";
     setTimeout(function() { btn.style.color = ""; }, 700);
   });
+}
+
+var _analyzeEs = null;
+
+function openAnalyzeModal() {
+  document.getElementById("analyzeModal").style.display = "flex";
+  document.getElementById("analyzeProgressWrap").style.display = "none";
+  document.getElementById("analyzeDoneMsg").style.display = "none";
+  document.getElementById("analyzeStartBtn").style.display = "";
+  document.getElementById("analyzeCancelBtn").textContent = "Annuler";
+  document.getElementById("analyzeSubtitle").textContent = "Analyse chaque vêtement non encore analysé via Qwen2.5-VL (Ollama local).";
+  document.getElementById("analyzeLog").innerHTML = "";
+}
+
+function closeAnalyzeModal() {
+  if (_analyzeEs) { _analyzeEs.close(); _analyzeEs = null; }
+  document.getElementById("analyzeModal").style.display = "none";
+}
+
+function startAnalyzeAll() {
+  var btn = document.getElementById("analyzeStartBtn");
+  btn.style.display = "none";
+  document.getElementById("analyzeProgressWrap").style.display = "";
+  document.getElementById("analyzeProgressLabel").textContent = "Connexion à Ollama…";
+  document.getElementById("analyzeProgressCount").textContent = "";
+  document.getElementById("analyzeDoneMsg").style.display = "none";
+
+  var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+  var csrf = csrfMeta ? csrfMeta.getAttribute('content') : '';
+
+  fetch("/api/analyze-all", {
+    method: "POST",
+    headers: { "X-CSRFToken": csrf, "Content-Type": "application/json" },
+    body: "{}"
+  }).then(function(resp) {
+    if (!resp.ok) {
+      resp.text().then(function(t) { showAnalyzeError("Erreur serveur : " + t.slice(0, 120)); });
+      return;
+    }
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = "";
+
+    function read() {
+      reader.read().then(function(chunk) {
+        if (chunk.done) return;
+        buf += decoder.decode(chunk.value, { stream: true });
+        var lines = buf.split("\n");
+        buf = lines.pop();
+        lines.forEach(function(line) {
+          if (line.startsWith("data: ")) {
+            try { handleAnalyzeEvent(JSON.parse(line.slice(6))); } catch(e) {}
+          }
+        });
+        read();
+      }).catch(function(e) {
+        showAnalyzeError("Connexion interrompue.");
+      });
+    }
+    read();
+  }).catch(function(e) {
+    showAnalyzeError("Impossible de contacter le serveur.");
+  });
+}
+
+function handleAnalyzeEvent(ev) {
+  if (ev.type === "start") {
+    if (ev.total === 0) {
+      showAnalyzeDone(0, 0, 0);
+      return;
+    }
+    document.getElementById("analyzeProgressLabel").textContent = "Analyse en cours…";
+    document.getElementById("analyzeProgressCount").textContent = "0 / " + ev.total;
+  } else if (ev.type === "retry") {
+    var log = document.getElementById("analyzeLog");
+    var entry = document.createElement("div");
+    entry.style.cssText = "display:flex;align-items:center;gap:.35rem;color:var(--tm)";
+    entry.innerHTML = '<span>↻</span><span>' + ev.item + ' — tentative ' + ev.attempt + '/3…</span>';
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+  } else if (ev.type === "progress") {
+    var pct = Math.round(ev.done / ev.total * 100);
+    document.getElementById("analyzeProgressBar").style.width = pct + "%";
+    document.getElementById("analyzeProgressCount").textContent = ev.done + " / " + ev.total;
+    var log = document.getElementById("analyzeLog");
+    var entry = document.createElement("div");
+    entry.style.cssText = "display:flex;align-items:center;gap:.35rem";
+    entry.innerHTML = (ev.ok
+      ? '<span style="color:var(--a)">✓</span>'
+      : '<span style="color:#C0392B">✗</span>') +
+      '<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px">' + ev.item + '</span>' +
+      (ev.error ? '<span style="color:#C0392B;font-size:.7rem"> — ' + ev.error + '</span>' : '');
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+  } else if (ev.type === "done") {
+    showAnalyzeDone(ev.ok, ev.errors, ev.total);
+  }
+}
+
+function showAnalyzeDone(ok, errors, total) {
+  document.getElementById("analyzeProgressBar").style.width = "100%";
+  var msg = document.getElementById("analyzeDoneMsg");
+  msg.style.display = "";
+  if (total === 0) {
+    msg.style.color = "var(--tm)";
+    msg.textContent = "Tous vos vêtements avec une photo ont déjà été analysés.";
+  } else {
+    msg.style.color = errors > 0 ? "#C0392B" : "var(--tx)";
+    msg.innerHTML = "<strong>" + ok + " vêtement" + (ok > 1 ? "s" : "") + " analysé" + (ok > 1 ? "s" : "") + "</strong>" +
+      (errors > 0 ? " — " + errors + " erreur" + (errors > 1 ? "s" : "") : "") + ".";
+  }
+  document.getElementById("analyzeStartBtn").style.display = "none";
+  document.getElementById("analyzeCancelBtn").textContent = "Fermer";
+}
+
+function showAnalyzeError(msg) {
+  var d = document.getElementById("analyzeDoneMsg");
+  d.style.display = "";
+  d.style.color = "#C0392B";
+  d.textContent = msg;
+  document.getElementById("analyzeStartBtn").style.display = "";
+  document.getElementById("analyzeCancelBtn").textContent = "Fermer";
 }
 </script>
 {% endblock %}

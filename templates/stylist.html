@@ -185,16 +185,17 @@
       {% endif %}
     </div>
 
-    {% if not has_api_key %}
-    <div class="key-nudge">
-      <div class="key-nudge-ico">🔑</div>
-      <div>
-        <h3>Clé API Anthropic requise</h3>
-        <p>Ajoutez-la dans les <a href="#" onclick="document.getElementById('sBtn').click();return false">Paramètres ⚙️</a> pour activer la suggestion du jour.<br>
-        <a href="https://console.anthropic.com" target="_blank">Obtenir une clé →</a></p>
-      </div>
+    <div class="ai-status" style="margin-bottom:1.1rem">
+      <div class="ai-dot {% if ai_status.ollama_running and ai_status.model_available %}ok{% elif ai_status.ollama_running %}warn{% else %}err{% endif %}"></div>
+      {% if ai_status.ollama_running and ai_status.model_available %}
+        IA locale · Ollama actif
+      {% elif ai_status.ollama_running %}
+        Modèle manquant — <code>ollama pull {{ ai_status.vision_model }}</code>
+      {% else %}
+        Ollama hors ligne — lancez <code>ollama serve</code>
+      {% endif %}
+      &nbsp;·&nbsp; {{ ai_status.indexed }} vêtement{{ 's' if ai_status.indexed != 1 }} indexé{{ 's' if ai_status.indexed != 1 }}
     </div>
-    {% endif %}
 
     <div class="occ-lbl">Pour quelle occasion ?</div>
     <div class="occ-pills" id="tdOccPills">
@@ -203,8 +204,22 @@
       {% endfor %}
     </div>
 
+    <div class="pcard" style="margin-bottom:1.25rem">
+      <div class="prow">
+        <textarea id="tdPrompt" class="pta" rows="2"
+          placeholder="Ex : Je veux quelque chose de confortable, évite le noir…"></textarea>
+      </div>
+      <div class="chips">
+        <span class="chip" data-td>Confortable et décontracté</span>
+        <span class="chip" data-td>Look minimaliste</span>
+        <span class="chip" data-td>Évite les couleurs sombres</span>
+        <span class="chip" data-td>Tenue passe-partout</span>
+      </div>
+      <p class="ptip">Optionnel — Ollama sélectionne la meilleure tenue selon ta demande</p>
+    </div>
+
     <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:2rem;flex-wrap:wrap">
-      <button class="btn btn-ai" id="tdGenBtn" {% if not has_api_key %}disabled title="Clé API requise"{% endif %}>
+      <button class="btn btn-ai" id="tdGenBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         Générer ma tenue du jour
       </button>
@@ -554,10 +569,11 @@ function tdGenerate() {
   var mi = 0;
   var ticker = setInterval(function(){ mi=(mi+1)%msgs.length; document.getElementById('tdLoadingMsg').textContent=msgs[mi]; }, 1800);
 
+  var tdPromptVal = (document.getElementById('tdPrompt') || {value:''}).value.trim();
   csrfFetch('/api/today/suggest', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({occasion: _tdOccasion})
+    body: JSON.stringify({occasion: _tdOccasion, prompt: tdPromptVal})
   }).then(function(r){ return r.json(); })
   .then(function(d){
     clearInterval(ticker);
@@ -631,6 +647,19 @@ function tdSave(markWorn) {
 }
 
 function showTdErr(msg){ var e=document.getElementById('tdErr'); e.textContent=msg; e.style.display=''; }
+
+// ── Aujourd'hui : textarea + chips ───────────────────────────────────────────
+var tdTa = document.getElementById('tdPrompt');
+if (tdTa) {
+  tdTa.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,150)+'px'; });
+}
+document.querySelectorAll('.chip[data-td]').forEach(function(c){
+  c.addEventListener('click', function(){
+    if (!tdTa) return;
+    tdTa.value = this.textContent.trim();
+    tdTa.focus(); tdTa.dispatchEvent(new Event('input'));
+  });
+});
 
 // ── Claude : textarea + chips + loading ──────────────────────────────────────
 var ta = document.getElementById('pta');

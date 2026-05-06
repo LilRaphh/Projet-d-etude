@@ -4,6 +4,7 @@ routes/stylist.py — Styliste unifié : Aujourd'hui · Claude · IA Locale
 import json
 import logging
 import os
+import re
 from datetime import date
 from typing import Optional
 
@@ -50,7 +51,7 @@ def _save_city(city: str) -> None:
 # Brique Aujourd'hui (1 tenue ciblée)
 # ---------------------------------------------------------------------------
 
-def _suggest_today(items, weather, occasion: str):
+def _suggest_today(items, weather, occasion: str, extra_prompt: str = ""):
     key = _api_key()
     if not key:
         return None, "Clé API Anthropic manquante — ajoutez-la dans les Paramètres ⚙️."
@@ -86,8 +87,9 @@ def _suggest_today(items, weather, occasion: str):
             ),
             messages=[{"role": "user", "content": (
                 f"Aujourd'hui : {date.today().strftime('%A %d %B %Y')}\n"
-                f"Occasion : {occasion or 'Quotidien'}\n{weather_ctx}\n\n"
-                f"Garde-robe :\n{chr(10).join(lines)}\n\n"
+                f"Occasion : {occasion or 'Quotidien'}\n{weather_ctx}\n"
+                + (f"Instructions supplémentaires : {extra_prompt}\n" if extra_prompt else "")
+                + f"\nGarde-robe :\n{chr(10).join(lines)}\n\n"
                 'JSON : {"name":"...","vibe":"Casual/Chic/etc.",'
                 '"reasoning":"2-3 phrases","weather_note":"ou vide","item_ids":[1,2,3]}'
             )}],
@@ -176,6 +178,43 @@ def _suggest_local(user_id, weather, occasion):
     except Exception as e:
         log.exception("_suggest_local user %d", user_id)
         return [], f"Erreur IA locale : {e}"
+
+
+def _pick_by_prompt(suggestions: list, prompt: str, vision_model: str) -> dict:
+    """
+    Utilise Ollama (text) pour sélectionner la tenue la plus adaptée au prompt.
+    Fallback sur la meilleure suggestion scorée si Ollama échoue.
+    """
+    import requests as req
+    from ai.vision import OLLAMA_BASE
+
+    options = "\n".join(
+        f"Option {i + 1} : {s.get('explanation', '')} — Pièces : "
+        + ", ".join(f"{it['name']} ({it.get('color', '')})" for it in s["items"])
+        for i, s in enumerate(suggestions)
+    )
+    payload = {
+        "model": vision_model,
+        "messages": [{"role": "user", "content": (
+            f"Parmi ces tenues, laquelle est la plus adaptée à : \"{prompt}\" ?\n\n"
+            f"{options}\n\n"
+            "Réponds UNIQUEMENT avec le chiffre (1, 2 ou 3), rien d'autre."
+        )}],
+        "stream": False,
+        "options": {"temperature": 0.1},
+    }
+    try:
+        resp = req.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=30)
+        resp.raise_for_status()
+        content = resp.json().get("message", {}).get("content", "").strip()
+        m = re.search(r"\d", content)
+        if m:
+            idx = int(m.group()) - 1
+            if 0 <= idx < len(suggestions):
+                return suggestions[idx]
+    except Exception:
+        pass
+    return suggestions[0]
 
 
 def _local_ai_status(user_id):
@@ -278,30 +317,67 @@ def today_suggest():
     if not _uid():
         return jsonify(ok=False, error="Non connecté"), 401
 
-    data     = request.get_json(force=True) or {}
-    occasion = data.get("occasion", "Quotidien").strip()
-    city     = _city()
-    weather  = WeatherService.get_current(city) if city else None
-    items    = ClothingItem.query.filter_by(user_id=_uid()).order_by(
-        ClothingItem.times_worn.asc(), ClothingItem.created_at.desc()
-    ).all()
+    data         = request.get_json(force=True) or {}
+    occasion     = data.get("occasion", "Quotidien").strip()
+    extra_prompt = data.get("prompt", "").strip()
+    city         = _city()
+    weather      = WeatherService.get_current(city) if city else None
 
-    suggestion, error = _suggest_today(items, weather, occasion)
+    try:
+        from ai.pipeline import recommend_outfits
+        n = 3 if extra_prompt else 1
+        suggestions, error = recommend_outfits(user_id=_uid(), weather=weather, occasion=occasion, n=n)
+    except ImportError:
+        return jsonify(ok=False, error="Dépendances IA locale manquantes (torch/transformers).")
+    except Exception as exc:
+        return jsonify(ok=False, error=str(exc))
+
     if error:
         return jsonify(ok=False, error=error)
+    if not suggestions:
+        return jsonify(ok=False, error="Aucune suggestion générée. Vérifiez qu'Ollama est actif et que vos vêtements sont indexés.")
 
-    items_map = {item.id: item for item in items}
-    enriched  = []
-    for iid in suggestion.get("item_ids", []):
-        item = items_map.get(iid)
-        if item:
-            enriched.append({
-                "id": item.id, "name": item.name, "category": item.category,
-                "color": item.color or "", "brand": item.brand or "",
-                "thumb": item.thumb_path or item.image_path or "",
-                "times_worn": item.times_worn or 0,
-            })
-    suggestion["items"] = enriched
+    if extra_prompt and len(suggestions) > 1:
+        from ai.vision import VISION_MODEL
+        best = _pick_by_prompt(suggestions, extra_prompt, VISION_MODEL)
+    else:
+        best = suggestions[0]
+    items_db = {it.id: it for it in ClothingItem.query.filter_by(user_id=_uid()).all()}
+
+    enriched = []
+    item_ids = []
+    for it in best["items"]:
+        iid = it.get("item_id")
+        if not iid:
+            continue
+        item_ids.append(iid)
+        db_item = items_db.get(iid)
+        enriched.append({
+            "id": iid,
+            "name": it["name"],
+            "category": it["category"],
+            "color": it.get("color", ""),
+            "brand": db_item.brand if db_item else "",
+            "thumb": (db_item.thumb_path or db_item.image_path or "") if db_item else "",
+            "times_worn": (db_item.times_worn or 0) if db_item else 0,
+        })
+
+    styles = [it.get("style", "") for it in best["items"] if it.get("style")]
+    vibe = styles[0].capitalize() if styles else "Local"
+    score_pct = round(best["score"] * 100)
+    weather_note = (
+        f"{weather['icon']} Adapté à {weather['temp']}°C, {weather['desc']}"
+        if weather else ""
+    )
+
+    suggestion = {
+        "name": f"Tenue du jour · {score_pct}%",
+        "vibe": vibe,
+        "reasoning": best.get("explanation", ""),
+        "weather_note": weather_note,
+        "item_ids": item_ids,
+        "items": enriched,
+    }
     return jsonify(ok=True, suggestion=suggestion, weather=weather)
 
 

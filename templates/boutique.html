@@ -171,6 +171,72 @@
   letter-spacing: .05em;
 }
 
+/* ── Modal conseiller ── */
+.conseil-modal-ov { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.45); backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:1rem; }
+.conseil-modal-ov.on { display:flex; }
+.conseil-modal { background:var(--sur); border:1px solid var(--bor); border-radius:var(--rl); width:100%; max-width:620px; max-height:92vh; overflow-y:auto; box-shadow:var(--shh); }
+.cm-head { padding:1.2rem 1.4rem .9rem; border-bottom:1px solid var(--bor); display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; position:sticky; top:0; background:var(--sur); z-index:1; }
+.cm-title { font-family:var(--serif); font-size:1.2rem; font-weight:400; }
+.cm-sub { font-size:.78rem; color:var(--tm); margin-top:.1rem; }
+.cm-close { border:none; background:transparent; font-size:1.2rem; color:var(--tm); cursor:pointer; line-height:1; flex-shrink:0; }
+.cm-section { padding:.9rem 1.4rem; border-bottom:1px solid var(--bor); }
+.cm-section-lbl { font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--tm); margin-bottom:.65rem; }
+.wardrobe-picker { display:grid; grid-template-columns:repeat(auto-fill,minmax(82px,1fr)); gap:.5rem; max-height:210px; overflow-y:auto; }
+.wp-item { border:2px solid var(--bor); border-radius:var(--r); overflow:hidden; cursor:pointer; transition:all var(--tr); background:var(--bg); }
+.wp-item:hover { border-color:var(--a); }
+.wp-item.selected { border-color:var(--a); box-shadow:0 0 0 2px var(--am); }
+.wp-img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--bor); }
+.wp-ph { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:1.4rem; opacity:.2; }
+.wp-name { font-size:.6rem; padding:.2rem .3rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--tm); text-align:center; }
+.cm-selected-preview { display:flex; align-items:center; gap:.75rem; background:var(--am); border-radius:var(--r); padding:.55rem .75rem; margin-top:.7rem; }
+.cm-sel-img { width:42px; height:52px; object-fit:cover; border-radius:4px; flex-shrink:0; border:1px solid var(--bor); }
+.cm-sel-ph { width:42px; height:52px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; opacity:.3; }
+.cm-sel-info { min-width:0; }
+.cm-sel-name { font-size:.82rem; font-weight:500; color:var(--a); }
+.cm-sel-meta { font-size:.71rem; color:var(--tm); margin-top:.1rem; }
+.cm-body { padding:1rem 1.4rem; }
+.cm-results { padding:1rem 1.4rem 1.4rem; border-top:1px solid var(--bor); }
+.cm-conseil-txt { font-size:.83rem; color:var(--tm); line-height:1.65; margin-bottom:.9rem; font-style:italic; }
+.cm-outfit-row { display:flex; gap:.65rem; flex-wrap:wrap; }
+.cm-wardrobe-card { background:var(--bg); border:2px solid var(--a); border-radius:var(--r); overflow:hidden; width:130px; flex-shrink:0; }
+.cm-wardrobe-card .cm-badge { font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--a); padding:.25rem .5rem; }
+.cm-item { background:var(--bg); border:1px solid var(--bor); border-radius:var(--r); overflow:hidden; width:130px; flex-shrink:0; transition:box-shadow var(--tr),transform var(--tr); }
+.cm-item:hover { box-shadow:var(--shh); transform:translateY(-2px); }
+.cm-item img, .cm-wardrobe-card img { width:100%; aspect-ratio:3/4; object-fit:cover; display:block; background:var(--bor); }
+.cm-item-body, .cm-wardrobe-card .cm-item-body { padding:.45rem .55rem; }
+.cm-item-brand { font-size:.6rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--a); }
+.cm-item-name { font-size:.73rem; font-weight:500; line-height:1.25; margin:.1rem 0; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.cm-item-price { font-size:.74rem; color:var(--tx); margin-top:.2rem; }
+.cm-item-link { display:block; font-size:.67rem; color:var(--a); margin-top:.28rem; text-decoration:underline; }
+.cm-loading { text-align:center; padding:1.5rem 1rem; color:var(--tm); font-size:.86rem; }
+.cm-err { background:#FFF0F0; border:1px solid #F8C0C0; color:#8A1A1A; border-radius:var(--r); padding:.65rem .9rem; font-size:.82rem; }
+
+/* ── Bouton ajout garde-robe ── */
+.add-wr-btn {
+  position: absolute;
+  top: .45rem;
+  right: .45rem;
+  background: rgba(255,255,255,.92);
+  border: 1px solid var(--bor);
+  border-radius: 99px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: .8rem;
+  color: var(--a);
+  transition: all var(--tr);
+  backdrop-filter: blur(4px);
+  line-height: 1;
+  padding: 0;
+}
+.add-wr-btn:hover { background: var(--a); color: #fff; border-color: var(--a); }
+.add-wr-btn.added { background: #d1fae5; border-color: #6ee7b7; color: #065f46; cursor: default; }
+.add-wr-btn.loading { opacity: .6; pointer-events: none; }
+.prod-card { position: relative; }
+
 /* ── Empty state ── */
 .bq-empty {
   text-align: center;
@@ -216,8 +282,18 @@
 <div class="bq-page">
   <div class="wrap">
 
-    <h1 class="bq-h">La <em>Boutique</em></h1>
-    <p class="bq-sub">{{ total }} produit{{ 's' if total != 1 }} scrapés — Mango, Nike, Jules, Le Coq Sportif, Kappa, Lotto, Sergio Tacchini</p>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.25rem">
+      <div>
+        <h1 class="bq-h">La <em>Boutique</em></h1>
+        <p class="bq-sub" style="margin-bottom:0">{{ total }} produit{{ 's' if total != 1 }} scrapés — Mango, Nike, Jules, Le Coq Sportif, Kappa, Lotto, Sergio Tacchini</p>
+      </div>
+      {% if wardrobe_items %}
+      <button class="btn btn-ai" onclick="openConseiller()" style="flex-shrink:0;margin-top:.5rem">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Composer une tenue
+      </button>
+      {% endif %}
+    </div>
 
     <!-- Filtres -->
     <form method="get" action="/boutique" class="filter-bar">
@@ -298,6 +374,8 @@
         {% else %}
         <div class="prod-img-placeholder">👕</div>
         {% endif %}
+        <button class="add-wr-btn" title="Ajouter à ma garde-robe"
+          onclick="addToWardrobe(this,{{ p | tojson }})">+</button>
 
         <div class="prod-body">
           <div class="prod-brand">{{ p.brand_source or '—' }}</div>
@@ -391,4 +469,240 @@
 
   </div>
 </div>
+
+<!-- Modal Composer une tenue -->
+<div class="conseil-modal-ov" id="conseillerOv" onclick="if(event.target===this)closeConseiller()">
+  <div class="conseil-modal">
+
+    <div class="cm-head">
+      <div>
+        <div class="cm-title">Composer une tenue</div>
+        <div class="cm-sub">Choisis un vêtement de ta garde-robe · la boutique complète la tenue</div>
+      </div>
+      <button class="cm-close" onclick="closeConseiller()">✕</button>
+    </div>
+
+    {% if not user_gender %}
+    <div style="background:#FFF8F0;border-bottom:1px solid #FFD0A0;padding:.6rem 1.4rem;font-size:.78rem;color:#9A5B00;display:flex;align-items:center;gap:.5rem">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Genre non renseigné — les suggestions ne sont pas filtrées.
+      <a href="/profile" style="color:#9A5B00;font-weight:600;text-decoration:underline;margin-left:.2rem">Configurer →</a>
+    </div>
+    {% endif %}
+
+    <!-- Sélecteur garde-robe -->
+    <div class="cm-section">
+      <div class="cm-section-lbl">1 — Choisis une pièce de ta garde-robe</div>
+      <div class="wardrobe-picker" id="wardrobePicker">
+        {% for it in wardrobe_items %}
+        <div class="wp-item" data-id="{{ it.id }}" data-name="{{ it.name }}" data-category="{{ it.category }}"
+             data-color="{{ it.color }}" data-brand="{{ it.brand }}" data-thumb="{{ it.thumb }}"
+             onclick="selectWardrobeItem(this)">
+          {% if it.thumb %}
+            <img class="wp-img" src="/static/{{ it.thumb }}" alt="{{ it.name }}" loading="lazy">
+          {% else %}
+            <div class="wp-ph">👗</div>
+          {% endif %}
+          <div class="wp-name">{{ it.name }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div id="cmSelectedPreview" style="display:none" class="cm-selected-preview">
+        <div id="cmSelImgWrap"></div>
+        <div class="cm-sel-info">
+          <div class="cm-sel-name" id="cmSelName"></div>
+          <div class="cm-sel-meta" id="cmSelMeta"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt -->
+    <div class="cm-section">
+      <div class="cm-section-lbl">2 — Précise le style (optionnel)</div>
+      <textarea id="cmPrompt" class="fc" rows="2" style="resize:none"
+        placeholder="Ex : Look streetwear pour le week-end, évite le noir…"></textarea>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.55rem">
+        <span class="chip" onclick="setChip(this)">Casual week-end</span>
+        <span class="chip" onclick="setChip(this)">Look streetwear</span>
+        <span class="chip" onclick="setChip(this)">Sport chic</span>
+        <span class="chip" onclick="setChip(this)">Minimaliste</span>
+        <span class="chip" onclick="setChip(this)">Tenue de soirée</span>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="cm-body">
+      <button class="btn btn-primary" id="cmGenBtn" style="width:100%;justify-content:center" onclick="lancerConseil()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Générer la tenue
+      </button>
+      <div id="cmErr" class="cm-err" style="display:none;margin-top:.75rem"></div>
+    </div>
+
+    <!-- Résultats -->
+    <div id="cmResults" style="display:none" class="cm-results">
+      <div class="cm-section-lbl" style="margin-bottom:.65rem">Tenue suggérée</div>
+      <div class="cm-conseil-txt" id="cmConseilTxt"></div>
+      <div class="cm-outfit-row" id="cmOutfitRow"></div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var _selectedItemId = null;
+
+function openConseiller() {
+  _selectedItemId = null;
+  document.querySelectorAll('.wp-item').forEach(function(el){ el.classList.remove('selected'); });
+  document.getElementById('cmSelectedPreview').style.display = 'none';
+  document.getElementById('cmPrompt').value = '';
+  document.getElementById('cmErr').style.display = 'none';
+  document.getElementById('cmResults').style.display = 'none';
+  document.getElementById('conseillerOv').classList.add('on');
+}
+
+function closeConseiller() {
+  document.getElementById('conseillerOv').classList.remove('on');
+}
+
+function selectWardrobeItem(el) {
+  document.querySelectorAll('.wp-item').forEach(function(x){ x.classList.remove('selected'); });
+  el.classList.add('selected');
+  _selectedItemId = el.dataset.id;
+
+  var thumb = el.dataset.thumb;
+  var imgWrap = document.getElementById('cmSelImgWrap');
+  imgWrap.innerHTML = thumb
+    ? '<img class="cm-sel-img" src="/static/' + esc(thumb) + '" alt="">'
+    : '<div class="cm-sel-ph">👗</div>';
+
+  document.getElementById('cmSelName').textContent = el.dataset.name;
+  var meta = [el.dataset.category, el.dataset.color, el.dataset.brand].filter(Boolean).join(' · ');
+  document.getElementById('cmSelMeta').textContent = meta;
+  document.getElementById('cmSelectedPreview').style.display = 'flex';
+  document.getElementById('cmResults').style.display = 'none';
+}
+
+function setChip(el) {
+  document.getElementById('cmPrompt').value = el.textContent.trim();
+}
+
+function lancerConseil() {
+  if (!_selectedItemId) {
+    document.getElementById('cmErr').textContent = 'Sélectionne d\'abord un vêtement de ta garde-robe.';
+    document.getElementById('cmErr').style.display = '';
+    return;
+  }
+  var btn = document.getElementById('cmGenBtn');
+  btn.disabled = true;
+  btn.innerHTML = 'Ollama compose…';
+  document.getElementById('cmErr').style.display = 'none';
+  document.getElementById('cmResults').style.display = 'none';
+
+  csrfFetch('/boutique/complete-wardrobe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({item_id: parseInt(_selectedItemId), prompt: document.getElementById('cmPrompt').value.trim()})
+  })
+  .then(function(r){
+    return r.text().then(function(txt){
+      try { return JSON.parse(txt); }
+      catch(e) { throw new Error('Réponse serveur invalide (status ' + r.status + ').'); }
+    });
+  })
+  .then(function(d){
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Générer la tenue';
+    if (d.error) {
+      document.getElementById('cmErr').textContent = d.error;
+      document.getElementById('cmErr').style.display = '';
+      return;
+    }
+    document.getElementById('cmConseilTxt').textContent = d.conseil || '';
+    var row = document.getElementById('cmOutfitRow');
+    row.innerHTML = '';
+
+    // Pièce garde-robe (anchor)
+    var anchor = d.anchor;
+    var aDiv = document.createElement('div');
+    aDiv.className = 'cm-wardrobe-card';
+    aDiv.innerHTML =
+      '<div class="cm-badge">Ta pièce</div>' +
+      (anchor.thumb ? '<img src="/static/' + esc(anchor.thumb) + '" alt="' + esc(anchor.name) + '" loading="lazy">' : '<div style="height:98px;display:flex;align-items:center;justify-content:center;font-size:2rem;opacity:.2">👗</div>') +
+      '<div class="cm-item-body"><div class="cm-item-brand">' + esc(anchor.brand || '') + '</div><div class="cm-item-name">' + esc(anchor.name) + '</div></div>';
+    row.appendChild(aDiv);
+
+    // Articles boutique
+    (d.products || []).forEach(function(p){
+      var div = document.createElement('div');
+      div.className = 'cm-item';
+      var price = p.price_value ? (parseFloat(p.price_value).toFixed(2) + ' ' + (p.currency || '€')) : '';
+      var addBtnId = 'awb_' + Math.random().toString(36).slice(2);
+      div.innerHTML =
+        '<div style="position:relative">' +
+          (p.image ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.style.display=\'none\'" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block">' : '') +
+          '<button id="' + addBtnId + '" class="add-wr-btn" title="Ajouter à ma garde-robe" style="z-index:2" onclick="addToWardrobeById(\'' + addBtnId + '\',' + JSON.stringify(p) + ')">+</button>' +
+        '</div>' +
+        '<div class="cm-item-body">' +
+          '<div class="cm-item-brand">' + esc(p.brand_source || '') + '</div>' +
+          '<div class="cm-item-name">' + esc(p.name || '') + '</div>' +
+          (price ? '<div class="cm-item-price">' + esc(price) + '</div>' : '') +
+          (p.url ? '<a class="cm-item-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">Voir en boutique →</a>' : '') +
+        '</div>';
+      row.appendChild(div);
+    });
+
+    document.getElementById('cmResults').style.display = '';
+  })
+  .catch(function(err){
+    console.error('lancerConseil:', err);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Générer la tenue';
+    document.getElementById('cmErr').textContent = (err && err.message) ? err.message : 'Erreur réseau. Réessayez.';
+    document.getElementById('cmErr').style.display = '';
+  });
+}
+
+function esc(str){ var d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
+
+function addToWardrobe(btn, product) {
+  _doAddToWardrobe(btn, product);
+}
+
+function addToWardrobeById(id, product) {
+  _doAddToWardrobe(document.getElementById(id), product);
+}
+
+function _doAddToWardrobe(btn, product) {
+  if (!btn || btn.classList.contains('added') || btn.classList.contains('loading')) return;
+  btn.classList.add('loading');
+  btn.textContent = '…';
+  csrfFetch('/boutique/add-to-wardrobe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(product)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.ok) {
+      btn.classList.remove('loading');
+      btn.classList.add('added');
+      btn.textContent = '✓';
+      btn.title = 'Ajouté à ta garde-robe';
+    } else {
+      btn.classList.remove('loading');
+      btn.textContent = '+';
+      alert('Erreur : ' + (d.error || 'inconnue'));
+    }
+  })
+  .catch(function(){
+    btn.classList.remove('loading');
+    btn.textContent = '+';
+    alert('Erreur réseau.');
+  });
+}
+</script>
 {% endblock %}
