@@ -29,21 +29,6 @@ SIZE_LABELS = {
     "39", "40", "41", "42", "43", "44", "45", "46",
 }
 
-COLOR_KEYWORDS = sorted([
-    "black beauty", "brilliant white", "optical white", "off white",
-    "navy blue", "royal blue", "sky blue", "light blue", "dark blue", "electric blue",
-    "forest green", "olive green", "dark green", "bright green",
-    "bright red", "dark red", "all black", "all white",
-    "bright cyan", "safety yellow", "fiesta red", "ultra marine",
-    "heather blue", "pine green", "clay red",
-    "black", "white", "navy", "blue", "red", "green",
-    "grey", "gray", "charcoal", "anthracite",
-    "orange", "yellow", "pink", "purple", "violet", "bordeaux", "burgundy",
-    "beige", "cream", "ivory", "ecru", "camel",
-    "brown", "tan", "khaki", "olive",
-    "multicolor", "colorblock",
-], key=len, reverse=True)
-
 EXCLUDED_TYPES = {
     "ball", "balls", "soccer ball", "football", "boot", "boots", "shoe", "shoes",
     "sneaker", "sneakers", "bag", "bags", "backpack", "sock", "socks",
@@ -147,21 +132,7 @@ class LottoScraper(BaseScraper):
         return default_sexe
 
     # ------------------------------------------------------------------
-    def _find_color_in_text(self, text: str) -> Optional[str]:
-        text_lower = text.lower()
-        for color in COLOR_KEYWORDS:
-            if re.search(r'\b' + re.escape(color) + r'\b', text_lower):
-                return color.capitalize()
-        return None
-
-    # ------------------------------------------------------------------
     def _extract_color(self, item: dict) -> Optional[str]:
-        """
-        Priorite :
-        1. Option Shopify "Color" / "Colour" / "Colore"
-        2. Apres le tiret dans le titre  ex: "Delta Jacket - Black/White" -> "Black"
-        3. Description
-        """
         options     = item.get("options", [])
         title       = item.get("title", "")
         description = re.sub(r'<[^>]+>', '', item.get("body_html", "") or "").strip()
@@ -175,83 +146,13 @@ class LottoScraper(BaseScraper):
         if ' - ' in title:
             color_part = title.split(' - ', 1)[1].strip()
             first = color_part.split('/')[0].strip()
-            color = self._find_color_in_text(first)
+            color = self._find_color(first)
             if color:
                 return color
             if first and len(first) < 30:
                 return first.capitalize()
 
-        if description:
-            color = self._find_color_in_text(description)
-            if color:
-                return color
-
-        return None
-
-    # ------------------------------------------------------------------
-    def _infer_style_lotto(self, name: str, description: str = "") -> str:
-        """
-        Regles de style specifiques Lotto (titres EN).
-        On travaille uniquement sur le NOM du produit pour eviter les
-        faux positifs depuis la description (ex: 'wardrobe' → 'Robe').
-        Ordre : du plus specifique au plus general.
-        """
-        n = name.lower()
-
-        # Hauts
-        if any(k in n for k in ["t-shirt", "tee", "short sleeve", "long sleeve"]):
-            return "T-shirt"
-        if any(k in n for k in ["hoodie", "hoody", "full zip hooded", "pullover hood",
-                                  "zip hoodie", "zip hoody"]):
-            return "Hoodie"
-        if any(k in n for k in ["crewneck", "crew neck", "crew", "1/4 zip", "quarter zip"]):
-            return "Sweat"
-        if any(k in n for k in ["sweater", "sweatshirt"]):
-            return "Sweat"
-        if "pullover" in n:
-            return "Pull"
-
-        # Bas
-        if any(k in n for k in ["sweatpant", "sweat pant", "track pant", "jogger",
-                                  "trouser", "pant"]) and "short" not in n:
-            return "Pantalon"
-        if any(k in n for k in ["short", "sweatshort"]):
-            return "Short"
-
-        # Vestes
-        if any(k in n for k in ["track jacket", "zip jacket", "jacket", "windbreaker"]):
-            return "Veste"
-
-        # Fallback sur base.py SANS description pour eviter wardrobe/robe
-        return self.infer_style(name, "")
-
-    # ------------------------------------------------------------------
-    def _infer_categorie_lotto(self, name: str, p_type: str) -> str:
-        """
-        Regles de categorie specifiques Lotto (titres EN).
-        Travaille uniquement sur le nom pour eviter les faux positifs description.
-        """
-        n = name.lower()
-
-        if p_type == "Chaussures":
-            return "Autre"
-
-        # Manteau/Veste
-        if any(k in n for k in ["jacket", "windbreaker", "parka", "coat"]):
-            return "Manteau/Veste"
-
-        # Bas
-        if any(k in n for k in ["pant", "short", "jogger", "trouser", "legging"]):
-            return "Bas"
-
-        # Haut — tout le reste des vetements
-        if any(k in n for k in ["tee", "t-shirt", "shirt", "hoodie", "hoody",
-                                  "sweater", "sweatshirt", "crewneck", "crew neck",
-                                  "crew", "pullover", "1/4 zip", "quarter zip", "top",
-                                  "jersey", "vest", "polo", "long sleeve"]):
-            return "Haut"
-
-        return "Autre"
+        return self._find_color(description) if description else None
 
     # ------------------------------------------------------------------
     def _parse_product(self, item: dict, genre: str, sexe: str) -> Optional[Product]:
@@ -328,8 +229,8 @@ class LottoScraper(BaseScraper):
             color        = color,
             rating       = None,
             type         = p_type,
-            categorie    = self._infer_categorie_lotto(name, p_type),
-            style        = self._infer_style_lotto(name),
+            categorie    = self.infer_categorie(name, "", p_type),
+            style        = self.infer_style(name, ""),
             image        = main_image,
             url          = url,
             brand_source = self.BRAND_SOURCE,

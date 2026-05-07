@@ -87,7 +87,7 @@ def create_app():
         os.makedirs(directory, exist_ok=True)
 
     with app.app_context():
-        from models import ClothingItem, Outfit, Tag, User, UserSetting  # noqa: F401
+        from models import ClothingItem, Outfit, Tag, User, UserSetting, WishlistItem  # noqa: F401
         db.create_all()
 
     from ai.ollama_setup import ensure_ollama

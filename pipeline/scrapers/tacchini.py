@@ -24,21 +24,6 @@ SIZE_LABELS = {
     "T1", "T2", "T3", "T4",
 }
 
-COLOR_KEYWORDS = sorted([
-    "navy blue", "royal blue", "sky blue", "light blue", "dark blue",
-    "forest green", "olive green", "dark green", "light green",
-    "dark red", "bright red", "burnt orange",
-    "jet black", "off white", "ivory white",
-    "black", "white", "navy", "blue", "red", "green",
-    "grey", "gray", "charcoal", "anthracite",
-    "orange", "yellow", "pink", "purple", "burgundy", "bordeaux",
-    "beige", "cream", "ivory", "ecru", "camel",
-    "brown", "tan", "khaki", "olive",
-    "multicolor", "colorblock", "stripe",
-    # francais aussi au cas ou
-    "noir", "blanc", "bleu", "rouge", "vert", "gris", "rose",
-], key=len, reverse=True)
-
 # Catalogue : (genre, sexe, handle)
 ST_CATALOG = [
     ("Adulte", "Homme", "mens-jackets"),
@@ -92,14 +77,6 @@ class TacchiniScraper(BaseScraper):
         return val.upper() in SIZE_LABELS or (val.replace('.', '').isdigit() and 28 <= float(val) <= 54)
 
     # ------------------------------------------------------------------
-    def _find_color_in_text(self, text: str) -> Optional[str]:
-        text_lower = text.lower()
-        for color in COLOR_KEYWORDS:
-            if re.search(r'\b' + re.escape(color) + r'\b', text_lower):
-                return color.capitalize()
-        return None
-
-    # ------------------------------------------------------------------
     def _extract_color(self, description: str, title: str, options: List[dict]) -> Optional[str]:
         """
         Priorite :
@@ -121,13 +98,13 @@ class TacchiniScraper(BaseScraper):
             color_part = title.split(' - ', 1)[1].strip()
             # Prend le premier coloris si format "Navy/White"
             first_color = color_part.split('/')[0].strip()
-            color = self._find_color_in_text(first_color)
+            color = self._find_color(first_color)
             if color:
                 return color
 
         # Priorite 3 : scan de la description
         if description:
-            color = self._find_color_in_text(description)
+            color = self._find_color(description)
             if color:
                 return color
 

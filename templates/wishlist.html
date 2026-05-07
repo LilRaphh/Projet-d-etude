@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}Wishlist — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.wl-page { padding: 2.5rem 0 5rem }
+.wl-h { font-family: var(--serif); font-size: clamp(1.9rem,4vw,2.8rem); font-weight: 300; line-height: 1.1; margin-bottom: .25rem }
+.wl-h em { color: #e11d48; font-style: normal }
+.wl-sub { color: var(--tm); font-size: .86rem; margin-bottom: 2rem }
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+.prod-card {
+  background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl);
+  overflow: hidden; display: flex; flex-direction: column; position: relative;
+  transition: box-shadow var(--tr), transform var(--tr);
+}
+.prod-card:hover { box-shadow: var(--shh); transform: translateY(-2px); }
+.prod-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; background: var(--bg); display: block; }
+.prod-img-placeholder { width: 100%; aspect-ratio: 3/4; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--tl); }
+.prod-body { padding: .75rem .9rem; display: flex; flex-direction: column; gap: .3rem; flex: 1; }
+.prod-brand { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--a); }
+.prod-name { font-size: .84rem; font-weight: 500; color: var(--tx); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.prod-meta { display: flex; flex-wrap: wrap; gap: .28rem; margin-top: .15rem; }
+.prod-tag { font-size: .67rem; padding: .12rem .42rem; border-radius: 99px; background: var(--bg); border: 1px solid var(--bor); color: var(--tm); }
+.prod-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: .5rem; border-top: 1px solid var(--bor); }
+.prod-price { font-family: var(--serif); font-size: 1.05rem; font-weight: 400; color: var(--tx); }
+.prod-price.no-price { font-size: .78rem; color: var(--tl); font-family: var(--sans); }
+.prod-link { font-size: .72rem; color: var(--a); text-decoration: none; font-weight: 500; padding: .22rem .55rem; border-radius: var(--r); border: 1px solid var(--a); transition: all var(--tr); }
+.prod-link:hover { background: var(--a); color: #fff; }
+.prod-sizes { display: flex; flex-wrap: wrap; gap: .2rem; margin-top: .2rem; }
+.prod-size { font-size: .63rem; font-weight: 600; padding: .1rem .35rem; border-radius: 4px; background: var(--am); color: var(--a); border: 1px solid var(--a)33; }
+.prod-rating { font-size: .72rem; color: #f59e0b; letter-spacing: .05em; }
+
+/* Bouton retirer de la wishlist */
+.wish-btn {
+  position: absolute; top: .45rem; left: .45rem;
+  background: #fff1f2; border: 1px solid #fecdd3; border-radius: 99px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .9rem; color: #e11d48;
+  transition: all var(--tr); backdrop-filter: blur(4px); line-height: 1; padding: 0; z-index: 1;
+}
+.wish-btn:hover { background: #ffe4e6; border-color: #e11d48; }
+.wish-btn.loading { opacity: .5; pointer-events: none; }
+.wish-btn.removed { opacity: 0; pointer-events: none; }
+
+/* Add to wardrobe */
+.add-wr-btn {
+  position: absolute; top: .45rem; right: .45rem;
+  background: rgba(255,255,255,.92); border: 1px solid var(--bor); border-radius: 99px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .8rem; color: var(--a);
+  transition: all var(--tr); backdrop-filter: blur(4px); line-height: 1; padding: 0;
+}
+.add-wr-btn:hover { background: var(--a); color: #fff; border-color: var(--a); }
+.add-wr-btn.added { background: #d1fae5; border-color: #6ee7b7; color: #065f46; cursor: default; }
+.add-wr-btn.loading { opacity: .6; pointer-events: none; }
+
+/* Empty state */
+.wl-empty { text-align: center; padding: 5rem 2rem; color: var(--tm); }
+.wl-empty-ico { font-size: 3.5rem; margin-bottom: 1rem }
+.wl-empty h3 { font-size: 1.15rem; font-weight: 400; margin-bottom: .45rem; color: var(--tx) }
+.wl-empty p { font-size: .86rem; }
+
+@media (max-width: 640px) {
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem }
+}
+{% endblock %}
+
+{% block content %}
+<div class="wl-page">
+  <div class="wrap">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:2rem">
+      <div>
+        <h1 class="wl-h">Ma <em>♥</em> Wishlist</h1>
+        <p class="wl-sub" style="margin-bottom:0">
+          {{ total }} article{{ 's' if total != 1 }} sauvegardé{{ 's' if total != 1 }}
+        </p>
+      </div>
+      <a href="/boutique" class="btn btn-ghost" style="flex-shrink:0;margin-top:.5rem">
+        ← Retour à la boutique
+      </a>
+    </div>
+
+    {% if products %}
+    <div class="products-grid">
+      {% for p in products %}
+      <div class="prod-card" id="wl-card-{{ loop.index }}">
+
+        {% if p.image %}
+        <img class="prod-img" src="{{ p.image }}" alt="{{ p.name }}" loading="lazy"
+             onerror="this.parentNode.innerHTML='<div class=\'prod-img-placeholder\'>👕</div>'">
+        {% else %}
+        <div class="prod-img-placeholder">👕</div>
+        {% endif %}
+
+        <button class="wish-btn wished" title="Retirer de la wishlist"
+          onclick="removeFromWishlist(this, {{ p|tojson }}, 'wl-card-{{ loop.index }}')">♥</button>
+        <button class="add-wr-btn" title="Ajouter à ma garde-robe"
+          onclick="addToWardrobe(this, {{ p|tojson }})">+</button>
+
+        <div class="prod-body">
+          <div class="prod-brand">{{ p.brand_source or '—' }}</div>
+          <div class="prod-name">{{ p.name }}</div>
+
+          <div class="prod-meta">
+            {% if p.categorie %}<span class="prod-tag">{{ p.categorie }}</span>{% endif %}
+            {% if p.style %}<span class="prod-tag">{{ p.style }}</span>{% endif %}
+            {% if p.sexe %}<span class="prod-tag">{{ p.sexe }}</span>{% endif %}
+            {% if p.color %}<span class="prod-tag">{{ p.color }}</span>{% endif %}
+          </div>
+
+          {% set sizes = (p.taille if p.taille else []) + (p.sizes | map('string') | list if p.sizes else []) %}
+          {% if sizes %}
+          <div class="prod-sizes">
+            {% for s in sizes[:6] %}
+            <span class="prod-size">{{ s }}</span>
+            {% endfor %}
+            {% if sizes|length > 6 %}<span class="prod-size">+{{ sizes|length - 6 }}</span>{% endif %}
+          </div>
+          {% endif %}
+
+          {% if p.rating %}
+          <div class="prod-rating">
+            {% set full = (p.rating | round(0, 'floor')) | int %}
+            {% for i in range(full) %}★{% endfor %}{% for i in range(5 - full) %}☆{% endfor %}
+            <span style="color:var(--tm);font-size:.68rem;margin-left:.2rem">{{ p.rating }}</span>
+          </div>
+          {% endif %}
+
+          <div class="prod-footer">
+            {% if p.price_value %}
+            <span class="prod-price">{{ "%.2f"|format(p.price_value) }} {{ p.currency or '€' }}</span>
+            {% else %}
+            <span class="prod-price no-price">Prix N/D</span>
+            {% endif %}
+            {% if p.url %}
+            <a class="prod-link" href="{{ p.url }}" target="_blank" rel="noopener">Voir</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="wl-empty">
+      <div class="wl-empty-ico">♡</div>
+      <h3>Ta wishlist est vide</h3>
+      <p>Parcours la <a href="/boutique" style="color:var(--a)">boutique</a> et sauvegarde tes coups de cœur avec le bouton ♡.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function removeFromWishlist(btn, product, cardId) {
+  if (btn.classList.contains('loading')) return;
+  btn.classList.add('loading');
+  csrfFetch('/boutique/wishlist/toggle', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(product)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (!d.wishlisted) {
+      var card = document.getElementById(cardId);
+      if (card) {
+        card.style.transition = 'opacity .25s, transform .25s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(.95)';
+        setTimeout(function(){ card.remove(); }, 260);
+      }
+    } else {
+      btn.classList.remove('loading');
+    }
+  })
+  .catch(function(){ btn.classList.remove('loading'); alert('Erreur réseau.'); });
+}
+
+function esc(str){ var d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
+
+function addToWardrobe(btn, product) {
+  if (!btn || btn.classList.contains('added') || btn.classList.contains('loading')) return;
+  btn.classList.add('loading');
+  btn.textContent = '…';
+  csrfFetch('/boutique/add-to-wardrobe', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(product)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    btn.classList.remove('loading');
+    if (d.ok) {
+      btn.classList.add('added');
+      btn.textContent = '✓';
+      btn.title = 'Ajouté à ta garde-robe';
+    } else {
+      btn.textContent = '+';
+      alert('Erreur : ' + (d.error || 'inconnue'));
+    }
+  })
+  .catch(function(){ btn.classList.remove('loading'); btn.textContent = '+'; alert('Erreur réseau.'); });
+}
+</script>
+{% endblock %}

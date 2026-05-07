@@ -2,13 +2,17 @@
 #  pipeline/dags/scraping_dag.py — DAG Airflow SmartWear
 #
 #  Structure :
-#    scrape_mango ─┐
-#    scrape_nike  ─┤
-#    scrape_jules ─┼─→ run_pipeline → run_audit → run_check
-#    scrape_lcs   ─┤
-#    scrape_tac   ─┤
-#    scrape_kappa ─┤
-#    scrape_lotto ─┘
+#    scrape_mango         ─┐
+#    scrape_gymshark      ─┤
+#    scrape_nike          ─┤
+#    scrape_jules         ─┤
+#    scrape_apc           ─┼─→ run_pipeline → run_audit → run_check
+#    scrape_balzac        ─┤
+#    scrape_maisonlabiche ─┤
+#    scrape_lcs           ─┤
+#    scrape_tac           ─┤
+#    scrape_kappa         ─┤
+#    scrape_lotto         ─┘
 #
 #  Déploiement :
 #    Copier ce fichier (ou créer un symlink) dans le dossier
@@ -44,7 +48,11 @@ DEFAULT_ARGS = {
 }
 
 SCRAPER_NAMES = [
-    "mango", "nike", "jules", "lecoqsportif", "tacchini", "kappa", "lotto",
+    "mango", "gymshark", "nike", "jules",
+    "apc", "balzac", "maisonlabiche",
+    "rouje", "cabaia", "bonnegueule",
+    "merci", "isabelmarant", "amiparis",
+    "lecoqsportif", "tacchini", "kappa", "lotto",
 ]
 
 
@@ -56,17 +64,31 @@ def _scrape(scraper_name: str, **context) -> str:
     lc.setup(level="INFO", run_id=context["run_id"])
 
     from pipeline.scrapers import (
-        MangoScraper, NikeScraper, JulesScraper,
+        MangoScraper, GymsharkScraper,
+        NikeScraper, JulesScraper,
+        ApcScraper, BalzacScraper, MaisonLabicheScraper,
+        RoujeScraper, CabaiaScraper, BonneGueuleScraper,
+        MerciScraper, IsabelMarantScraper, AmiParisScraper,
         LeCoqSportifScraper, TacchiniScraper, KappaScraper, LottoScraper,
     )
     SCRAPERS = {
-        "mango":        MangoScraper,
-        "nike":         NikeScraper,
-        "jules":        JulesScraper,
-        "lecoqsportif": LeCoqSportifScraper,
-        "tacchini":     TacchiniScraper,
-        "kappa":        KappaScraper,
-        "lotto":        LottoScraper,
+        "mango":          MangoScraper,
+        "gymshark":       GymsharkScraper,
+        "nike":           NikeScraper,
+        "jules":          JulesScraper,
+        "apc":            ApcScraper,
+        "balzac":         BalzacScraper,
+        "maisonlabiche":  MaisonLabicheScraper,
+        "rouje":          RoujeScraper,
+        "cabaia":         CabaiaScraper,
+        "bonnegueule":    BonneGueuleScraper,
+        "merci":          MerciScraper,
+        "isabelmarant":   IsabelMarantScraper,
+        "amiparis":       AmiParisScraper,
+        "lecoqsportif":   LeCoqSportifScraper,
+        "tacchini":       TacchiniScraper,
+        "kappa":          KappaScraper,
+        "lotto":          LottoScraper,
     }
 
     cls = SCRAPERS[scraper_name]

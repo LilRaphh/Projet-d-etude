@@ -21,6 +21,20 @@ def login_required(view_func):
     return decorated
 
 
+def admin_required(view_func):
+    @functools.wraps(view_func)
+    def decorated(*args, **kwargs):
+        user = current_user()
+        if not user:
+            flash('Connectez-vous pour continuer.', 'info')
+            return redirect(url_for('auth.login', next=request.path))
+        if not user.is_admin:
+            flash('Accès refusé.', 'error')
+            return redirect('/')
+        return view_func(*args, **kwargs)
+    return decorated
+
+
 def get_ctx():
     user = current_user()
     uid = user.id if user else 0

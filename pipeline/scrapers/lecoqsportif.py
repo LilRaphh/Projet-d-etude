@@ -25,23 +25,6 @@ SIZE_LABELS = {
     "T1", "T2", "T3", "T4",
 }
 
-# Couleurs triees du plus long au plus court pour matcher "bleu marine" avant "bleu"
-COLOR_KEYWORDS = sorted([
-    "new optical white", "optical white", "sky captain", "dress blues",
-    "bleu electrique", "bleu marine", "bleu ciel", "bleu nuit", "bleu roi",
-    "gris chine", "gris chine clair", "rouge electro", "rio red",
-    "noir", "black", "blanc", "white",
-    "bleu", "blue", "marine", "navy",
-    "rouge", "red",
-    "vert", "green", "kaki", "khaki", "olive", "safari", "univert",
-    "gris", "grey", "gray", "anthracite",
-    "beige", "camel", "ecru", "creme",
-    "rose", "pink",
-    "jaune", "yellow", "orange",
-    "violet", "purple", "bordeaux", "burgundy",
-    "multicolore", "colorblock",
-], key=len, reverse=True)
-
 # Zones a masquer avant la recherche de couleur (couleurs du logo, pas du vetement)
 NOISE_PATTERNS = [
     r'couleurs?\s+\w+(?:[,\s/]+\w+)+',   # "couleurs rouge, vert et jaune"
@@ -101,15 +84,6 @@ class LeCoqSportifScraper(BaseScraper):
         return val.upper() in SIZE_LABELS or (val.isdigit() and 28 <= int(val) <= 54)
 
     # ------------------------------------------------------------------
-    def _find_color_in_text(self, text: str) -> Optional[str]:
-        """Cherche la premiere couleur connue dans un texte (du plus long au plus court)."""
-        text_lower = text.lower()
-        for color in COLOR_KEYWORDS:
-            if re.search(r'\b' + re.escape(color) + r'\b', text_lower):
-                return color.capitalize()
-        return None
-
-    # ------------------------------------------------------------------
     def _extract_color(self, description: str, title: str) -> Optional[str]:
         """
         Extrait la couleur d'un produit LCS.
@@ -122,7 +96,7 @@ class LeCoqSportifScraper(BaseScraper):
         4. Fallback sur le titre (produits avec code SKU)
         """
         if not description:
-            return self._find_color_in_text(title) if title else None
+            return self._find_color(title) if title else None
 
         desc_lower = description.lower()
 
@@ -151,12 +125,12 @@ class LeCoqSportifScraper(BaseScraper):
             line = line.strip().lstrip('-').strip()
             if not line:
                 continue
-            color = self._find_color_in_text(line)
+            color = self._find_color(line)
             if color:
                 return color
 
         # Priorite 4 : titre produit (codes SKU ex: "sky captain/rio red")
-        return self._find_color_in_text(title) if title else None
+        return self._find_color(title) if title else None
 
     # ------------------------------------------------------------------
     def _parse_product(self, item: dict, genre: str, sexe: str) -> List[Product]:

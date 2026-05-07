@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Administration — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.adm-hero{padding:2.5rem 0 1.5rem}
+.adm-title{font-family:var(--serif);font-size:2rem;font-weight:300;margin-bottom:.3rem}
+.adm-sub{color:var(--tm);font-size:.9rem}
+.adm-tabs{display:flex;gap:.4rem;margin-bottom:2rem;border-bottom:1px solid var(--bor);padding-bottom:0}
+.adm-tab{padding:.5rem 1rem;font-size:.83rem;color:var(--tm);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--tr)}
+.adm-tab:hover{color:var(--tx)}
+.adm-tab.active{color:var(--a);border-bottom-color:var(--a);font-weight:500}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2.5rem}
+.stat-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.4rem 1.6rem}
+.stat-val{font-family:var(--serif);font-size:2.6rem;font-weight:300;line-height:1;color:var(--a)}
+.stat-lbl{font-size:.78rem;color:var(--tm);margin-top:.3rem;text-transform:uppercase;letter-spacing:.05em}
+.sec-title{font-family:var(--serif);font-size:1.2rem;font-weight:400;margin-bottom:1rem}
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+.tbl th{text-align:left;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);padding:.6rem .8rem;border-bottom:2px solid var(--bor)}
+.tbl td{padding:.7rem .8rem;border-bottom:1px solid var(--bor);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg)}
+.role-badge{display:inline-flex;align-items:center;padding:.14rem .48rem;border-radius:99px;font-size:.69rem;font-weight:500}
+.role-admin{background:#fef3c7;color:#92400e}
+.role-user{background:var(--am);color:var(--a)}
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="adm-hero">
+    <h1 class="adm-title">Administration</h1>
+    <p class="adm-sub">Vue d'ensemble de la plateforme</p>
+  </div>
+
+  <nav class="adm-tabs">
+    <a href="/admin/" class="adm-tab active">Dashboard</a>
+    <a href="/admin/users" class="adm-tab">Utilisateurs</a>
+  </nav>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.users }}</div>
+      <div class="stat-lbl">Utilisateurs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.items }}</div>
+      <div class="stat-lbl">Vêtements</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.outfits }}</div>
+      <div class="stat-lbl">Tenues</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val">{{ stats.admins }}</div>
+      <div class="stat-lbl">Admins</div>
+    </div>
+  </div>
+
+  <p class="sec-title">Derniers inscrits</p>
+  <div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden;margin-bottom:2rem">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Email</th>
+          <th>Rôle</th>
+          <th>Inscrit le</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in recent_users %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:.6rem">
+              <div class="avatar" style="width:28px;height:28px;font-size:.72rem">{{ u.username[:2] }}</div>
+              <strong>{{ u.username }}</strong>
+            </div>
+          </td>
+          <td style="color:var(--tm)">{{ u.email }}</td>
+          <td>
+            {% if u.is_admin %}
+            <span class="role-badge role-admin">Admin</span>
+            {% else %}
+            <span class="role-badge role-user">User</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--tm)">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <a href="/admin/users" class="btn btn-ghost btn-sm">Voir tous les utilisateurs →</a>
+</div>
+{% endblock %}

@@ -1,27 +1,88 @@
 {% extends "base.html" %}
-{% block title %}Mon profil — {{ app_name }}{% endblock %}
+{% block title %}Mon compte — {{ app_name }}{% endblock %}
 {% block extra_css %}
 .pp { padding: 2rem 0 5rem; }
 .pp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: 1.75rem; }
 .pp-ttl em { color: var(--a); font-style: italic; }
 
-/* Hero card */
-.pp-hero { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.6rem; display: flex; align-items: center; gap: 1.4rem; margin-bottom: 1.6rem; }
-.pp-av { width: 72px; height: 72px; border-radius: 50%; background: var(--a); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 2rem; font-weight: 400; flex-shrink: 0; text-transform: uppercase; }
-.pp-av-name { font-family: var(--serif); font-size: 1.35rem; font-weight: 400; color: var(--tx); }
-.pp-av-sub { font-size: .8rem; color: var(--tm); margin-top: .18rem; }
-.pp-stats { display: flex; gap: 1.4rem; margin-top: .75rem; }
+/* Hero */
+.pp-hero {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  padding: 1.6rem 1.8rem;
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+  margin-bottom: 1.75rem;
+}
+.pp-av {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: var(--a);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif);
+  font-size: 2.2rem; font-weight: 400;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.pp-hero-info { flex: 1; min-width: 0; }
+.pp-av-name { font-family: var(--serif); font-size: 1.5rem; font-weight: 400; color: var(--tx); }
+.pp-av-sub { font-size: .8rem; color: var(--tm); margin-top: .2rem; }
+.pp-stats { display: flex; gap: 2rem; margin-top: .85rem; }
 .pp-stat { text-align: center; }
-.pp-stat-n { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; color: var(--a); line-height: 1; }
-.pp-stat-l { font-size: .72rem; color: var(--tm); margin-top: .15rem; }
+.pp-stat-n { font-family: var(--serif); font-size: 1.65rem; font-weight: 300; color: var(--a); line-height: 1; }
+.pp-stat-l { font-size: .72rem; color: var(--tm); margin-top: .18rem; text-transform: uppercase; letter-spacing: .05em; }
 
-/* Layout */
-.pp-lay { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
-@media (max-width: 680px) { .pp-lay { grid-template-columns: 1fr; } }
+/* Tabs */
+.tab-nav {
+  display: flex;
+  gap: .3rem;
+  border-bottom: 1px solid var(--bor);
+  margin-bottom: 1.6rem;
+}
+.tab-btn {
+  padding: .58rem 1.1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-size: .84rem;
+  font-weight: 500;
+  color: var(--tm);
+  cursor: pointer;
+  transition: all var(--tr);
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  border-radius: var(--r) var(--r) 0 0;
+}
+.tab-btn:hover { color: var(--tx); background: var(--bg); }
+.tab-btn.active { color: var(--a); border-bottom-color: var(--a); background: var(--am); }
+
+/* Tab icon */
+.tab-ico { font-size: .92rem; }
+
+/* Tab panes */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
 
 /* Cards */
-.pc { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.4rem; }
-.pc-ttl { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--tm); margin-bottom: 1.1rem; padding-bottom: .65rem; border-bottom: 1px solid var(--bor); }
+.pc { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.5rem; margin-bottom: 1.2rem; }
+.pc-ttl { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--tm); margin-bottom: 1.2rem; padding-bottom: .65rem; border-bottom: 1px solid var(--bor); }
+.pc-desc { font-size: .83rem; color: var(--tm); margin-bottom: 1.1rem; line-height: 1.6; }
+
+/* Info row (read-only) */
+.info-row { display: flex; align-items: center; justify-content: space-between; padding: .6rem 0; border-bottom: 1px solid var(--bor); gap: 1rem; }
+.info-row:last-child { border-bottom: none; }
+.info-lbl { font-size: .78rem; font-weight: 500; color: var(--tm); text-transform: uppercase; letter-spacing: .06em; flex-shrink: 0; }
+.info-val { font-size: .88rem; color: var(--tx); text-align: right; word-break: break-all; }
+
+/* Layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; align-items: start; }
+@media (max-width: 680px) { .two-col { grid-template-columns: 1fr; } }
 
 /* Gender pills */
 .gender-grid { display: flex; flex-wrap: wrap; gap: .4rem; }
@@ -30,19 +91,30 @@
 .gender-opt input:checked + label { background: var(--am); border-color: var(--a); color: var(--a); font-weight: 500; }
 .gender-opt label:hover { border-color: var(--a); color: var(--a); }
 
-/* Aesthetic / body pills (same style) */
+/* Pill options */
 .pill-grid { display: flex; flex-wrap: wrap; gap: .4rem; }
 .pill-opt input { display: none; }
 .pill-opt label { display: inline-flex; align-items: center; padding: .28rem .65rem; border: 1px solid var(--bor); border-radius: 99px; font-size: .78rem; color: var(--tm); cursor: pointer; transition: all var(--tr); }
 .pill-opt input:checked + label { background: var(--am); border-color: var(--a); color: var(--a); font-weight: 500; }
 .pill-opt label:hover { border-color: var(--a); color: var(--a); }
 
-/* Budget select highlight */
+/* Budget pills */
 .budget-row { display: flex; gap: .5rem; flex-wrap: wrap; }
 .budget-opt input { display: none; }
 .budget-opt label { padding: .3rem .75rem; border: 1px solid var(--bor); border-radius: var(--r); font-size: .8rem; color: var(--tm); cursor: pointer; transition: all var(--tr); }
 .budget-opt input:checked + label { background: var(--a); border-color: var(--a); color: #fff; }
 .budget-opt label:hover { border-color: var(--a); color: var(--a); }
+
+/* Password strength */
+.pw-strength { height: 3px; border-radius: 99px; background: var(--bor); margin-top: .35rem; overflow: hidden; }
+.pw-strength-bar { height: 100%; width: 0; border-radius: 99px; transition: width .2s, background .2s; }
+
+/* Danger zone */
+.danger-zone { background: #FFF5F5; border: 1px solid #FCCFCF; border-radius: var(--rl); padding: 1.5rem; }
+.danger-ttl { font-size: .72rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #C0392B; margin-bottom: .6rem; }
+.danger-desc { font-size: .83rem; color: #7A3030; margin-bottom: 1.1rem; line-height: 1.6; }
+.btn-danger { background: #C0392B; color: #fff; border: none; padding: .44rem .9rem; border-radius: var(--r); font-size: .81rem; font-weight: 500; cursor: pointer; transition: all var(--tr); }
+.btn-danger:hover { background: #962d22; transform: translateY(-1px); }
 
 .fact { display: flex; justify-content: flex-end; margin-top: 1rem; }
 {% endblock %}
@@ -50,15 +122,15 @@
 {% block content %}
 <div class="pp"><div class="wrap">
   <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Retour</a>
-  <h1 class="pp-ttl">Mon <em>profil</em></h1>
+  <h1 class="pp-ttl">Mon <em>compte</em></h1>
 
   <!-- Hero -->
   <div class="pp-hero">
     <div class="pp-av">{{ me.username[:2] }}</div>
-    <div>
+    <div class="pp-hero-info">
       <div class="pp-av-name">
         {{ profile.display_name or me.username }}
-        {% if me.gender %}<span style="font-size:.75rem;font-family:var(--sans);color:var(--tm);font-weight:400;margin-left:.4rem">{{ me.gender }}</span>{% endif %}
+        {% if me.gender %}<span style="font-size:.75rem;font-family:var(--sans);color:var(--tm);font-weight:400;margin-left:.5rem">{{ me.gender }}</span>{% endif %}
       </div>
       <div class="pp-av-sub">{{ me.email }} · Membre depuis {{ me.created_at.strftime('%B %Y') }}</div>
       <div class="pp-stats">
@@ -74,133 +146,298 @@
     </div>
   </div>
 
-  <div class="pp-lay">
+  <!-- Tab navigation -->
+  <div class="tab-nav">
+    <button class="tab-btn {% if active_tab == 'compte' %}active{% endif %}" data-tab="compte">
+      <span class="tab-ico">👤</span> Compte
+    </button>
+    <button class="tab-btn {% if active_tab == 'preferences' %}active{% endif %}" data-tab="preferences">
+      <span class="tab-ico">🎨</span> Préférences
+    </button>
+    <button class="tab-btn {% if active_tab == 'securite' %}active{% endif %}" data-tab="securite">
+      <span class="tab-ico">🔒</span> Sécurité
+    </button>
+  </div>
 
-    <!-- Identité -->
-    <form method="POST">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="action" value="profile">
-      <div class="pc">
-        <p class="pc-ttl">Identité</p>
+  <!-- Tab: Compte -->
+  <div class="tab-pane {% if active_tab == 'compte' %}active{% endif %}" id="tab-compte">
+    <div class="two-col">
 
-        <div class="fg">
-          <label class="lbl">Prénom / Surnom affiché</label>
-          <input name="display_name" class="fc" placeholder="{{ me.username }}" value="{{ profile.display_name }}">
+      <!-- Identité -->
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="account">
+        <div class="pc">
+          <p class="pc-ttl">Identité</p>
+
+          <div class="fg">
+            <label class="lbl">Prénom / Surnom affiché</label>
+            <input name="display_name" class="fc" placeholder="{{ me.username }}" value="{{ profile.display_name }}">
+          </div>
+
+          <div class="fg">
+            <label class="lbl">Bio / À propos de mon style</label>
+            <textarea name="bio" class="fc" rows="4" placeholder="Ex : J'aime les tenues minimalistes et les couleurs neutres...">{{ profile.bio }}</textarea>
+          </div>
+
+          <div class="fact">
+            <button type="submit" class="btn btn-primary">Sauvegarder</button>
+          </div>
         </div>
+      </form>
 
-        <div class="fg">
-          <label class="lbl" style="margin-bottom:.5rem">Genre</label>
-          <div class="gender-grid">
-            {% for g in genders %}
-            <div class="gender-opt">
-              <input type="radio" name="gender" id="g{{ loop.index }}" value="{{ g }}" {% if me.gender == g %}checked{% endif %}>
-              <label for="g{{ loop.index }}">{{ g }}</label>
+      <!-- Informations du compte -->
+      <div>
+        <div class="pc">
+          <p class="pc-ttl">Informations du compte</p>
+          <div>
+            <div class="info-row">
+              <span class="info-lbl">Nom d'utilisateur</span>
+              <span class="info-val">{{ me.username }}</span>
             </div>
-            {% endfor %}
+            <div class="info-row">
+              <span class="info-lbl">Adresse e-mail</span>
+              <span class="info-val">{{ me.email }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Membre depuis</span>
+              <span class="info-val">{{ me.created_at.strftime('%d %B %Y') }}</span>
+            </div>
+            {% if me.is_admin %}
+            <div class="info-row">
+              <span class="info-lbl">Rôle</span>
+              <span class="info-val" style="color:var(--a);font-weight:500">Administrateur</span>
+            </div>
+            {% endif %}
           </div>
         </div>
 
-        <div class="fg">
-          <label class="lbl">Bio / À propos de mon style</label>
-          <textarea name="bio" class="fc" rows="3" placeholder="Ex : J'aime les tenues minimalistes et les couleurs neutres...">{{ profile.bio }}</textarea>
-        </div>
-
-        <div class="fact">
-          <button type="submit" class="btn btn-primary">Sauvegarder</button>
+        <div class="pc">
+          <p class="pc-ttl">Statistiques</p>
+          <div>
+            <div class="info-row">
+              <span class="info-lbl">Vêtements</span>
+              <span class="info-val" style="font-family:var(--serif);font-size:1.1rem;color:var(--a)">{{ me.items.count() }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-lbl">Tenues créées</span>
+              <span class="info-val" style="font-family:var(--serif);font-size:1.1rem;color:var(--a)">{{ me.outfits.count() }}</span>
+            </div>
+            {% set analyzed = me.items.filter_by(ai_analyzed=True).count() %}
+            <div class="info-row">
+              <span class="info-lbl">Analysés par IA</span>
+              <span class="info-val" style="font-family:var(--serif);font-size:1.1rem;color:var(--a)">{{ analyzed }}</span>
+            </div>
+          </div>
         </div>
       </div>
-    </form>
 
-    <!-- Préférences de style -->
+    </div>
+  </div>
+
+  <!-- Tab: Préférences -->
+  <div class="tab-pane {% if active_tab == 'preferences' %}active{% endif %}" id="tab-preferences">
     <form method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="action" value="profile">
-      <!-- On recopie les champs identité pour ne pas les écraser -->
-      <input type="hidden" name="display_name" value="{{ profile.display_name }}">
-      <input type="hidden" name="bio" value="{{ profile.bio }}">
-      <input type="hidden" name="gender" value="{{ me.gender or '' }}">
-      <div class="pc">
-        <p class="pc-ttl">Préférences de style</p>
+      <input type="hidden" name="action" value="preferences">
+      <div class="two-col">
 
-        <div class="fg">
-          <label class="lbl" style="margin-bottom:.5rem">Esthétique générale</label>
-          <div class="pill-grid">
-            {% for a in aesthetics %}
-            <div class="pill-opt">
-              <input type="radio" name="style_aesthetic" id="ae{{ loop.index }}" value="{{ a }}" {% if profile.style_aesthetic == a %}checked{% endif %}>
-              <label for="ae{{ loop.index }}">{{ a }}</label>
+        <!-- Style & genre -->
+        <div class="pc">
+          <p class="pc-ttl">Style &amp; Genre</p>
+
+          <div class="fg">
+            <label class="lbl" style="margin-bottom:.5rem">Genre</label>
+            <div class="gender-grid">
+              {% for g in genders %}
+              <div class="gender-opt">
+                <input type="radio" name="gender" id="g{{ loop.index }}" value="{{ g }}" {% if me.gender == g %}checked{% endif %}>
+                <label for="g{{ loop.index }}">{{ g }}</label>
+              </div>
+              {% endfor %}
             </div>
-            {% endfor %}
+          </div>
+
+          <div class="fg">
+            <label class="lbl" style="margin-bottom:.5rem">Esthétique générale</label>
+            <div class="pill-grid">
+              {% for a in aesthetics %}
+              <div class="pill-opt">
+                <input type="radio" name="style_aesthetic" id="ae{{ loop.index }}" value="{{ a }}" {% if profile.style_aesthetic == a %}checked{% endif %}>
+                <label for="ae{{ loop.index }}">{{ a }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="fg">
+            <label class="lbl" style="margin-bottom:.5rem">Budget moyen par pièce</label>
+            <div class="budget-row">
+              {% for bud in budgets %}
+              <div class="budget-opt">
+                <input type="radio" name="style_budget" id="bu{{ loop.index }}" value="{{ bud }}" {% if profile.style_budget == bud %}checked{% endif %}>
+                <label for="bu{{ loop.index }}">{{ bud }}</label>
+              </div>
+              {% endfor %}
+            </div>
           </div>
         </div>
 
-        <div class="fg">
-          <label class="lbl" style="margin-bottom:.5rem">Morphologie</label>
-          <div style="display:flex;gap:1rem">
-            <div style="flex:1">
-              <label for="height" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Taille (cm)</label>
-              <input type="number" id="height" name="height" min="100" max="250"
-                value="{{ profile.height }}" placeholder="ex. 175"
-                style="width:100%;padding:.55rem .75rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);color:var(--tx);font-size:.95rem">
+        <!-- Morphologie & notes -->
+        <div class="pc">
+          <p class="pc-ttl">Morphologie &amp; Notes</p>
+
+          <div class="fg">
+            <label class="lbl" style="margin-bottom:.5rem">Morphologie</label>
+            <div style="display:flex;gap:1rem">
+              <div style="flex:1">
+                <label for="height" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Taille (cm)</label>
+                <input type="number" id="height" name="height" min="100" max="250"
+                  value="{{ profile.height }}" placeholder="ex. 175"
+                  class="fc">
+              </div>
+              <div style="flex:1">
+                <label for="weight" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Poids (kg)</label>
+                <input type="number" id="weight" name="weight" min="30" max="300"
+                  value="{{ profile.weight }}" placeholder="ex. 70"
+                  class="fc">
+              </div>
             </div>
-            <div style="flex:1">
-              <label for="weight" style="font-size:.8rem;color:var(--tm);display:block;margin-bottom:.35rem">Poids (kg)</label>
-              <input type="number" id="weight" name="weight" min="30" max="300"
-                value="{{ profile.weight }}" placeholder="ex. 70"
-                style="width:100%;padding:.55rem .75rem;border-radius:var(--r);border:1px solid var(--bor);background:var(--bg);color:var(--tx);font-size:.95rem">
-            </div>
+          </div>
+
+          <div class="fg">
+            <label class="lbl">Notes libres sur mon style</label>
+            <textarea name="style_notes" class="fc" rows="5" placeholder="Ex : J'évite le synthétique, je préfère les coupes amples...">{{ profile.style_notes }}</textarea>
           </div>
         </div>
 
-        <div class="fg">
-          <label class="lbl" style="margin-bottom:.5rem">Budget moyen par pièce</label>
-          <div class="budget-row">
-            {% for bud in budgets %}
-            <div class="budget-opt">
-              <input type="radio" name="style_budget" id="bu{{ loop.index }}" value="{{ bud }}" {% if profile.style_budget == bud %}checked{% endif %}>
-              <label for="bu{{ loop.index }}">{{ bud }}</label>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="fg">
-          <label class="lbl">Notes libres sur mon style</label>
-          <textarea name="style_notes" class="fc" rows="3" placeholder="Ex : J'évite le synthétique, je préfère les coupes amples...">{{ profile.style_notes }}</textarea>
-        </div>
-
-        <div class="fact">
-          <button type="submit" class="btn btn-primary">Sauvegarder</button>
-        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:.4rem">
+        <button type="submit" class="btn btn-primary">Sauvegarder les préférences</button>
       </div>
     </form>
+  </div>
 
-    <!-- Sécurité -->
-    <form method="POST" style="grid-column: 1 / -1;">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="action" value="password">
-      <div class="pc">
-        <p class="pc-ttl">Changer le mot de passe</p>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem">
+  <!-- Tab: Sécurité -->
+  <div class="tab-pane {% if active_tab == 'securite' %}active{% endif %}" id="tab-securite">
+    <div style="max-width:680px">
+
+      <!-- Changer le mot de passe -->
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="password">
+        <div class="pc">
+          <p class="pc-ttl">Changer le mot de passe</p>
+          <p class="pc-desc">Utilisez un mot de passe long et unique que vous n'utilisez pas ailleurs.</p>
+
           <div class="fg">
             <label class="lbl">Mot de passe actuel</label>
             <input type="password" name="current_password" class="fc" autocomplete="current-password">
           </div>
           <div class="fg">
             <label class="lbl">Nouveau mot de passe</label>
-            <input type="password" name="new_password" class="fc" autocomplete="new-password">
+            <input type="password" name="new_password" id="newPw" class="fc" autocomplete="new-password">
+            <div class="pw-strength"><div class="pw-strength-bar" id="pwBar"></div></div>
+            <div id="pwHint" style="font-size:.72rem;color:var(--tm);margin-top:.25rem"></div>
           </div>
           <div class="fg">
-            <label class="lbl">Confirmer le nouveau</label>
-            <input type="password" name="new_password2" class="fc" autocomplete="new-password">
+            <label class="lbl">Confirmer le nouveau mot de passe</label>
+            <input type="password" name="new_password2" id="newPw2" class="fc" autocomplete="new-password">
+            <div id="pwMatch" style="font-size:.72rem;margin-top:.25rem"></div>
+          </div>
+
+          <div class="fact">
+            <button type="submit" class="btn btn-ghost">Mettre à jour le mot de passe</button>
           </div>
         </div>
-        <div class="fact">
-          <button type="submit" class="btn btn-ghost">Changer le mot de passe</button>
+      </form>
+
+      <!-- Sessions -->
+      <div class="pc">
+        <p class="pc-ttl">Session active</p>
+        <p class="pc-desc">Vous êtes connecté sur cet appareil. Pour vous déconnecter de tous vos appareils, changez votre mot de passe.</p>
+        <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+          <a href="/logout" class="btn btn-ghost">Se déconnecter</a>
         </div>
       </div>
-    </form>
 
+      <!-- Zone de danger -->
+      <div class="danger-zone">
+        <p class="danger-ttl">⚠ Zone dangereuse</p>
+        <p class="danger-desc">
+          La suppression de votre compte est <strong>irréversible</strong>. Toutes vos données — vêtements, tenues, préférences — seront définitivement effacées.
+        </p>
+        <details>
+          <summary style="font-size:.83rem;color:#C0392B;cursor:pointer;font-weight:500;margin-bottom:.75rem">Supprimer mon compte…</summary>
+          <form method="POST" style="margin-top:.85rem" onsubmit="return confirm('Êtes-vous absolument sûr ? Cette action est irréversible.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="delete_account">
+            <div class="fg">
+              <label class="lbl" style="color:#C0392B">Tapez votre nom d'utilisateur pour confirmer : <strong>{{ me.username }}</strong></label>
+              <input name="confirm_delete" class="fc" placeholder="{{ me.username }}" autocomplete="off"
+                style="border-color:#FCCFCF;background:#FFF5F5">
+            </div>
+            <button type="submit" class="btn-danger">Supprimer définitivement mon compte</button>
+          </form>
+        </details>
+      </div>
+
+    </div>
   </div>
+
 </div></div>
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var tab = this.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    this.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    history.replaceState(null, '', '/profile?tab=' + tab);
+  });
+});
+
+// Password strength indicator
+var newPw = document.getElementById('newPw');
+var newPw2 = document.getElementById('newPw2');
+var pwBar = document.getElementById('pwBar');
+var pwHint = document.getElementById('pwHint');
+var pwMatch = document.getElementById('pwMatch');
+
+if (newPw) {
+  newPw.addEventListener('input', function() {
+    var v = this.value;
+    var score = 0;
+    if (v.length >= 8) score++;
+    if (v.length >= 12) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    var colors = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60'];
+    var labels = ['Très faible','Faible','Moyen','Fort','Très fort'];
+    pwBar.style.width = (score * 20) + '%';
+    pwBar.style.background = score > 0 ? colors[score - 1] : 'transparent';
+    pwHint.textContent = v.length > 0 ? labels[Math.min(score, 4)] : '';
+    checkMatch();
+  });
+}
+
+if (newPw2) {
+  newPw2.addEventListener('input', checkMatch);
+}
+
+function checkMatch() {
+  if (!newPw2 || !newPw2.value) { pwMatch.textContent = ''; return; }
+  if (newPw.value === newPw2.value) {
+    pwMatch.style.color = '#27ae60';
+    pwMatch.textContent = '✓ Les mots de passe correspondent';
+  } else {
+    pwMatch.style.color = '#e74c3c';
+    pwMatch.textContent = '✗ Les mots de passe ne correspondent pas';
+  }
+}
+</script>
 {% endblock %}

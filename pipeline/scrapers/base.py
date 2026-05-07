@@ -17,6 +17,39 @@ from pipeline.models import Product
 
 logger = logging.getLogger(__name__)
 
+# Liste de couleurs partagée par tous les scrapers — du plus long au plus court
+# pour garantir "bleu marine" avant "bleu", "navy blue" avant "navy", etc.
+COLOR_KEYWORDS = sorted({
+    # Français multi-mots
+    "bleu electrique", "bleu marine", "bleu ciel", "bleu nuit", "bleu roi",
+    "gris chine clair", "gris chine", "gris chiné", "gris clair", "gris foncé",
+    "vert kaki", "rouge electro", "new optical white",
+    # Anglais multi-mots
+    "black beauty", "brilliant white", "optical white", "ivory white", "off white",
+    "electric blue", "dark blue", "light blue", "navy blue", "royal blue", "sky blue",
+    "ultra marine", "heather blue", "dress blues",
+    "dark green", "bright green", "forest green", "light green", "olive green", "pine green",
+    "bright red", "dark red", "clay red", "fiesta red", "rio red",
+    "burnt orange", "safety yellow", "bright cyan",
+    "all black", "all white", "jet black", "sky captain",
+    # Français simple
+    "anthracite", "bordeaux", "terracotta", "lavande", "parme",
+    "caramel", "chocolat", "cognac", "rouille", "charbon",
+    "naturel", "corail", "univert", "safari",
+    "crème", "creme", "écru", "ivoire",
+    "marine", "rouge", "blanc", "noir",
+    "kaki", "khaki", "olive", "beige",
+    "camel", "rose", "gris", "vert", "bleu",
+    "marron", "violet", "orange", "jaune",
+    # Anglais simple
+    "multicolor", "multicolore", "colorblock", "burgundy", "turquoise",
+    "charcoal", "ivory", "cream", "ecru", "nude", "sand", "stripe",
+    "purple", "yellow", "pink", "green", "navy",
+    "red", "grey", "gray", "blue",
+    "brown", "tan", "beige",
+    "black", "white",
+}, key=len, reverse=True)
+
 
 class BaseScraper(ABC):
     BRAND_SOURCE: str = "Unknown"
@@ -37,6 +70,14 @@ class BaseScraper(ABC):
 
     def sleep(self, min_s: float = 0.8, max_s: float = 2.0):
         time.sleep(random.uniform(min_s, max_s))
+
+    def _find_color(self, text: str) -> Optional[str]:
+        """Cherche la première couleur connue dans un texte (du plus long au plus court)."""
+        t = text.lower()
+        for c in COLOR_KEYWORDS:
+            if re.search(r'\b' + re.escape(c) + r'\b', t):
+                return c.capitalize()
+        return None
 
     @staticmethod
     def parse_price(text: str) -> tuple:
@@ -65,15 +106,18 @@ class BaseScraper(ABC):
             (["crop", "brassière"],                                      "Crop-top"),
             (["robe"],                                                   "Robe"),
             (["combinaison"],                                            "Combinaison"),
-            (["chemise", "shirt"],                                       "Chemise"),
-            (["sweat", "sweatshirt"],                                    "Sweat"),
-            (["hoodie", "capuche"],                                      "Hoodie"),
-            (["veste", "blazer", "costume"],                             "Veste"),
-            (["blouson", "bomber", "vest", "jacket", "track jacket"],   "Veste"),
-            (["manteau", "parka", "anorak"],                             "Manteau"),
-            (["doudoune"],                                               "Doudoune"),
-            (["court", "short", "bermuda"],                              "Short"),
-            (["jogging", "pantalon", "chino", "cargo"],                 "Pantalon"),
+            (["crewneck", "crew neck", "1/4 zip", "quarter zip"],               "Sweat"),
+            (["sweat", "sweatshirt"],                                            "Sweat"),
+            (["hoodie", "hoody", "capuche"],                                     "Hoodie"),
+            (["chemise", "shirt"],                                               "Chemise"),
+            (["veste", "blazer", "costume"],                                     "Veste"),
+            (["blouson", "bomber", "vest", "jacket", "track jacket",
+              "windbreaker"],                                                     "Veste"),
+            (["manteau", "parka", "anorak"],                                     "Manteau"),
+            (["doudoune"],                                                        "Doudoune"),
+            (["court", "short", "bermuda"],                                      "Short"),
+            (["sweatpant", "sweat pant", "track pant", "jogger", "trouser"],    "Pantalon"),
+            (["jogging", "pantalon", "chino", "cargo"],                         "Pantalon"),
             (["legging"],                                                "Legging"),
             (["jupe"],                                                   "Jupe"),
             (["débardeur"],                                              "Débardeur"),
@@ -114,7 +158,8 @@ class BaseScraper(ABC):
                                     "chemise", "sweat", "hoodie", "haut", "top",
                                     "débardeur", "polo", "cardigan", "gilet",
                                     "brassière", "crop", "maillot", "shirt", "tee",
-                                    "tank", "sweater", "hoodie", "knitwear", "knit"]):
+                                    "tank", "sweater", "knitwear", "knit",
+                                    "jersey", "crewneck", "crew neck", "long sleeve"]):
             return "Haut"
         return "Autre"
 

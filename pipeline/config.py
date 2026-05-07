@@ -46,7 +46,7 @@ STYLE_VALUES = [
     "Blazer", "Parka", "Doudoune", "Sneakers", "Bottines",
     "Sandales", "Mocassins", "Derbies", "Autre",
 ]
-CURRENCY_VALUES = ["EUR", "USD"]
+CURRENCY_VALUES = ["EUR", "USD", "GBP"]
 
 # ==========================
 #  Template d'un produit (schéma MongoDB)

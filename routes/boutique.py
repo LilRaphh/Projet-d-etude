@@ -12,7 +12,7 @@ from pathlib import Path
 from flask import Blueprint, jsonify, render_template, request
 
 from extensions import db
-from models import ClothingItem
+from models import ClothingItem, WishlistItem
 from utils.auth import current_user, get_ctx, login_required
 
 boutique_bp = Blueprint('boutique', __name__)
@@ -22,16 +22,74 @@ PER_PAGE = 24
 
 _cache = None
 
+# ── Filtres qualité produit ───────────────────────────────────────────────────
+
+_CHILD_SEXE = frozenset(['fille', 'garçon', 'garcon'])
+
+_NON_CLOTHING_STARTS = (
+    # Bougies & éclairage
+    'bougie', 'bougies', 'cierge', 'bougeoir', 'lampe', 'suspension',
+    # Vaisselle & cuisine
+    'tasse', 'assiette', 'verre', 'couteau', 'cuillère', 'fourchette',
+    'sabre', 'bol', 'pichet', 'carafe', 'théière', 'cafetière',
+    'torchon', 'nappe', 'serviette',
+    # Déco & maison
+    'coussin', 'drap', 'taie', 'housse', 'vase', 'plateau', 'peluche',
+    'canapé', 'miroir', 'plaid', 'plante', 'gourde', 'jouet', 'magnet',
+    # Papeterie & livres
+    'carnet', 'affiche', 'stylo', 'livre', 'crayons', 'jeu de',
+    'planche de stickers', 'poster',
+    # Beauté & parfumerie
+    'diffuseur', 'parfum ', 'eau de parfum', 'eau de cologne',
+    'trudon -', 'savon', 'lotion', 'gel douche', 'le sérum',
+    "huile d'", 'huile d',
+    # Coffrets & sets maison
+    'coffret', 'lot de', 'lot 4', 'lot 12', 'set de',
+    'duo de bougies', 'ensemble de',
+    # Divers
+    'adhésif bougie', 'adhesif bougie', 'boîte', 'boite',
+)
+_NON_CLOTHING_STARTS = _NON_CLOTHING_STARTS + ('gervasoni',)
+
+_NON_CLOTHING_CONTAINS = (
+    'eau de parfum', 'eau de cologne', "parfum d'intérieur",
+    'diffuseur parfumé', ' bougies', ' - bougie', ' - carnet',
+    ' assiette', ' canapé',
+)
+
+
+def _is_adult_clothing(p: dict) -> bool:
+    """Retourne False pour les articles enfants ou non-vestimentaires."""
+    if (p.get('sexe') or '').lower().strip() in _CHILD_SEXE:
+        return False
+    name = (p.get('name') or '').lower().strip()
+    for kw in _NON_CLOTHING_STARTS:
+        if name.startswith(kw):
+            return False
+    if re.search(r'\bmugs?\b', name):
+        return False
+    for kw in _NON_CLOTHING_CONTAINS:
+        if kw in name:
+            return False
+    return True
+
 
 def _load_products():
     global _cache
     if _cache is None:
         try:
             with open(DB_PATH, encoding='utf-8') as f:
-                _cache = json.load(f)
+                raw = json.load(f)
+            _cache = [p for p in raw if _is_adult_clothing(p)]
         except (FileNotFoundError, json.JSONDecodeError):
             _cache = []
     return _cache
+
+
+def reset_boutique_cache():
+    """Invalide le cache produit — à appeler après chaque scraping."""
+    global _cache
+    _cache = None
 
 
 @boutique_bp.route('/boutique')
@@ -96,6 +154,13 @@ def boutique():
     )
 
     me = ctx['me']
+    wishlisted_urls = set()
+    wishlist_count = 0
+    if me:
+        wl = WishlistItem.query.filter_by(user_id=me.id).with_entities(WishlistItem.product_url).all()
+        wishlisted_urls = {row[0] for row in wl}
+        wishlist_count = len(wishlisted_urls)
+
     wardrobe_items = []
     if me:
         wardrobe_items = [
@@ -126,6 +191,8 @@ def boutique():
         all_sexes=all_sexes,
         wardrobe_items=wardrobe_items,
         user_gender=me.gender if me else '',
+        wishlisted_urls=wishlisted_urls,
+        wishlist_count=wishlist_count,
         **ctx,
     )
 
@@ -157,19 +224,25 @@ _SLOT_LABELS = {
     'shoes': 'chaussures',
 }
 
-_OUTER_KW  = ['veste', 'manteau', 'blouson', 'parka', 'doudoune', 'coupe-vent', 'bomber',
-               'trench', 'sweat', 'pull', 'cardigan', 'hoodie', 'polaire', 'gilet', 'zip']
-_BOTTOM_KW = ['pantalon', 'jean', 'short', 'bermuda', 'jogging', 'legging', 'cargo',
-               'chino', 'jupe', 'robe']
-_SHOES_KW  = ['chaussure', 'sneaker', 'basket', 'boot', 'botte', 'mocassin', 'espadrille',
-               'sandal', 'running', 'jordan', 'air max', 'tennis shoe']
-_TOP_KW    = ['t-shirt', 'tshirt', 'polo', 'chemise', 'top', 'débardeur', 'haut', 'maillot']
+_OUTER_KW     = ['veste', 'manteau', 'blouson', 'parka', 'doudoune', 'coupe-vent', 'bomber',
+                  'trench', 'sweat', 'pull', 'cardigan', 'hoodie', 'polaire', 'gilet', 'zip']
+_BOTTOM_KW    = ['pantalon', 'jean', 'short', 'bermuda', 'jogging', 'legging', 'cargo',
+                  'chino', 'jupe', 'robe']
+_SHOES_KW     = ['chaussure', 'sneaker', 'basket', 'boot', 'botte', 'mocassin', 'espadrille',
+                  'sandal', 'running', 'jordan', 'air max', 'tennis shoe']
+_TOP_KW       = ['t-shirt', 'tshirt', 'polo', 'chemise', 'top', 'débardeur', 'haut', 'maillot']
+_ACCESSORY_KW = ['pochette', 'sacoche', 'cabas', 'tote', 'portefeuille', 'porte-monnaie',
+                  'ceinture', 'bracelet', 'collier', 'bague', 'montre', 'lunette',
+                  'chapeau', 'bob ', 'bonnet', 'casquette', 'béret', 'écharpe', 'foulard',
+                  'gant ', 'mitaine', 'sac à', 'sac de', 'backpack', 'wallet']
 
 
 def _boutique_slot(p: dict) -> str:
     text = ' '.join(filter(None, [
         p.get('categorie', ''), p.get('type', ''), p.get('name', '')
     ])).lower()
+    if any(k in text for k in _ACCESSORY_KW):
+        return 'accessory'
     if any(k in text for k in _SHOES_KW):
         return 'shoes'
     if any(k in text for k in _BOTTOM_KW):
@@ -200,6 +273,11 @@ def _complete_wardrobe_inner():
     item_id = data.get('item_id')
     prompt  = data.get('prompt', '').strip()
 
+    try:
+        budget_max = float(data['budget_max']) if data.get('budget_max') else None
+    except (TypeError, ValueError):
+        budget_max = None
+
     if not item_id:
         return jsonify(error='Vêtement manquant'), 400
 
@@ -214,8 +292,8 @@ def _complete_wardrobe_inner():
 
     # Valeurs acceptées par genre (inclut variantes enfant + mixte + vide)
     _GENDER_ACCEPT = {
-        'Homme': {'homme', 'garçon', 'mixte', 'unisexe', ''},
-        'Femme': {'femme', 'fille',  'mixte', 'unisexe', ''},
+        'Homme': {'homme', 'mixte', 'unisexe', ''},
+        'Femme': {'femme',  'mixte', 'unisexe', ''},
     }
     accepted = _GENDER_ACCEPT.get(user_gender)
 
@@ -232,10 +310,16 @@ def _complete_wardrobe_inner():
     for p in products:
         by_slot.setdefault(_boutique_slot(p), []).append(p)
 
+    # Budget par pièce : on divise le total par le nombre de slots à compléter
+    n_slots = len(needed_slots)
+    per_piece_budget = (budget_max / n_slots) if budget_max and n_slots else None
+
     # Échantillonner : 8 articles par slot nécessaire
     slot_samples: dict = {}
     for slot in needed_slots:
         pool = by_slot.get(slot, [])
+        if per_piece_budget is not None:
+            pool = [p for p in pool if p.get('price_value') is not None and p['price_value'] <= per_piece_budget]
         if pool:
             slot_samples[slot] = random.sample(pool, min(8, len(pool)))
 
@@ -290,6 +374,7 @@ def _complete_wardrobe_inner():
     user_msg = (
         f"Pièce existante : {anchor_desc}\n"
         f"Catégories à compléter : {needed_desc}\n"
+        + (f"Budget total maximum pour la tenue : {budget_max:.0f}€ (environ {per_piece_budget:.0f}€ par pièce)\n" if budget_max else "")
         + (f"Style voulu : {prompt}\n" if prompt else "")
         + "\nCatalogue (retourne le chiffre entre [ ] pour chaque catégorie) :\n\n"
         + "\n\n".join(sections)
@@ -297,10 +382,42 @@ def _complete_wardrobe_inner():
     )
 
     def _sanitize(s: str) -> str:
-        """Supprime les caractères de contrôle qui cassent json.loads."""
         return re.sub(r'[\x00-\x1f\x7f]', ' ', str(s)).strip()
 
-    # Nettoyer aussi le contenu des messages avant envoi
+    def _parse_llm_json(raw: str):
+        # 1. Supprimer les blocs markdown ```json ... ```
+        raw = re.sub(r'```(?:json)?\s*', '', raw).strip()
+        raw = re.sub(r'```\s*$', '', raw).strip()
+        # 2. Extraire entre le premier { et le dernier }
+        start, end = raw.find('{'), raw.rfind('}')
+        if start == -1 or end == -1:
+            return None
+        raw = raw[start:end + 1]
+        # 3. Tentative directe
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+        # 4. Réparer virgule manquante entre valeur numérique et clé suivante
+        fixed = re.sub(r'(\d)\s*\n\s*"', r'\1,\n"', raw)
+        # 5. Supprimer virgule traînante avant } ou ]
+        fixed = re.sub(r',\s*([}\]])', r'\1', fixed)
+        try:
+            return json.loads(fixed)
+        except json.JSONDecodeError:
+            pass
+        # 6. Extraction regex slot par slot en dernier recours
+        result = {}
+        for key in ('top', 'outer', 'bottom', 'shoes', 'full', 'accessory', 'conseil'):
+            m = re.search(rf'"{key}"\s*:\s*(\d+|"[^"]*")', raw)
+            if m:
+                val = m.group(1)
+                try:
+                    result[key] = int(val)
+                except ValueError:
+                    result[key] = val.strip('"')
+        return result or None
+
     system_msg = _sanitize(system_msg)
     user_msg   = _sanitize(user_msg)
 
@@ -317,18 +434,16 @@ def _complete_wardrobe_inner():
                     {"role": "user",   "content": user_msg},
                 ],
                 "stream": False,
+                "format": "json",
                 "options": {"temperature": 0.15},
             },
             timeout=60,
         )
         resp.raise_for_status()
         raw = _sanitize(resp.json().get("message", {}).get("content", ""))
-        m = re.search(r'\{.*\}', raw, re.DOTALL)
-        if not m:
-            return jsonify(error="Réponse Ollama invalide."), 500
-        result = json.loads(m.group())
-    except json.JSONDecodeError as exc:
-        return jsonify(error=f"JSON invalide : {str(exc)[:120]}"), 500
+        result = _parse_llm_json(raw)
+        if result is None:
+            return jsonify(error="Réponse Ollama invalide (JSON introuvable)."), 500
     except Exception as exc:
         return jsonify(error=f"Ollama indisponible : {str(exc)[:120]}"), 500
 
@@ -422,3 +537,52 @@ def boutique_add_to_wardrobe():
     db.session.add(item)
     db.session.commit()
     return jsonify(ok=True, item_id=item.id, name=item.name)
+
+
+# ── Wishlist ──────────────────────────────────────────────────────────────────
+
+@boutique_bp.route('/boutique/wishlist/toggle', methods=['POST'])
+@login_required
+def boutique_wishlist_toggle():
+    data = request.get_json(force=True) or {}
+    url = (data.get('url') or '').strip()
+    if not url:
+        return jsonify(error='URL manquante'), 400
+
+    me = current_user()
+    existing = WishlistItem.query.filter_by(user_id=me.id, product_url=url).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        return jsonify(wishlisted=False)
+
+    snapshot = {k: data.get(k) for k in [
+        'name', 'price_value', 'currency', 'color', 'brand_source',
+        'image', 'url', 'type', 'categorie', 'style', 'sexe', 'description',
+        'taille', 'sizes', 'rating',
+    ]}
+    w = WishlistItem(
+        user_id=me.id,
+        product_url=url,
+        product_json=json.dumps(snapshot, ensure_ascii=False),
+    )
+    db.session.add(w)
+    db.session.commit()
+    return jsonify(wishlisted=True)
+
+
+@boutique_bp.route('/boutique/wishlist')
+@login_required
+def boutique_wishlist_page():
+    ctx = get_ctx()
+    me = ctx['me']
+    rows = WishlistItem.query.filter_by(user_id=me.id).order_by(WishlistItem.added_at.desc()).all()
+    products = [json.loads(w.product_json) for w in rows]
+    wishlisted_urls = {w.product_url for w in rows}
+    return render_template(
+        'wishlist.html',
+        products=products,
+        total=len(products),
+        wishlisted_urls=wishlisted_urls,
+        **ctx,
+    )

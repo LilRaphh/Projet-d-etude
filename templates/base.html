@@ -287,6 +287,9 @@ textarea.fc{resize:vertical;min-height:80px}
         ✦ Styliste
       </a>
       <a href="/style-check" class="nav-link {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse Mon style</a>
+      {% if me.is_admin %}
+      <a href="/admin/" class="nav-link {% if request.path.startswith('/admin') %}active{% endif %}" title="Administration">⚙ Admin</a>
+      {% endif %}
       {% if global_weather %}
       <a href="/forecast" class="weather-pill-wrap">
         <div class="weather-pill">

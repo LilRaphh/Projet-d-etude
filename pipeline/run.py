@@ -14,8 +14,12 @@ from typing import List
 
 from pipeline import logging_config
 from pipeline.scrapers import (
-    MangoScraper, NikeScraper, JulesScraper,
+    MangoScraper,
+    NikeScraper, JulesScraper, GymsharkScraper,
     LeCoqSportifScraper, TacchiniScraper, KappaScraper, LottoScraper,
+    ApcScraper, BalzacScraper, MaisonLabicheScraper,
+    RoujeScraper, CabaiaScraper,
+    BonneGueuleScraper, MerciScraper, IsabelMarantScraper, AmiParisScraper,
     _PLAYWRIGHT_AVAILABLE,
 )
 from pipeline.models import Product
@@ -25,15 +29,25 @@ from pipeline.check import run_check
 from pipeline.stats import generate as generate_stats
 
 SCRAPERS = {
-    "mango":        MangoScraper,
-    "lecoqsportif": LeCoqSportifScraper,
-    "tacchini":     TacchiniScraper,
-    "kappa":        KappaScraper,
-    "lotto":        LottoScraper,
+    "mango":           MangoScraper,
+    "lecoqsportif":    LeCoqSportifScraper,
+    "tacchini":        TacchiniScraper,
+    "kappa":           KappaScraper,
+    "lotto":           LottoScraper,
+    "apc":             ApcScraper,
+    "balzac":          BalzacScraper,
+    "maisonlabiche":   MaisonLabicheScraper,
+    "rouje":           RoujeScraper,
+    "cabaia":          CabaiaScraper,
+    "bonnegueule":     BonneGueuleScraper,
+    "merci":           MerciScraper,
+    "isabelmarant":    IsabelMarantScraper,
+    "amiparis":        AmiParisScraper,
 }
 if _PLAYWRIGHT_AVAILABLE:
-    SCRAPERS["nike"]  = NikeScraper
-    SCRAPERS["jules"] = JulesScraper
+    SCRAPERS["nike"]     = NikeScraper
+    SCRAPERS["jules"]    = JulesScraper
+    SCRAPERS["gymshark"] = GymsharkScraper
 
 
 def run(scraper_names: List[str], log_level: str = "INFO") -> dict:

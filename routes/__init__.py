@@ -1,3 +1,4 @@
+from .admin import admin_bp
 from .ai_recommend import ai_bp
 from .api import api_bp
 from .auth import auth_bp
@@ -21,3 +22,4 @@ def register_blueprints(app):
     app.register_blueprint(style_check_bp)
     app.register_blueprint(boutique_bp)
     app.register_blueprint(complete_bp)
+    app.register_blueprint(admin_bp)

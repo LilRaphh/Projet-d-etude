@@ -24,11 +24,13 @@ class User(db.Model):
     username = db.Column(db.String(60), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     gender = db.Column(db.String(30), nullable=True)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship('ClothingItem', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
     outfits = db.relationship('Outfit', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
     user_settings = db.relationship('UserSetting', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
+    wishlist_items = db.relationship('WishlistItem', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
 
     def set_password(self, pw):
         self.password_hash = generate_password_hash(pw)
@@ -123,6 +125,22 @@ class ItemEmbedding(db.Model):
     __table_args__ = (
         db.UniqueConstraint('item_id', 'user_id', name='uq_embedding_item_user'),
     )
+
+
+class WishlistItem(db.Model):
+    __tablename__ = 'wishlist_items'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    product_url = db.Column(db.String(500), nullable=False)
+    product_json = db.Column(db.Text, nullable=False)
+    added_at    = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'product_url', name='uq_wishlist_user_product'),
+    )
+
+    owner = db.relationship('User', back_populates='wishlist_items')
 
 
 class UserSetting(db.Model):
