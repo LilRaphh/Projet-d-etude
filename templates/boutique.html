@@ -745,16 +745,24 @@ function esc(str){ var d=document.createElement('div'); d.appendChild(document.c
 
 function toggleWishlist(btn, product) {
   if (btn.classList.contains('loading')) return;
+  var prev = btn.textContent;
   btn.classList.add('loading');
+  btn.textContent = '…';
   csrfFetch('/boutique/wishlist/toggle', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(product)
   })
-  .then(function(r){ return r.json(); })
+  .then(function(r){
+    return r.text().then(function(txt){
+      try { return JSON.parse(txt); }
+      catch(e) { throw new Error('Réponse serveur invalide (status ' + r.status + '). Rechargez la page et réessayez.'); }
+    });
+  })
   .then(function(d){
     btn.classList.remove('loading');
     if (d.error) {
+      btn.textContent = prev;
       alert('Erreur : ' + d.error);
       return;
     }
@@ -767,7 +775,6 @@ function toggleWishlist(btn, product) {
       btn.textContent = '♡';
       btn.title = 'Ajouter à la wishlist';
     }
-    // Met à jour le compteur dans le lien
     var countEl = document.querySelector('a[href="/boutique/wishlist"] span');
     var linkEl  = document.querySelector('a[href="/boutique/wishlist"]');
     var current = countEl ? parseInt(countEl.textContent) || 0 : 0;
@@ -781,7 +788,11 @@ function toggleWishlist(btn, product) {
       }
     }
   })
-  .catch(function(){ btn.classList.remove('loading'); alert('Erreur réseau.'); });
+  .catch(function(err){
+    btn.classList.remove('loading');
+    btn.textContent = prev;
+    alert((err && err.message) ? err.message : 'Erreur réseau. Réessayez.');
+  });
 }
 
 function addToWardrobe(btn, product) {

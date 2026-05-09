@@ -55,3 +55,4 @@ class Config:
     RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = 300
+    TEMPLATES_AUTO_RELOAD = True
