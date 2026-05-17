@@ -184,3 +184,53 @@ class UserSetting(db.Model):
         if row:
             db.session.delete(row)
             db.session.commit()
+
+class CalendarEntry(db.Model):
+    """Entrée du calendrier : vêtement ou tenue planifié pour un jour."""
+    __tablename__ = 'calendar_entries'
+ 
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    date = db.Column(db.Date, nullable=False, index=True)
+    item_id = db.Column(db.Integer, db.ForeignKey('clothing_items.id'), nullable=True)
+    outfit_id = db.Column(db.Integer, db.ForeignKey('outfits.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+ 
+    __table_args__ = (
+        db.Index('ix_calendar_user_date', 'user_id', 'date'),
+    )
+ 
+    item = db.relationship('ClothingItem', backref='calendar_entries')
+    outfit = db.relationship('Outfit', backref='calendar_entries')
+ 
+    @property
+    def item_name(self):
+        return self.item.name if self.item else None
+ 
+    @property
+    def outfit_name(self):
+        return self.outfit.name if self.outfit else None
+ 
+    @property
+    def item_thumb(self):
+        return self.item.thumb_path if self.item else None
+    
+    @property
+    def outfit_items(self):
+        """Retourne la liste des vêtements d'une tenue avec leurs infos."""
+        if not self.outfit:
+            return []
+        return [{
+            'id': item.id,
+            'name': item.name,
+            'thumb': item.thumb_path,
+        } for item in self.outfit.items]
+    
+    @property
+    def all_item_ids(self):
+        """Retourne tous les IDs de vêtements (direct ou via tenue)."""
+        if self.item_id:
+            return [self.item_id]
+        elif self.outfit:
+            return [item.id for item in self.outfit.items]
+        return []

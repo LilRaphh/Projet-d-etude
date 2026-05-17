@@ -1,0 +1,538 @@
+{% extends "base.html" %}
+{% block title %}Calendrier — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.cal-page { padding: 2.5rem 0 5rem }
+.cal-h { font-family: var(--serif); font-size: clamp(1.9rem,4vw,2.8rem); font-weight: 300; line-height: 1.1; margin-bottom: .25rem }
+.cal-h em { color: var(--a); font-style: italic }
+.cal-sub { color: var(--tm); font-size: .86rem; margin-bottom: 1.75rem }
+
+/* View toggle */
+.view-toggle { display: flex; gap: .5rem; margin-bottom: 1rem; justify-content: center }
+.view-btn { padding: .4rem .9rem; border-radius: var(--r); border: 1px solid var(--bor); background: var(--sur); color: var(--tm); cursor: pointer; font-size: .82rem; transition: all .15s }
+.view-btn.active { background: var(--a); color: #fff; border-color: var(--a) }
+.view-btn:hover:not(.active) { background: var(--bg); color: var(--tx) }
+
+/* Nav mois/semaine */
+.cal-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap }
+.cal-nav-title { font-family: var(--serif); font-size: 1.4rem; font-weight: 300; flex: 1; text-align: center }
+.cal-nav-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--r); border: 1px solid var(--bor); background: var(--sur); color: var(--tx); cursor: pointer; text-decoration: none; font-size: 1rem; transition: all .15s }
+.cal-nav-btn:hover { background: var(--am); border-color: var(--a); color: var(--a) }
+
+/* Grille */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px }
+.cal-grid.week-view { grid-template-columns: repeat(7, 1fr); gap: 8px }
+.cal-dow { text-align: center; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--tm); padding: .4rem 0; }
+.cal-dow:nth-child(6), .cal-dow:nth-child(7) { color: var(--a) }
+
+.cal-cell {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--r);
+  min-height: 100px;
+  padding: .45rem .5rem;
+  position: relative;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  overflow: hidden;
+}
+.week-view .cal-cell { min-height: 200px }
+.cal-cell:hover { border-color: var(--a); box-shadow: 0 0 0 2px var(--am) }
+.cal-cell.today { border-color: var(--a); background: var(--am) }
+.cal-cell.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none }
+.cal-cell.past { opacity: .75 }
+.cal-cell.weekend .cal-day-num { color: var(--a) }
+
+.cal-day-num { font-size: .78rem; font-weight: 600; color: var(--tm); margin-bottom: .3rem }
+.cal-weather { display: flex; align-items: center; gap: .25rem; margin-bottom: .35rem }
+.cal-wx-icon { font-size: 1.1rem; line-height: 1 }
+.cal-wx-temp { font-size: .72rem; color: var(--tx); font-weight: 500 }
+.cal-wx-min { color: var(--tl); font-size: .68rem }
+
+/* Entrées vêtements */
+.cal-entries { display: flex; flex-direction: column; gap: 3px; margin-top: .2rem }
+.cal-entry {
+  display: flex; align-items: center; gap: .3rem;
+  background: var(--bg); border-radius: 4px;
+  padding: .15rem .35rem; font-size: .66rem; color: var(--tx);
+  border: 1px solid var(--bor);
+}
+.cal-entry-thumb { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; flex-shrink: 0 }
+.cal-entry-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.cal-entry-del { color: var(--tl); cursor: pointer; flex-shrink: 0; font-size: .7rem; padding: 0 .1rem }
+.cal-entry-del:hover { color: #dc2626 }
+
+/* Tenue: plusieurs images */
+.cal-entry.outfit { flex-wrap: wrap; padding: .25rem .4rem }
+.cal-entry-outfit-thumbs { display: flex; gap: 3px; flex-wrap: wrap }
+.cal-entry-outfit-thumbs .cal-entry-thumb { width: 32px; height: 32px; border-radius: 4px }
+
+/* Statistiques en bas */
+.stats-section { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--bor) }
+.stats-h { font-family: var(--serif); font-size: 1.5rem; font-weight: 300; margin-bottom: 1.25rem; text-align: center }
+.stats-h em { color: var(--a); font-style: italic }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem }
+.stat-card {
+  background: var(--sur); border: 1px solid var(--bor); border-radius: var(--r);
+  padding: .75rem; display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  transition: all .15s; position: relative;
+}
+.stat-card:hover { border-color: var(--a); box-shadow: 0 2px 8px rgba(0,0,0,.06) }
+.stat-card-thumb { width: 60px; height: 60px; border-radius: var(--r); object-fit: cover; border: 1px solid var(--bor) }
+.stat-card-name { font-size: .75rem; font-weight: 500; text-align: center; color: var(--tx); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.stat-card-count { background: var(--a); color: #fff; border-radius: 99px; font-size: .7rem; padding: .2rem .5rem; font-weight: 600 }
+.stat-card-count.zero { background: var(--tl); opacity: .5 }
+
+/* No city */
+.no-city-banner {
+  background: #fffbeb; border: 1px solid #fcd34d;
+  border-radius: var(--rl); padding: 1rem 1.25rem;
+  display: flex; gap: .75rem; align-items: flex-start; margin-bottom: 1.5rem;
+}
+.no-city-banner-ico { font-size: 1.3rem }
+.no-city-banner h3 { font-size: .85rem; font-weight: 600; color: #92400e; margin-bottom: .2rem }
+.no-city-banner p { font-size: .78rem; color: #b45309; margin: 0 }
+.no-city-banner a { color: #b45309; font-weight: 600; text-decoration: underline }
+
+/* Modal picker */
+.picker-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.picker-overlay.open { display: flex }
+.picker-modal {
+  background: var(--sur); border-radius: var(--rl);
+  width: min(520px, 95vw); max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.picker-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--bor);
+}
+.picker-head h2 { font-family: var(--serif); font-size: 1.1rem; font-weight: 300 }
+.picker-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--tm) }
+.picker-tabs { display: flex; border-bottom: 1px solid var(--bor) }
+.picker-tab {
+  flex: 1; padding: .6rem; font-size: .8rem; font-weight: 500;
+  text-align: center; cursor: pointer; color: var(--tm);
+  border-bottom: 2px solid transparent; transition: all .15s;
+}
+.picker-tab.active { color: var(--a); border-bottom-color: var(--a) }
+.picker-search {
+  padding: .75rem 1rem; border-bottom: 1px solid var(--bor);
+}
+.picker-search input {
+  width: 100%; padding: .4rem .75rem;
+  border: 1px solid var(--bor); border-radius: var(--r);
+  background: var(--bg); font-size: .82rem; color: var(--tx);
+}
+.picker-search input:focus { outline: none; border-color: var(--a) }
+.picker-list { flex: 1; overflow-y: auto; padding: .5rem }
+.picker-item {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .55rem .75rem; border-radius: var(--r);
+  cursor: pointer; transition: background .1s;
+}
+.picker-item:hover { background: var(--am) }
+.picker-item-thumb {
+  width: 40px; height: 40px; border-radius: var(--r);
+  object-fit: cover; background: var(--bg);
+  border: 1px solid var(--bor); flex-shrink: 0;
+}
+.picker-item-thumb.placeholder {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+}
+.picker-item-info { flex: 1 }
+.picker-item-name { font-size: .84rem; font-weight: 500; color: var(--tx) }
+.picker-item-meta { font-size: .72rem; color: var(--tm) }
+.picker-empty { text-align: center; padding: 2rem; color: var(--tl); font-size: .85rem }
+
+@media (max-width: 640px) {
+  .cal-cell { min-height: 72px; padding: .3rem }
+  .cal-wx-icon { font-size: .9rem }
+  .cal-wx-temp { font-size: .65rem }
+  .cal-entry { font-size: .6rem }
+  .stats-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: .5rem }
+  .stat-card-thumb { width: 50px; height: 50px }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cal-page">
+  <div class="wrap">
+
+    <h1 class="cal-h">Mon <em>calendrier</em></h1>
+    <p class="cal-sub">Météo du mois et organisation de ta garde-robe au quotidien.</p>
+
+    {% if not city %}
+    <div class="no-city-banner">
+      <div class="no-city-banner-ico">📍</div>
+      <div>
+        <h3>Ville non configurée</h3>
+        <p>Configure ta ville dans <a href="/profile">ton profil</a> pour voir la météo.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Toggle vue -->
+    <div class="view-toggle">
+      <a href="/calendar?view=month&year={{ year }}&month={{ month or 5 }}" 
+         class="view-btn {% if view_mode == 'month' %}active{% endif %}">📅 Mois</a>
+      <a href="/calendar?view=week&year={{ year }}&week={{ week or 20 }}" 
+         class="view-btn {% if view_mode == 'week' %}active{% endif %}">📆 Semaine</a>
+    </div>
+
+    <!-- Navigation -->
+    <div class="cal-nav">
+      {% if view_mode == 'week' %}
+        <a href="/calendar?view=week&year={{ prev_year }}&week={{ prev_week }}" class="cal-nav-btn">‹</a>
+        <div class="cal-nav-title">Semaine {{ week }} - {{ year }}</div>
+        <a href="/calendar?view=week&year={{ next_year }}&week={{ next_week }}" class="cal-nav-btn">›</a>
+      {% else %}
+        <a href="/calendar?view=month&year={{ prev_year }}&month={{ prev_month }}" class="cal-nav-btn">‹</a>
+        <div class="cal-nav-title">{{ month_name }} {{ year }}</div>
+        <a href="/calendar?view=month&year={{ next_year }}&month={{ next_month }}" class="cal-nav-btn">›</a>
+      {% endif %}
+    </div>
+
+    <!-- Grille calendrier -->
+    <div class="cal-grid {% if view_mode == 'week' %}week-view{% endif %}">
+      {% for day in ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"] %}
+      <div class="cal-dow">{{ day }}</div>
+      {% endfor %}
+
+      {% if view_mode == 'week' %}
+        <!-- Vue semaine -->
+        {% for day_date in days %}
+          {% set date_str = day_date.strftime('%Y-%m-%d') %}
+          {% set wx = weather.get(date_str, {}) %}
+          {% set day_entries = entries.get(date_str, []) %}
+          {% set is_today = date_str == today %}
+          {% set is_past = date_str < today %}
+          {% set dow = day_date.weekday() %}
+          <div class="cal-cell {% if is_today %}today{% elif is_past %}past{% endif %} {% if dow >= 5 %}weekend{% endif %}"
+               data-date="{{ date_str }}"
+               onclick="openPicker(event, '{{ date_str }}', {{ day_date.day }})">
+
+            <div class="cal-day-num">{{ day_date.day }}</div>
+
+            {% if wx %}
+            <div class="cal-weather">
+              <span class="cal-wx-icon">{{ wx.icon }}</span>
+              <span class="cal-wx-temp">
+                {% if wx.temp_max is not none %}{{ wx.temp_max }}°{% endif %}
+                {% if wx.temp_min is not none %}<span class="cal-wx-min"> / {{ wx.temp_min }}°</span>{% endif %}
+              </span>
+            </div>
+            {% endif %}
+
+            <div class="cal-entries" id="entries-{{ date_str }}">
+              {% for e in day_entries %}
+                {% if e.is_outfit %}
+                <div class="cal-entry outfit" id="entry-{{ e.id }}">
+                  <span class="cal-entry-name" style="width:100%;margin-bottom:.25rem">{{ e.outfit_name }}</span>
+                  <div class="cal-entry-outfit-thumbs">
+                    {% for outfit_item in e.outfit_items %}
+                    <img src="/static/{{ outfit_item.thumb }}" class="cal-entry-thumb" alt="{{ outfit_item.name }}" title="{{ outfit_item.name }}">
+                    {% endfor %}
+                  </div>
+                  <span class="cal-entry-del" onclick="deleteEntry(event, {{ e.id }}, '{{ date_str }}')">✕</span>
+                </div>
+                {% else %}
+                <div class="cal-entry" id="entry-{{ e.id }}">
+                  {% if e.item_thumb %}
+                  <img src="/static/{{ e.item_thumb }}" class="cal-entry-thumb" alt="">
+                  {% else %}
+                  <span style="font-size:.8rem">👗</span>
+                  {% endif %}
+                  <span class="cal-entry-name">{{ e.item_name }}</span>
+                  <span class="cal-entry-del" onclick="deleteEntry(event, {{ e.id }}, '{{ date_str }}')">✕</span>
+                </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+
+      {% else %}
+        <!-- Vue mois -->
+        {% for week in cal %}
+          {% for day_num in week %}
+            {% if day_num == 0 %}
+            <div class="cal-cell empty"></div>
+            {% else %}
+              {% set date_str = "%04d-%02d-%02d" | format(year, month, day_num) %}
+              {% set wx = weather.get(date_str, {}) %}
+              {% set day_entries = entries.get(date_str, []) %}
+              {% set is_today = date_str == today %}
+              {% set is_past = date_str < today %}
+              {% set dow = loop.index0 % 7 %}
+              <div class="cal-cell {% if is_today %}today{% elif is_past %}past{% endif %} {% if dow >= 5 %}weekend{% endif %}"
+                   data-date="{{ date_str }}"
+                   onclick="openPicker(event, '{{ date_str }}', {{ day_num }})">
+
+                <div class="cal-day-num">{{ day_num }}</div>
+
+                {% if wx %}
+                <div class="cal-weather">
+                  <span class="cal-wx-icon">{{ wx.icon }}</span>
+                  <span class="cal-wx-temp">
+                    {% if wx.temp_max is not none %}{{ wx.temp_max }}°{% endif %}
+                    {% if wx.temp_min is not none %}<span class="cal-wx-min"> / {{ wx.temp_min }}°</span>{% endif %}
+                  </span>
+                </div>
+                {% endif %}
+
+                <div class="cal-entries" id="entries-{{ date_str }}">
+                  {% for e in day_entries %}
+                    {% if e.is_outfit %}
+                    <div class="cal-entry outfit" id="entry-{{ e.id }}">
+                      <span class="cal-entry-name" style="width:100%;margin-bottom:.25rem">{{ e.outfit_name }}</span>
+                      <div class="cal-entry-outfit-thumbs">
+                        {% for outfit_item in e.outfit_items %}
+                        <img src="/static/{{ outfit_item.thumb }}" class="cal-entry-thumb" alt="{{ outfit_item.name }}" title="{{ outfit_item.name }}">
+                        {% endfor %}
+                      </div>
+                      <span class="cal-entry-del" onclick="deleteEntry(event, {{ e.id }}, '{{ date_str }}')">✕</span>
+                    </div>
+                    {% else %}
+                    <div class="cal-entry" id="entry-{{ e.id }}">
+                      {% if e.item_thumb %}
+                      <img src="/static/{{ e.item_thumb }}" class="cal-entry-thumb" alt="">
+                      {% else %}
+                      <span style="font-size:.8rem">👗</span>
+                      {% endif %}
+                      <span class="cal-entry-name">{{ e.item_name }}</span>
+                      <span class="cal-entry-del" onclick="deleteEntry(event, {{ e.id }}, '{{ date_str }}')">✕</span>
+                    </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <!-- STATISTIQUES DES PORTS -->
+    <div class="stats-section">
+      <h2 class="stats-h">Statistiques de <em>ports</em></h2>
+      <div class="stats-grid" id="statsGrid">
+        <div style="grid-column: 1/-1; text-align: center; color: var(--tl); padding: 2rem">
+          Chargement...
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal picker -->
+<div class="picker-overlay" id="pickerOverlay" onclick="closePicker(event)">
+  <div class="picker-modal" onclick="event.stopPropagation()">
+    <div class="picker-head">
+      <h2 id="pickerTitle">Ajouter un vêtement</h2>
+      <button class="picker-close" onclick="closePicker()">✕</button>
+    </div>
+    <div class="picker-tabs">
+      <div class="picker-tab active" id="tabItems" onclick="switchTab('items')">👗 Vêtements</div>
+      <div class="picker-tab" id="tabOutfits" onclick="switchTab('outfits')">✨ Tenues</div>
+    </div>
+    <div class="picker-search">
+      <input type="text" id="pickerSearch" placeholder="Rechercher…" oninput="filterPicker()">
+    </div>
+    <div class="picker-list" id="pickerList">
+      <div class="picker-empty">Chargement…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentDate = null;
+let currentTab = 'items';
+let wardrobeData = null;
+let wearStats = null;
+
+// Charge la garde-robe et les stats
+async function loadWardrobe() {
+  if (wardrobeData) return;
+  try {
+    const [wardrobeRes, statsRes] = await Promise.all([
+      fetch('/calendar/wardrobe'),
+      fetch('/calendar/stats')
+    ]);
+    wardrobeData = await wardrobeRes.json();
+    wearStats = await statsRes.json();
+    
+    // Mettre à jour les stats visuelles
+    renderStats();
+  } catch(e) {
+    wardrobeData = { items: [], outfits: [] };
+    wearStats = {};
+  }
+}
+
+function renderStats() {
+  const grid = document.getElementById('statsGrid');
+  if (!wardrobeData || !wearStats) return;
+  
+  const items = wardrobeData.items;
+  if (!items.length) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--tl); padding: 2rem">Aucun vêtement</div>';
+    return;
+  }
+  
+  // Trier par nombre de ports (décroissant)
+  const sorted = items.map(item => ({
+    ...item,
+    count: wearStats[item.id] || 0
+  })).sort((a, b) => b.count - a.count);
+  
+  grid.innerHTML = sorted.map(item => {
+    const thumb = item.thumb 
+      ? `<img src="/static/${item.thumb}" class="stat-card-thumb">`
+      : `<div class="stat-card-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--bg);font-size:1.5rem">👗</div>`;
+    return `<div class="stat-card">
+      ${thumb}
+      <div class="stat-card-name" title="${item.name}">${item.name}</div>
+      <div class="stat-card-count ${item.count === 0 ? 'zero' : ''}">${item.count} port${item.count > 1 ? 's' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// Charger au chargement de la page
+loadWardrobe();
+
+function openPicker(e, dateStr, dayNum) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  currentDate = dateStr;
+  document.getElementById('pickerTitle').textContent = `Ajouter — ${dayNum}`;
+  document.getElementById('pickerSearch').value = '';
+  document.getElementById('pickerOverlay').classList.add('open');
+  switchTab('items');
+  loadWardrobe().then(() => renderPickerList());
+}
+
+function closePicker(e) {
+  if (e && e.target !== document.getElementById('pickerOverlay')) return;
+  document.getElementById('pickerOverlay').classList.remove('open');
+  currentDate = null;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabItems').classList.toggle('active', tab === 'items');
+  document.getElementById('tabOutfits').classList.toggle('active', tab === 'outfits');
+  renderPickerList();
+}
+
+function filterPicker() {
+  renderPickerList();
+}
+
+function renderPickerList() {
+  const list = document.getElementById('pickerList');
+  if (!wardrobeData) { list.innerHTML = '<div class="picker-empty">Chargement…</div>'; return; }
+
+  const q = document.getElementById('pickerSearch').value.toLowerCase();
+  const data = currentTab === 'items' ? wardrobeData.items : wardrobeData.outfits;
+  const filtered = data.filter(x => x.name.toLowerCase().includes(q));
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="picker-empty">Aucun résultat</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(x => {
+    const thumb = x.thumb
+      ? `<img src="/static/${x.thumb}" class="picker-item-thumb">`
+      : `<div class="picker-item-thumb placeholder">${currentTab === 'items' ? '👗' : '✨'}</div>`;
+    const meta = currentTab === 'items'
+      ? `${x.category || ''}${x.color ? ' · ' + x.color : ''}`
+      : `${x.occasion || ''}`;
+    const onclick = currentTab === 'items'
+      ? `addEntry(${x.id}, null)`
+      : `addEntry(null, ${x.id})`;
+    return `<div class="picker-item" onclick="${onclick}">
+      ${thumb}
+      <div class="picker-item-info">
+        <div class="picker-item-name">${x.name}</div>
+        <div class="picker-item-meta">${meta}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addEntry(itemId, outfitId) {
+  if (!currentDate) return;
+  try {
+    const r = await csrfFetch('/calendar/entry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: currentDate, item_id: itemId, outfit_id: outfitId })
+    });
+    const data = await r.json();
+    if (!r.ok) { alert(data.error || 'Erreur'); return; }
+
+    const container = document.getElementById(`entries-${currentDate}`);
+    if (container) {
+      const div = document.createElement('div');
+      div.className = data.is_outfit ? 'cal-entry outfit' : 'cal-entry';
+      div.id = `entry-${data.id}`;
+      
+      if (data.is_outfit) {
+        div.innerHTML = `
+          <span class="cal-entry-name" style="width:100%;margin-bottom:.25rem">${data.outfit_name}</span>
+          <div class="cal-entry-outfit-thumbs">
+            ${data.outfit_items.map(item => `<img src="/static/${item.thumb}" class="cal-entry-thumb" alt="${item.name}" title="${item.name}">`).join('')}
+          </div>
+          <span class="cal-entry-del" onclick="deleteEntry(event, ${data.id}, '${currentDate}')">✕</span>
+        `;
+      } else {
+        div.innerHTML = `
+          ${data.item_thumb ? `<img src="/static/${data.item_thumb}" class="cal-entry-thumb">` : '<span style="font-size:.8rem">👗</span>'}
+          <span class="cal-entry-name">${data.item_name}</span>
+          <span class="cal-entry-del" onclick="deleteEntry(event, ${data.id}, '${currentDate}')">✕</span>
+        `;
+      }
+      container.appendChild(div);
+    }
+
+    // Recharger les stats
+    wearStats = null;
+    wardrobeData = null;
+    await loadWardrobe();
+    
+    document.getElementById('pickerOverlay').classList.remove('open');
+  } catch(e) {
+    alert('Erreur réseau');
+  }
+}
+
+async function deleteEntry(e, entryId, dateStr) {
+  e.stopPropagation();
+  try {
+    const r = await csrfFetch(`/calendar/entry/${entryId}`, { method: 'DELETE' });
+    if (r.ok) {
+      const el = document.getElementById(`entry-${entryId}`);
+      if (el) el.remove();
+      
+      // Recharger les stats
+      wearStats = null;
+      wardrobeData = null;
+      await loadWardrobe();
+    }
+  } catch(e) {
+    alert('Erreur réseau');
+  }
+}
+</script>
+{% endblock %}
