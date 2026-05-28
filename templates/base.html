@@ -278,6 +278,7 @@ textarea.fc{resize:vertical;min-height:80px}
     <nav class="hdr-nav">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
       <a href="/boutique" class="nav-link {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
+      <a href="/calendar" class="nav-link {% if '/calendar' in request.path %}active{% endif %}">Calendrier</a>
       <a href="/outfits" class="nav-link {% if '/outfit' in request.path %}active{% endif %}">
         Tenues
         {% set oc = me.outfits.count() %}
