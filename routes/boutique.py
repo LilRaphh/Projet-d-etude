@@ -561,10 +561,15 @@ def boutique_wishlist_toggle():
         'image', 'url', 'type', 'categorie', 'style', 'sexe', 'description',
         'taille', 'sizes', 'rating',
     ]}
+    try:
+        initial_price = float(snapshot.get('price_value')) if snapshot.get('price_value') is not None else None
+    except (TypeError, ValueError):
+        initial_price = None
     w = WishlistItem(
         user_id=me.id,
         product_url=url,
         product_json=json.dumps(snapshot, ensure_ascii=False),
+        last_known_price=initial_price,
     )
     db.session.add(w)
     db.session.commit()
@@ -577,6 +582,36 @@ def boutique_wishlist_page():
     ctx = get_ctx()
     me = ctx['me']
     rows = WishlistItem.query.filter_by(user_id=me.id).order_by(WishlistItem.added_at.desc()).all()
+
+    # ── Détection des baisses de prix ────────────────────────────────────────
+    current_prices = {p['url']: p.get('price_value') for p in _load_products() if p.get('url')}
+    dropped = []
+    changed = False
+    for row in rows:
+        if not row.price_alert or row.last_known_price is None:
+            continue
+        raw = current_prices.get(row.product_url)
+        try:
+            current_price = float(raw) if raw is not None else None
+        except (TypeError, ValueError):
+            current_price = None
+        if current_price is not None and current_price < row.last_known_price:
+            product = json.loads(row.product_json)
+            dropped.append({
+                'name': product.get('name', row.product_url),
+                'old_price': row.last_known_price,
+                'new_price': current_price,
+                'currency': product.get('currency', '€'),
+            })
+        if current_price is not None:
+            row.last_known_price = current_price
+            changed = True
+    if changed:
+        db.session.commit()
+    if dropped and me.email_verified:
+        from utils.mail import send_price_alert_email
+        send_price_alert_email(me, dropped)
+
     products = [json.loads(w.product_json) for w in rows]
     wishlisted_urls = {w.product_url for w in rows}
     return render_template(
@@ -584,5 +619,6 @@ def boutique_wishlist_page():
         products=products,
         total=len(products),
         wishlisted_urls=wishlisted_urls,
+        price_drops=dropped,
         **ctx,
     )

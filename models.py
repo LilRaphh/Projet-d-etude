@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from extensions import db
@@ -25,6 +26,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     gender = db.Column(db.String(30), nullable=True)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    email_verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     items = db.relationship('ClothingItem', back_populates='owner', lazy='dynamic', cascade='all, delete-orphan')
@@ -134,6 +136,8 @@ class WishlistItem(db.Model):
     user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     product_url = db.Column(db.String(500), nullable=False)
     product_json = db.Column(db.Text, nullable=False)
+    price_alert = db.Column(db.Boolean, default=True, nullable=False)
+    last_known_price = db.Column(db.Float, nullable=True)
     added_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
     __table_args__ = (
@@ -141,6 +145,54 @@ class WishlistItem(db.Model):
     )
 
     owner = db.relationship('User', back_populates='wishlist_items')
+
+
+class EmailVerificationToken(db.Model):
+    __tablename__ = 'email_verification_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('verification_tokens', lazy='dynamic', cascade='all, delete-orphan'))
+
+    @classmethod
+    def create_for(cls, user):
+        token = secrets.token_urlsafe(32)
+        row = cls(user_id=user.id, token=token, expires_at=datetime.utcnow() + timedelta(hours=24))
+        db.session.add(row)
+        db.session.commit()
+        return row
+
+    def is_valid(self):
+        return not self.used and self.expires_at > datetime.utcnow()
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('reset_tokens', lazy='dynamic', cascade='all, delete-orphan'))
+
+    @classmethod
+    def create_for(cls, user):
+        token = secrets.token_urlsafe(32)
+        row = cls(user_id=user.id, token=token, expires_at=datetime.utcnow() + timedelta(hours=1))
+        db.session.add(row)
+        db.session.commit()
+        return row
+
+    def is_valid(self):
+        return not self.used and self.expires_at > datetime.utcnow()
 
 
 class UserSetting(db.Model):

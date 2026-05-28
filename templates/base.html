@@ -351,6 +351,14 @@ textarea.fc{resize:vertical;min-height:80px}
   </div>
   {% endif %}
 {% endwith %}
+{% if me and not me.email_verified %}
+<div class="wrap">
+  <div class="flash info" style="justify-content:space-between">
+    <span>Votre adresse email n'est pas encore confirmée.</span>
+    <a href="/resend-verification" style="font-weight:600;color:inherit;text-decoration:underline">Renvoyer l'email</a>
+  </div>
+</div>
+{% endif %}
 
 <main>{% block content %}{% endblock %}</main>
 

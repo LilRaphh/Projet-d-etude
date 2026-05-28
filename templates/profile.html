@@ -200,6 +200,12 @@
               <span class="info-val">{{ me.email }}</span>
             </div>
             <div class="info-row">
+              <span class="info-lbl">Statut e-mail</span>
+              <span class="info-val" style="color:{% if me.email_verified %}#1A6035{% else %}#C67C12{% endif %};font-weight:500">
+                {% if me.email_verified %}Confirmée{% else %}En attente de confirmation{% endif %}
+              </span>
+            </div>
+            <div class="info-row">
               <span class="info-lbl">Membre depuis</span>
               <span class="info-val">{{ me.created_at.strftime('%d %B %Y') }}</span>
             </div>
@@ -321,6 +327,46 @@
   <!-- Tab: Sécurité -->
   <div class="tab-pane {% if active_tab == 'securite' %}active{% endif %}" id="tab-securite">
     <div style="max-width:680px">
+
+      <!-- Changer l'email -->
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="pc">
+          <p class="pc-ttl">Adresse email</p>
+          <p class="pc-desc">La nouvelle adresse ne sera appliquée qu'après validation du lien reçu par email.</p>
+
+          <div class="info-row" style="padding-top:0">
+            <span class="info-lbl">Adresse actuelle</span>
+            <span class="info-val">{{ me.email }}</span>
+          </div>
+
+          {% if pending_email_change %}
+          <div style="margin:1rem 0;padding:.9rem 1rem;border-radius:var(--r);background:#FFF8E8;border:1px solid #F0D39A">
+            <div style="font-size:.8rem;font-weight:600;color:#9A6A12;text-transform:uppercase;letter-spacing:.05em">Changement en attente</div>
+            <div style="margin-top:.35rem;font-size:.9rem;color:#5E4A21">
+              {{ pending_email_change.email }} jusqu'au {{ pending_email_change.expires_at.strftime('%d/%m/%Y à %H:%M') }}
+            </div>
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.85rem">
+              <button type="submit" name="action" value="resend_email_change" class="btn btn-ghost">Renvoyer l'email</button>
+              <button type="submit" name="action" value="cancel_email_change" class="btn btn-ghost">Annuler la demande</button>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="fg">
+            <label class="lbl">Nouvelle adresse email</label>
+            <input type="email" name="new_email" class="fc" placeholder="ex. nouveau@mail.com" autocomplete="email">
+          </div>
+          <div class="fg">
+            <label class="lbl">Mot de passe actuel</label>
+            <input type="password" name="email_change_password" class="fc" autocomplete="current-password">
+          </div>
+
+          <div class="fact">
+            <button type="submit" name="action" value="email_change" class="btn btn-primary">Envoyer le lien de confirmation</button>
+          </div>
+        </div>
+      </form>
 
       <!-- Changer le mot de passe -->
       <form method="POST">

@@ -56,3 +56,5 @@ class Config:
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = 300
     TEMPLATES_AUTO_RELOAD = True
+    from datetime import timedelta
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)  # durée si "se souvenir de moi" coché
