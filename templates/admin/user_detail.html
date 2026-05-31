@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}{{ u.username }} — Admin — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+.adm-hero{padding:2.5rem 0 1.5rem}
+.adm-title{font-family:var(--serif);font-size:2rem;font-weight:300;margin-bottom:.3rem}
+.adm-sub{color:var(--tm);font-size:.9rem}
+.adm-tabs{display:flex;gap:.4rem;margin-bottom:2rem;border-bottom:1px solid var(--bor);padding-bottom:0}
+.adm-tab{padding:.5rem 1rem;font-size:.83rem;color:var(--tm);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--tr);cursor:pointer}
+.adm-tab:hover{color:var(--tx)}
+.adm-tab.active{color:var(--a);border-bottom-color:var(--a);font-weight:500}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem}
+.info-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.4rem}
+.info-card h3{font-size:.75rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);margin-bottom:1rem}
+.field-row{margin-bottom:.9rem}
+.field-row label{display:block;font-size:.78rem;color:var(--tm);margin-bottom:.3rem}
+.stat-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem}
+.stat-pill{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:.6rem 1rem;font-size:.83rem}
+.stat-pill strong{font-family:var(--serif);font-size:1.3rem;font-weight:300;display:block;color:var(--a)}
+.role-badge{display:inline-flex;align-items:center;padding:.14rem .48rem;border-radius:99px;font-size:.69rem;font-weight:500}
+.role-admin{background:#fef3c7;color:#92400e}
+.role-user{background:var(--am);color:var(--a)}
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+.tbl th{text-align:left;font-size:.72rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);padding:.6rem .8rem;border-bottom:2px solid var(--bor)}
+.tbl td{padding:.7rem .8rem;border-bottom:1px solid var(--bor);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--bg)}
+.thumb{width:40px;height:40px;object-fit:cover;border-radius:6px;background:var(--bg)}
+.thumb-ph{width:40px;height:40px;border-radius:6px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--tl)}
+.tag{display:inline-block;padding:.1rem .4rem;border-radius:4px;font-size:.69rem;background:var(--am);color:var(--a);margin:.1rem}
+.outfit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
+.outfit-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1rem}
+.outfit-card h4{font-size:.88rem;font-weight:500;margin-bottom:.4rem}
+.outfit-meta{font-size:.75rem;color:var(--tm)}
+.btn-danger{background:transparent;color:#c0392b;border:1px solid #f0b0b0;font-size:.77rem}
+.btn-danger:hover{background:#fff0f0;border-color:#c0392b}
+.btn-warning{background:transparent;color:#b45309;border:1px solid #fcd34d;font-size:.77rem}
+.btn-warning:hover{background:#fffbeb;border-color:#b45309}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);padding:1.8rem;min-width:340px;max-width:420px;width:90%}
+.modal-title{font-family:var(--serif);font-size:1.2rem;font-weight:300;margin-bottom:1rem}
+.modal-actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1.2rem}
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="adm-hero">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:.5rem">
+      <a href="/admin/users" style="font-size:.82rem;color:var(--tm)">← Utilisateurs</a>
+    </div>
+    <h1 class="adm-title" style="display:flex;align-items:center;gap:.75rem">
+      <div class="avatar" style="width:40px;height:40px;font-size:1rem">{{ u.username[:2] }}</div>
+      {{ u.username }}
+      {% if u.is_admin %}<span class="role-badge role-admin">Admin</span>{% else %}<span class="role-badge role-user">User</span>{% endif %}
+    </h1>
+    <p class="adm-sub">{{ u.email }} · inscrit le {{ u.created_at.strftime('%d/%m/%Y') }}</p>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-pill"><strong>{{ items|length }}</strong>Vêtements</div>
+    <div class="stat-pill"><strong>{{ outfits|length }}</strong>Tenues</div>
+    <div class="stat-pill"><strong>{{ u.wishlist_items.count() }}</strong>Wishlist</div>
+    <div class="stat-pill"><strong>{{ items|selectattr('ai_analyzed')|list|length }}</strong>Analysés IA</div>
+    <div class="stat-pill">
+      <strong>{% if u.email_verified %}<span style="color:#16a34a">✓</span>{% else %}<span style="color:#dc2626">✗</span>{% endif %}</strong>
+      Email vérifié
+    </div>
+    <div class="stat-pill">
+      <strong style="font-size:.85rem">{{ u.last_login_at.strftime('%d/%m %H:%M') if u.last_login_at else '—' }}</strong>
+      Dernière connexion
+    </div>
+    <div class="stat-pill">
+      <strong style="font-size:.85rem;font-family:monospace">{{ u.last_login_ip or '—' }}</strong>
+      IP
+    </div>
+  </div>
+
+  <nav class="adm-tabs">
+    <a class="adm-tab active" onclick="switchTab('infos', this)">Infos & Édition</a>
+    <a class="adm-tab" onclick="switchTab('items', this)">Vêtements ({{ items|length }})</a>
+    <a class="adm-tab" onclick="switchTab('outfits', this)">Tenues ({{ outfits|length }})</a>
+  </nav>
+
+  <!-- TAB INFOS -->
+  <div class="tab-panel active" id="tab-infos">
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>Modifier le profil</h3>
+        <form method="POST" action="/admin/users/{{ u.id }}/edit">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="field-row">
+            <label>Nom d'utilisateur</label>
+            <input type="text" name="username" value="{{ u.username }}" class="input" style="width:100%">
+          </div>
+          <div class="field-row">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ u.email }}" class="input" style="width:100%">
+          </div>
+          <button type="submit" class="btn btn-sm" style="background:var(--a);color:#fff;margin-top:.4rem">Enregistrer</button>
+        </form>
+      </div>
+
+      <div class="info-card">
+        <h3>Sécurité</h3>
+        <div class="field-row">
+          <label>Nouveau mot de passe</label>
+          <form method="POST" action="/admin/users/{{ u.id }}/reset-password" style="display:flex;gap:.5rem">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="back" value="/admin/users/{{ u.id }}">
+            <input type="password" name="password" placeholder="6 car. min." class="input" style="flex:1" minlength="6" required autocomplete="new-password">
+            <button type="submit" class="btn btn-sm btn-warning">Changer</button>
+          </form>
+        </div>
+        <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--bor)">
+          <h3 style="margin-bottom:.8rem">Rôle</h3>
+          {% if u.id != me.id %}
+          <form method="POST" action="/admin/users/{{ u.id }}/toggle-admin">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-ghost btn-sm">
+              {{ '↓ Rétrograder en User' if u.is_admin else '↑ Promouvoir Admin' }}
+            </button>
+          </form>
+          {% else %}
+          <p style="font-size:.8rem;color:var(--tm)">Vous ne pouvez pas modifier votre propre rôle.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if u.id != me.id %}
+    <div style="margin-top:1rem;padding:1rem;background:#fff5f5;border:1px solid #fecaca;border-radius:var(--rl)">
+      <p style="font-size:.83rem;color:#7f1d1d;margin-bottom:.6rem">Zone dangereuse</p>
+      <form method="POST" action="/admin/users/{{ u.id }}/delete"
+            onsubmit="return confirm('Supprimer définitivement {{ u.username }} et toutes ses données ?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger btn-sm">Supprimer ce compte</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- TAB VÊTEMENTS -->
+  <div class="tab-panel" id="tab-items">
+    {% if items %}
+    <div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Marque</th>
+            <th>Couleur</th>
+            <th>Taille</th>
+            <th>Prix</th>
+            <th>Analyse IA</th>
+            <th>Ajouté le</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td>
+              {% if item.thumb_path %}
+              <img src="/static/{{ item.thumb_path }}" class="thumb" alt="">
+              {% else %}
+              <div class="thumb-ph">?</div>
+              {% endif %}
+            </td>
+            <td><strong>{{ item.name[:40] }}</strong></td>
+            <td style="color:var(--tm)">{{ item.category }}</td>
+            <td style="color:var(--tm)">{{ item.brand or '—' }}</td>
+            <td style="color:var(--tm)">{{ item.color or '—' }}</td>
+            <td style="color:var(--tm)">{{ item.size or '—' }}</td>
+            <td style="color:var(--tm)">{{ '%.0f€' % item.price if item.price else '—' }}</td>
+            <td>
+              {% if item.ai_analyzed %}
+              <div>
+                {% if item.ai_style %}<span class="tag">{{ item.ai_style }}</span>{% endif %}
+                {% if item.ai_pattern %}<span class="tag">{{ item.ai_pattern }}</span>{% endif %}
+                {% if item.ai_material %}<span class="tag">{{ item.ai_material }}</span>{% endif %}
+                {% if item.ai_fit %}<span class="tag">{{ item.ai_fit }}</span>{% endif %}
+                {% if item.ai_formality is not none %}
+                <span class="tag">F{{ item.ai_formality }}</span>
+                {% endif %}
+              </div>
+              {% else %}
+              <span style="font-size:.75rem;color:var(--tl)">Non analysé</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--tm)">{{ item.created_at.strftime('%d/%m/%Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--tm);font-size:.9rem">Aucun vêtement.</p>
+    {% endif %}
+  </div>
+
+  <!-- TAB TENUES -->
+  <div class="tab-panel" id="tab-outfits">
+    {% if outfits %}
+    <div class="outfit-grid">
+      {% for outfit in outfits %}
+      <div class="outfit-card">
+        {% if outfit.generated_image %}
+        <img src="/static/{{ outfit.generated_image }}" style="width:100%;height:140px;object-fit:cover;border-radius:6px;margin-bottom:.7rem" alt="">
+        {% endif %}
+        <h4>{{ outfit.name }}</h4>
+        <div class="outfit-meta">
+          {% if outfit.occasion %}<span>{{ outfit.occasion }}</span> · {% endif %}
+          {% if outfit.season %}<span>{{ outfit.season }}</span> · {% endif %}
+          <span>{{ outfit.items|length }} pièce{{ 's' if outfit.items|length > 1 }}</span>
+        </div>
+        {% if outfit.style_analysis %}
+        <p style="font-size:.75rem;color:var(--tm);margin-top:.5rem;line-height:1.4">{{ outfit.style_analysis[:120] }}{% if outfit.style_analysis|length > 120 %}…{% endif %}</p>
+        {% endif %}
+        {% if outfit.rating %}
+        <p style="font-size:.75rem;margin-top:.4rem">Note : {{ '★' * outfit.rating }}{{ '☆' * (5 - outfit.rating) }}</p>
+        {% endif %}
+        <p style="font-size:.72rem;color:var(--tl);margin-top:.4rem">{{ outfit.created_at.strftime('%d/%m/%Y') }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:var(--tm);font-size:.9rem">Aucune tenue.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.adm-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+{% endblock %}

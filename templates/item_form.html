@@ -95,12 +95,24 @@
 {% block extra_js %}
 <script>
 // ── Tailles par catégorie ──────────────────────────────────────────────────
-var SIZES_BY_CAT = {{ sizes_by_cat | tojson }};
-var SAVED_SIZE   = {{ (item.size or '') | tojson }};
+var SIZES_BY_CAT  = {{ sizes_by_cat | tojson }};
+var SAVED_SIZE    = {{ (item.size or '') | tojson }};
+var DEFAULT_SIZES = {{ (default_sizes or {}) | tojson }};
+
+var _TOP_CATS    = ['Hauts','T-shirts','Pulls & Sweats','Vestes & Manteaux','Sport','Sous-vêtements','Robes & Jupes','Accessoires','Autre'];
+var _BOTTOM_CATS = ['Pantalons','Jeans','Shorts'];
+var _SHOE_CATS   = ['Chaussures'];
+
+function _defaultForCat(cat) {
+  if (_SHOE_CATS.indexOf(cat) !== -1)   return DEFAULT_SIZES['shoes'] || '';
+  if (_BOTTOM_CATS.indexOf(cat) !== -1) return DEFAULT_SIZES['bottom'] || '';
+  return DEFAULT_SIZES['top'] || '';
+}
 
 function updateSizes(cat, keepSelection) {
   var sel  = document.getElementById('sizeSelect');
-  var prev = keepSelection ? sel.value : SAVED_SIZE;
+  var isNew = !SAVED_SIZE && !keepSelection;
+  var prev = keepSelection ? sel.value : (SAVED_SIZE || (isNew ? _defaultForCat(cat) : ''));
   var opts = SIZES_BY_CAT[cat] || [];
 
   sel.innerHTML = '<option value="">—</option>';
@@ -125,7 +137,10 @@ document.addEventListener('DOMContentLoaded', function() {
   var catSel = document.getElementById('catSelect');
   if (catSel) {
     updateSizes(catSel.value, false);
-    catSel.addEventListener('change', function() { updateSizes(this.value, true); });
+    catSel.addEventListener('change', function() {
+      var keepSel = !!SAVED_SIZE;
+      updateSizes(this.value, keepSel);
+    });
   }
 });
 

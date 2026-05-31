@@ -312,6 +312,33 @@
           </div>
 
           <div class="fg">
+            <label class="lbl" style="margin-bottom:.5rem">Tailles par défaut</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem">
+              <div>
+                <label style="font-size:.75rem;color:var(--tm);display:block;margin-bottom:.3rem">Hauts / Vestes</label>
+                <select name="default_size_top" class="fc">
+                  <option value="">—</option>
+                  {% for s in sizes_top %}<option value="{{ s }}" {% if profile.default_size_top == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.75rem;color:var(--tm);display:block;margin-bottom:.3rem">Pantalons / Jeans</label>
+                <select name="default_size_bottom" class="fc">
+                  <option value="">—</option>
+                  {% for s in sizes_bottom %}<option value="{{ s }}" {% if profile.default_size_bottom == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+              </div>
+              <div>
+                <label style="font-size:.75rem;color:var(--tm);display:block;margin-bottom:.3rem">Chaussures</label>
+                <select name="default_size_shoes" class="fc">
+                  <option value="">—</option>
+                  {% for s in sizes_shoes %}<option value="{{ s }}" {% if profile.default_size_shoes == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="fg">
             <label class="lbl">Notes libres sur mon style</label>
             <textarea name="style_notes" class="fc" rows="5" placeholder="Ex : J'évite le synthétique, je préfère les coupes amples...">{{ profile.style_notes }}</textarea>
           </div>

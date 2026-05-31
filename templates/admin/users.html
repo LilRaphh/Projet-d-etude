@@ -41,7 +41,7 @@
     <a href="/admin/users" class="adm-tab active">Utilisateurs</a>
   </nav>
 
-  <div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow:hidden;margin-bottom:2rem">
+  <div style="background:var(--sur);border:1px solid var(--bor);border-radius:var(--rl);overflow-x:auto;margin-bottom:2rem">
     <table class="tbl">
       <thead>
         <tr>
@@ -90,8 +90,9 @@
           <td style="color:var(--tm)">{{ u.last_login_at.strftime('%d/%m/%Y %H:%M') if u.last_login_at else '—' }}</td>
           <td style="color:var(--tm);font-family:monospace;font-size:.8rem">{{ u.last_login_ip or '—' }}</td>
           <td>
-            {% if u.id != me.id %}
             <div class="actions">
+              <a href="/admin/users/{{ u.id }}" class="btn btn-ghost btn-sm">Voir</a>
+              {% if u.id != me.id %}
               <form method="POST" action="/admin/users/{{ u.id }}/toggle-admin">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-ghost btn-sm" title="{{ 'Rétrograder' if u.is_admin else 'Promouvoir admin' }}">
@@ -107,10 +108,8 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
               </form>
+              {% endif %}
             </div>
-            {% else %}
-            <span style="font-size:.78rem;color:var(--tl)">—</span>
-            {% endif %}
           </td>
         </tr>
         {% endfor %}

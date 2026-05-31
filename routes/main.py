@@ -132,6 +132,12 @@ def add():
         flash('Vêtement ajouté !', 'success')
         return redirect('/')
 
+    from models import UserSetting
+    default_sizes = {
+        'top':    UserSetting.get(me.id, 'default_size_top', ''),
+        'bottom': UserSetting.get(me.id, 'default_size_bottom', ''),
+        'shoes':  UserSetting.get(me.id, 'default_size_shoes', ''),
+    }
     return render_template(
         'item_form.html',
         item=None,
@@ -142,6 +148,7 @@ def add():
         seasons=SEASONS,
         conds=CONDITIONS,
         etags='',
+        default_sizes=default_sizes,
         **ctx,
     )
 
@@ -183,6 +190,12 @@ def edit(iid):
         flash('Vêtement mis à jour !', 'success')
         return redirect(f'/item/{iid}')
 
+    from models import UserSetting
+    default_sizes = {
+        'top':    UserSetting.get(me.id, 'default_size_top', ''),
+        'bottom': UserSetting.get(me.id, 'default_size_bottom', ''),
+        'shoes':  UserSetting.get(me.id, 'default_size_shoes', ''),
+    }
     return render_template(
         'item_form.html',
         item=item,
@@ -193,6 +206,7 @@ def edit(iid):
         seasons=SEASONS,
         conds=CONDITIONS,
         etags=', '.join(t.name for t in item.tags),
+        default_sizes=default_sizes,
         **ctx,
     )
 

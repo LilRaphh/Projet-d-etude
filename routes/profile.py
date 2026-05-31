@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, flash, redirect, render_template, request, session
 
-from config import AESTHETICS, BUDGETS, GENDERS
+from config import AESTHETICS, BUDGETS, GENDERS, SIZES_BY_CATEGORY
 from extensions import db
 from models import User, UserSetting
 from utils.auth import current_user, get_ctx, login_required
@@ -12,7 +12,8 @@ from utils.mail import send_email_change_email
 profile_bp = Blueprint('profile', __name__)
 
 _ACCOUNT_KEYS = ('display_name', 'bio')
-_PREF_KEYS = ('style_aesthetic', 'height', 'weight', 'style_budget', 'style_notes')
+_PREF_KEYS = ('style_aesthetic', 'height', 'weight', 'style_budget', 'style_notes',
+              'default_size_top', 'default_size_bottom', 'default_size_shoes')
 _PROFILE_KEYS = _ACCOUNT_KEYS + _PREF_KEYS
 _PENDING_EMAIL = 'pending_email'
 _PENDING_EMAIL_TOKEN = 'pending_email_token'
@@ -189,6 +190,9 @@ def profile():
         profile=profile_data,
         pending_email_change=pending_email_change,
         active_tab=active_tab,
+        sizes_top=SIZES_BY_CATEGORY.get('Hauts', []),
+        sizes_bottom=SIZES_BY_CATEGORY.get('Pantalons', []),
+        sizes_shoes=SIZES_BY_CATEGORY.get('Chaussures', []),
         **ctx,
     )
 

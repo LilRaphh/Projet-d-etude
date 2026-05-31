@@ -33,6 +33,46 @@ def users():
     return render_template('admin/users.html', all_users=all_users, **get_ctx())
 
 
+@admin_bp.route('/users/<int:user_id>')
+@admin_required
+def user_detail(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash('Utilisateur introuvable.', 'error')
+        return redirect('/admin/users')
+    items = ClothingItem.query.filter_by(user_id=user_id).order_by(ClothingItem.created_at.desc()).all()
+    outfits = Outfit.query.filter_by(user_id=user_id).order_by(Outfit.created_at.desc()).all()
+    return render_template('admin/user_detail.html', u=user, items=items, outfits=outfits, **get_ctx())
+
+
+@admin_bp.route('/users/<int:user_id>/edit', methods=['POST'])
+@admin_required
+def edit_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        flash('Utilisateur introuvable.', 'error')
+        return redirect('/admin/users')
+
+    new_username = request.form.get('username', '').strip()
+    new_email = request.form.get('email', '').strip().lower()
+
+    if new_username and new_username != user.username:
+        if User.query.filter(User.username == new_username, User.id != user_id).first():
+            flash("Nom d'utilisateur déjà pris.", 'error')
+            return redirect(f'/admin/users/{user_id}')
+        user.username = new_username
+
+    if new_email and new_email != user.email:
+        if User.query.filter(User.email == new_email, User.id != user_id).first():
+            flash('Email déjà utilisé.', 'error')
+            return redirect(f'/admin/users/{user_id}')
+        user.email = new_email
+
+    db.session.commit()
+    flash('Profil mis à jour.', 'success')
+    return redirect(f'/admin/users/{user_id}')
+
+
 @admin_bp.route('/users/<int:user_id>/toggle-admin', methods=['POST'])
 @admin_required
 def toggle_admin(user_id):
@@ -61,11 +101,12 @@ def reset_password(user_id):
     new_pw = request.form.get('password', '').strip()
     if len(new_pw) < 6:
         flash('Mot de passe trop court (6 car. min.).', 'error')
-        return redirect('/admin/users')
+        return redirect(f'/admin/users/{user_id}')
     user.set_password(new_pw)
     db.session.commit()
     flash(f'Mot de passe de {user.username} mis à jour.', 'success')
-    return redirect('/admin/users')
+    back = request.form.get('back', '/admin/users')
+    return redirect(back)
 
 
 @admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
