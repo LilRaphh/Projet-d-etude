@@ -75,7 +75,7 @@ class Config:
             "Générez-en une : python -c \"import secrets; print(secrets.token_hex(32))\"\n"
             "Puis ajoutez-la dans un fichier .env ou exportez-la : export SECRET_KEY=<valeur>"
         )
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'wardrobe.db')}"
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', f"sqlite:///{os.path.join(BASE_DIR, 'wardrobe.db')}")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024
     RATELIMIT_STORAGE_URI = os.environ.get('REDIS_URL', 'memory://')

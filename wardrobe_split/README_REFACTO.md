@@ -1,43 +1,25 @@
-# Wardrobe v5 — version découpée
+# wardrobe_split/ — Archive de refactorisation
 
-## Structure
+Ce dossier contient une version intermédiaire de l'app créée lors d'une étape de refactorisation (découpage du `app.py` monolithique en blueprints).
 
-- `app.py` : point d'entrée Flask
-- `config.py` : constantes et configuration
-- `extensions.py` : extensions Flask (ici `db`)
-- `models.py` : tous les modèles SQLAlchemy
-- `routes/` : routes séparées par domaine
-  - `auth.py`
-  - `main.py`
-  - `outfits.py`
-  - `api.py`
-- `utils/` : helpers réutilisables
-  - `auth.py`
-  - `images.py`
-  - `tags.py`
-  - `ai.py`
+**Ce code est obsolète.** La version active est à la racine du projet.
 
-## Lancement
+## Différences avec la version courante
 
-Depuis le dossier `wardrobe_split` :
+| Aspect | wardrobe_split/ | Racine (version active) |
+|--------|----------------|------------------------|
+| Blueprints | 4 (auth, main, outfits, api) | 12 (+ stylist, ai, style_check, boutique, complete, calendar, profile, admin) |
+| IA | Basique | FashionCLIP, Ollama, Claude, Groq |
+| Auth | Login/Register | + vérification e-mail, reset mot de passe |
+| Docker | Non | Oui (`Dockerfile` + `docker-compose.yml`) |
 
-```bash
-python app.py
-python app.py --debug
-python app.py --host
+## Structure (à titre de référence)
+
 ```
-
-## Important
-
-Cette version reprend **la logique de ton `app.py` monolithique** mais suppose que tes templates existent bien côté projet :
-
-- `index.html`
-- `login.html`
-- `register.html`
-- `item_form.html`
-- `item_detail.html`
-- `outfits.html`
-- `outfit_form.html`
-- `outfit_detail.html`
-
-Si chez toi les noms réels diffèrent (`add_edit.html`, `detail.html`, etc.), il faudra soit renommer les templates, soit ajuster les `render_template(...)`.
+wardrobe_split/
+├── app.py          ← point d'entrée
+├── config.py       ← constantes
+├── extensions.py   ← SQLAlchemy, CSRF
+├── models.py       ← modèles (sous-ensemble)
+└── routes/         ← auth, main, outfits, api
+```

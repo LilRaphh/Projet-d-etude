@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+wardrobe.db
+static/uploads/
+logs/
+.git/
+.DS_Store
+*.log
+finetune/
+pipeline/
+monitoring/
+wardrobe_split/
+data/
