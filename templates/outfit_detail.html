@@ -44,6 +44,22 @@
 }
 .gen-error.visible { display: block; }
 
+/* ── Personnalisation génération ── */
+.gc-toggle { display: flex; align-items: center; gap: .4rem; background: transparent; border: 1px solid var(--bor); border-radius: var(--r); padding: .38rem .7rem; font-size: .78rem; color: var(--tm); cursor: pointer; width: 100%; transition: all var(--tr); margin-bottom: .55rem; }
+.gc-toggle:hover { background: var(--bg); color: var(--tx); }
+.gc-toggle svg { transition: transform .2s; }
+.gc-toggle.open svg { transform: rotate(180deg); }
+.gc-body { display: none; background: var(--bg); border: 1px solid var(--bor); border-radius: var(--r); padding: .85rem; margin-bottom: .7rem; }
+.gc-body.open { display: block; }
+.gc-section { margin-bottom: .85rem; }
+.gc-section:last-child { margin-bottom: 0; }
+.gc-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--tm); margin-bottom: .45rem; }
+.gc-decors { display: flex; flex-wrap: wrap; gap: .3rem; }
+.gc-decor-chip { padding: .26rem .62rem; border-radius: 99px; border: 1px solid var(--bor); background: var(--sur); color: var(--tm); font-size: .75rem; cursor: pointer; transition: all var(--tr); }
+.gc-decor-chip:hover { border-color: var(--a); color: var(--a); }
+.gc-decor-chip.on { background: var(--a); color: #fff; border-color: var(--a); }
+.gc-custom-input { margin-top: .45rem; width: 100%; padding: .38rem .6rem; border: 1px solid var(--bor); border-radius: var(--r); background: var(--sur); color: var(--tx); font-size: .8rem; font-family: inherit; }
+.gc-custom-input:focus { outline: none; border-color: var(--a); }
 .photo-tabs { display: flex; border-bottom: 1px solid var(--bor); }
 .photo-tab {
   flex: 1; padding: .65rem; font-size: .8rem; font-weight: 500;
@@ -147,6 +163,34 @@ canvas#saRadar { max-width: 100%; max-height: 260px; }
           </div>
 
           <div class="ai-actions">
+
+            <!-- Personnalisation génération -->
+            <button class="gc-toggle" id="gcToggle" type="button" onclick="toggleGC()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Personnaliser la génération
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:auto"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="gc-body" id="gcBody">
+
+              <!-- Décor -->
+              <div class="gc-section">
+                <div class="gc-lbl">🎨 Décor / Arrière-plan</div>
+                <div class="gc-decors" id="gcDecors">
+                  <button type="button" class="gc-decor-chip on" data-decor="" onclick="selectDecor(this)">Studio</button>
+                  <button type="button" class="gc-decor-chip" data-decor="rue" onclick="selectDecor(this)">Rue</button>
+                  <button type="button" class="gc-decor-chip" data-decor="nature" onclick="selectDecor(this)">Nature</button>
+                  <button type="button" class="gc-decor-chip" data-decor="cafe" onclick="selectDecor(this)">Café</button>
+                  <button type="button" class="gc-decor-chip" data-decor="appartement" onclick="selectDecor(this)">Appartement</button>
+                  <button type="button" class="gc-decor-chip" data-decor="plage" onclick="selectDecor(this)">Plage</button>
+                  <button type="button" class="gc-decor-chip" data-decor="bureau" onclick="selectDecor(this)">Bureau</button>
+                  <button type="button" class="gc-decor-chip" data-decor="nuit" onclick="selectDecor(this)">Nuit</button>
+                  <button type="button" class="gc-decor-chip" data-decor="custom" onclick="selectDecor(this)">✏️ Autre</button>
+                </div>
+                <input class="gc-custom-input" id="gcCustomDecor" placeholder="Décrivez votre décor en anglais ou en français..." style="display:none">
+              </div>
+            </div>
+            <!-- /Personnalisation -->
+
             {% if outfit.ai_prompt %}
             <div id="promptBox" class="ai-prompt-box">{{ outfit.ai_prompt }}</div>
             <button type="button" class="btn btn-ghost btn-sm" onclick="togglePrompt()" style="margin-bottom:.65rem;font-size:.74rem">
@@ -317,6 +361,37 @@ canvas#saRadar { max-width: 100%; max-height: 260px; }
 var OUTFIT_ID = {{ outfit.id }};
 var SAVED_ANALYSIS = {{ outfit.style_analysis | tojson if outfit.style_analysis else 'null' }};
 var saRadarChart = null;
+var _genDecor = '';
+
+// ── Personnalisation ──────────────────────────────────────────────────────
+function toggleGC() {
+  var btn = document.getElementById('gcToggle');
+  var body = document.getElementById('gcBody');
+  btn.classList.toggle('open');
+  body.classList.toggle('open');
+}
+
+function selectDecor(el) {
+  document.querySelectorAll('.gc-decor-chip').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  var val = el.getAttribute('data-decor');
+  var customInput = document.getElementById('gcCustomDecor');
+  if (val === 'custom') {
+    customInput.style.display = '';
+    customInput.focus();
+    _genDecor = customInput.value.trim();
+  } else {
+    customInput.style.display = 'none';
+    _genDecor = val;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var ci = document.getElementById('gcCustomDecor');
+  if (ci) ci.addEventListener('input', function() { _genDecor = ci.value.trim(); });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 
 function generateImage() {
   console.log("generateImage() called — outfit", OUTFIT_ID);
@@ -346,7 +421,12 @@ function generateImage() {
     msgEl.textContent = messages[mi];
   }, 8000);
 
-  csrfFetch("/outfits/" + OUTFIT_ID + "/generate", { method: "POST" })
+  var decorVal = _genDecor || '';
+  csrfFetch("/outfits/" + OUTFIT_ID + "/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decor: decorVal })
+  })
     .then(function(response) {
       console.log("HTTP status:", response.status);
       if (!response.ok) {

@@ -325,13 +325,13 @@ textarea.fc{resize:vertical;min-height:80px}
     <button class="mob-btn" id="mobBtn" aria-label="Menu"><span></span><span></span><span></span></button>
     <nav class="hdr-nav">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
-      <a href="/boutique" class="nav-link {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
-      <a href="/calendar" class="nav-link nav-cal {% if '/calendar' in request.path %}active{% endif %}">Calendrier</a>
       <a href="/outfits" class="nav-link {% if '/outfit' in request.path %}active{% endif %}">
         Tenues
         {% set oc = me.outfits.count() %}
         {% if oc %}<span class="nav-badge">{{ oc }}</span>{% endif %}
       </a>
+      <a href="/calendar" class="nav-link nav-cal {% if '/calendar' in request.path %}active{% endif %}">Calendrier</a>
+      <a href="/boutique" class="nav-link {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
       <a href="/stylist" class="nav-link nav-sty {% if request.path == '/stylist' %}active{% endif %}">✦ Styliste</a>
       <a href="/style-check" class="nav-link {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse<span class="nhide"> Mon style</span></a>
       {% if me.is_admin %}
@@ -402,12 +402,12 @@ textarea.fc{resize:vertical;min-height:80px}
   </a>
   <nav class="mob-nav">
     <a href="/" class="mob-nl {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
-    <a href="/boutique" class="mob-nl {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
-    <a href="/calendar" class="mob-nl {% if '/calendar' in request.path %}active{% endif %}">Calendrier</a>
     <a href="/outfits" class="mob-nl {% if '/outfit' in request.path %}active{% endif %}">
       Tenues
       {% set oc = me.outfits.count() %}{% if oc %}<span class="nav-badge">{{ oc }}</span>{% endif %}
     </a>
+    <a href="/calendar" class="mob-nl {% if '/calendar' in request.path %}active{% endif %}">Calendrier</a>
+    <a href="/boutique" class="mob-nl {% if request.path == '/boutique' %}active{% endif %}">Boutique</a>
     <a href="/stylist" class="mob-nl {% if request.path == '/stylist' %}active{% endif %}">✦ Styliste</a>
     <a href="/style-check" class="mob-nl {% if request.path == '/style-check' %}active{% endif %}">✦ Analyse Mon style</a>
     {% if me.is_admin %}

@@ -6,7 +6,7 @@ import uuid
 from flask import Blueprint, flash, jsonify, redirect, render_template, request
 from PIL import Image, ImageOps
 
-from config import BASE_DIR, OCCASIONS, OUTFIT_FOLDER, SEASONS
+from config import BASE_DIR, OCCASIONS, OUTFIT_FOLDER, SEASONS, UPLOAD_FOLDER
 from extensions import db
 from models import ClothingItem, Outfit, UserSetting
 from utils.ai import generate_image, generate_prompt_with_claude
@@ -150,23 +150,46 @@ def outfit_generate(oid):
     if not outfit.items:
         return jsonify(error='Ajoutez au moins un vêtement à la tenue avant de générer.'), 400
 
+    data = request.get_json(force=True, silent=True) or {}
+    decor = data.get('decor', '').strip() or None
+    use_face = data.get('use_face', False)
+
     anthropic_key = UserSetting.get(me.id, 'anthropic_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
     pollinations_key = UserSetting.get(me.id, 'pollinations_key', '') or os.environ.get('POLLINATIONS_API_KEY', '')
     image_gen_model = UserSetting.get(me.id, 'image_gen_model', '').strip() or None
     local_sd_url = UserSetting.get(me.id, 'local_sd_url', '').strip() or None
     local_sd_checkpoint = UserSetting.get(me.id, 'local_sd_checkpoint', '').strip() or None
 
-    prompt, err = generate_prompt_with_claude(outfit, api_key=anthropic_key)
-    if err:
-        return jsonify(error=err), 422
+    face_path = None
+    if use_face:
+        face_rel = f'uploads/faces/{me.id}.jpg'
+        candidate = os.path.join(BASE_DIR, 'static', face_rel)
+        if os.path.isfile(candidate):
+            face_path = candidate
 
-    img_path, err2 = generate_image(
-        prompt, api_key=pollinations_key, outfit=outfit,
-        image_model=image_gen_model,
-        local_url=local_sd_url, local_checkpoint=local_sd_checkpoint,
-    )
-    if err2:
-        return jsonify(error=err2), 422
+    person_mode = face_path is not None
+    gender = (me.gender or 'Homme').strip()
+
+    try:
+        prompt, err = generate_prompt_with_claude(outfit, api_key=anthropic_key, person_mode=person_mode, decor=decor, gender=gender)
+        if err:
+            return jsonify(error=err), 422
+
+        img_path, err2 = generate_image(
+            prompt, api_key=pollinations_key, outfit=outfit,
+            image_model=image_gen_model,
+            local_url=local_sd_url, local_checkpoint=local_sd_checkpoint,
+            face_path=face_path, person_mode=person_mode,
+            public_base_url=request.host_url.rstrip('/'),
+            gender=gender,
+        )
+        if err2:
+            return jsonify(error=err2), 422
+    except Exception as exc:
+        import traceback
+        from flask import current_app
+        current_app.logger.error(f'outfit_generate exception: {exc}\n{traceback.format_exc()}')
+        return jsonify(error=f'Erreur interne : {exc}'), 500
 
     if outfit.generated_image:
         old = os.path.join(BASE_DIR, 'static', outfit.generated_image)
@@ -177,6 +200,47 @@ def outfit_generate(oid):
     outfit.ai_prompt = prompt
     db.session.commit()
     return jsonify(image_path=img_path, prompt=prompt)
+
+
+@outfits_bp.route('/gen-face', methods=['GET'])
+@login_required
+def gen_face_status():
+    me = current_user()
+    face_rel = f'uploads/faces/{me.id}.jpg'
+    exists = os.path.isfile(os.path.join(BASE_DIR, 'static', face_rel))
+    return jsonify(has_face=exists, url=f'/static/{face_rel}' if exists else None)
+
+
+@outfits_bp.route('/gen-face', methods=['POST'])
+@login_required
+def gen_face_upload():
+    me = current_user()
+    f = request.files.get('face')
+    if not f:
+        return jsonify(error='Aucun fichier.'), 400
+    if not allowed(f.filename, f.stream):
+        return jsonify(error='Format non supporté (JPEG, PNG, WebP).'), 400
+
+    face_dir = os.path.join(UPLOAD_FOLDER, 'faces')
+    os.makedirs(face_dir, exist_ok=True)
+    dest = os.path.join(face_dir, f'{me.id}.jpg')
+
+    f.stream.seek(0)
+    img = Image.open(f.stream).convert('RGB')
+    img.thumbnail((1024, 1024), Image.LANCZOS)
+    img.save(dest, 'JPEG', quality=90, optimize=True)
+
+    return jsonify(ok=True, url=f'/static/uploads/faces/{me.id}.jpg')
+
+
+@outfits_bp.route('/gen-face', methods=['DELETE'])
+@login_required
+def gen_face_delete():
+    me = current_user()
+    dest = os.path.join(UPLOAD_FOLDER, 'faces', f'{me.id}.jpg')
+    if os.path.isfile(dest):
+        os.remove(dest)
+    return jsonify(ok=True)
 
 
 @outfits_bp.route('/<int:oid>/upload-photo', methods=['POST'])

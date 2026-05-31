@@ -52,7 +52,12 @@ def analyze_and_store_item(item, image_full_path: str, vision_model: Optional[st
         RuntimeError si Ollama est inaccessible ou l'analyse échoue
     """
     log.info("Analyse visuelle item %d (%s)…", item.id, item.name)
-    ai_attrs = analyze_garment(image_full_path, vision_model=vision_model or None)
+    ai_attrs = analyze_garment(
+        image_full_path,
+        vision_model=vision_model or None,
+        item_name=item.name or None,
+        item_category=item.category or None,
+    )
 
     log.info("Encodage FashionCLIP item %d…", item.id)
     embedding = encode_image(image_full_path)

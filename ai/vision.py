@@ -50,7 +50,10 @@ SEASON_MAP = {
     "all seasons": "Toutes saisons",
 }
 
-_PROMPT = """You are analyzing a clothing item photo. Return ONLY valid JSON, no markdown, no explanation.
+_PROMPT_HEADER = "You are analyzing a clothing item photo."
+_PROMPT_BODY = """
+Focus ONLY on the item indicated — ignore any other clothing worn by the model in the photo.
+Return ONLY valid JSON, no markdown, no explanation.
 
 {
   "category": "one of: tops, t-shirts, shirts, sweaters, hoodies, jackets, coats, blazers, pants, jeans, shorts, dresses, skirts, shoes, sneakers, boots, accessories, underwear, sportswear",
@@ -161,7 +164,8 @@ def _analyze_shoe_detail(img_b64: str, model: Optional[str] = None) -> Optional[
     return result
 
 
-def analyze_garment(image_path: str, vision_model: Optional[str] = None) -> dict:
+def analyze_garment(image_path: str, vision_model: Optional[str] = None,
+                    item_name: Optional[str] = None, item_category: Optional[str] = None) -> dict:
     """
     Analyse une photo de vêtement avec Qwen2.5-VL via Ollama.
 
@@ -180,7 +184,16 @@ def analyze_garment(image_path: str, vision_model: Optional[str] = None) -> dict
         raise RuntimeError(f"Impossible de lire l'image : {e}")
 
     effective_model = vision_model if vision_model else None
-    data, raw = _call_ollama(img_b64, _PROMPT, model=effective_model)
+
+    focus_parts = []
+    if item_name:
+        focus_parts.append(f'The item to analyze is: "{item_name}".')
+    if item_category:
+        focus_parts.append(f'It belongs to the category: {item_category}.')
+    focus_hint = (' ' + ' '.join(focus_parts)) if focus_parts else ''
+    prompt = _PROMPT_HEADER + focus_hint + _PROMPT_BODY
+
+    data, raw = _call_ollama(img_b64, prompt, model=effective_model)
 
     if not data:
         log.warning("Qwen2.5-VL — JSON invalide reçu : %.200s", raw)

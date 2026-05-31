@@ -146,6 +146,21 @@ _FIT_MAP = {
 
 _SHOE_SUBCATS = {'shoe', 'sneaker', 'boot', 'loafer', 'sandal', 'mule', 'oxford', 'derby', 'moccasin', 'espadrille'}
 
+_CATEGORY_LAYER_LABEL = {
+    'T-shirts':         'T-SHIRT',
+    'Hauts':            'TOP',
+    'Pulls & Sweats':   'SWEATER',
+    'Vestes & Manteaux':'JACKET',
+    'Pantalons':        'PANTS',
+    'Jeans':            'JEANS',
+    'Shorts':           'SHORTS',
+    'Robes & Jupes':    'DRESS',
+    'Chaussures':       'SHOES',
+    'Accessoires':      'ACCESSORY',
+    'Sport':            'SPORT TOP',
+    'Sous-vêtements':   'UNDERWEAR',
+}
+
 
 def _is_shoe_item(it) -> bool:
     cat = _normalize_category(it.category)
@@ -204,16 +219,29 @@ def _item_visual_token(it) -> str:
     return ' '.join(parts).strip() or category
 
 
-def build_prompt(outfit):
+DECOR_PROMPTS = {
+    'studio':      'white seamless studio background, soft box lighting, e-commerce product photography',
+    'rue':         'urban street background, city sidewalk, natural daylight, editorial fashion photography',
+    'nature':      'outdoor nature setting, green park, soft diffused natural light',
+    'cafe':        'cozy parisian cafe interior, warm ambient lighting, blurred bokeh background',
+    'appartement': 'modern minimalist apartment interior, living room, natural window light',
+    'plage':       'beach setting, golden sand, ocean horizon, bright natural sunlight',
+    'bureau':      'modern office interior, professional environment, clean background',
+    'nuit':        'night city background, bokeh street lights, evening atmosphere, dramatic lighting',
+}
+
+
+def build_prompt(outfit, person_mode=False, decor=None, gender='Homme'):
     garments = []
     has_shoes = False
     texture_hints = set()
     style_hints = set()
 
-    for it in outfit.items:
+    for it in _sorted_outfit_items(outfit):
         token = _item_visual_token(it)
         if token:
-            garments.append(token)
+            layer_label = _CATEGORY_LAYER_LABEL.get(it.category, 'ITEM')
+            garments.append(f'[{layer_label}] {token}')
 
         ai_subcategory = _clean_text(getattr(it, 'ai_subcategory', '') or '').lower()
         ai_style = _clean_text(getattr(it, 'ai_style', '') or '').lower()
@@ -230,53 +258,79 @@ def build_prompt(outfit):
                 texture_hints.add(texture_label)
                 break
 
-    garments_text = ' | '.join(garments) if garments else 'modern coordinated casual outfit'
+    garments_text = ', '.join(garments) if garments else 'modern coordinated casual outfit'
     occasion_text = _normalize_occasion(outfit.occasion) if outfit.occasion else 'fashion lookbook'
     season_text = _normalize_season(outfit.season) if outfit.season else 'all-season'
     texture_parts = sorted(texture_hints) if texture_hints else ['realistic fabric textures']
     style_parts = sorted(style_hints) if style_hints else ['coherent modern styling']
     footwear_part = 'shoes on feet' if has_shoes else 'complete footwear visible'
 
+    background = DECOR_PROMPTS.get(decor, decor) if decor else 'white seamless background, soft box lighting'
+    is_female = gender.lower() in ('femme', 'female', 'woman', 'f')
+    gender_subject = 'woman' if is_female else 'man'
+    gender_adj = 'feminine' if is_female else 'masculine'
+    fashion_label = "women's fashion" if is_female else "men's fashion"
+
+    if person_mode:
+        return (
+            f"Keep the exact same person from the reference photo — preserve their face, hair, skin tone, and body shape identically. "
+            f"Replace ALL their clothing with these exact garments: {garments_text}. "
+            f"{', '.join(texture_parts)}, {', '.join(style_parts)}. "
+            f"Full body, front view, head to toe, {footwear_part}. "
+            f"{background}. "
+            f"Occasion: {occasion_text}, season: {season_text}. "
+            f"Photorealistic, 8K, sharp focus, accurate garment colors, preserve face identity completely."
+        )
+
     return (
-        f"full body studio fashion photo, male clothing mannequin, front view, head to toe, "
+        f"ghost mannequin product photography, invisible mannequin, front view, full body, "
+        f"two arms visible, arms slightly away from body, two legs, symmetrical upright posture, "
+        f"{fashion_label} e-commerce, {background}, "
         f"{garments_text}, "
-        f"{', '.join(texture_parts)}, "
-        f"{', '.join(style_parts)}, "
-        f"{occasion_text}, {season_text}, {footwear_part}, "
-        "white seamless background, soft box lighting, accurate garment colors, "
-        "e-commerce product photography, photorealistic, 8K, sharp focus, "
-        "no face, no skin, matte mannequin surface"
+        f"{', '.join(texture_parts)}, {', '.join(style_parts)}, "
+        f"{occasion_text}, {season_text}, "
+        f"accurate garment shapes and colors, sharp fabric details, 8K, photorealistic, "
+        f"no visible person, no skin, no face, floating clothes effect"
     )
 
 
-def build_negative_prompt():
-    return (
-        # Qualité générale
+def build_negative_prompt(person_mode=False, gender='Homme'):
+    base = (
         'blurry, low quality, low resolution, jpeg artifacts, compression artifacts, '
         'overexposed, underexposed, bad lighting, harsh shadows, cluttered background, '
         'text, watermark, logo, signature, '
-        # Anatomie / corps
-        'face, skin, human face, visible skin, human model, person, realistic human, '
         'bad anatomy, deformed body, wrong proportions, extra limbs, missing limbs, '
+        'missing arms, no arms, armless, fused arms, merged arms, arms hidden, arms behind back, '
+        'missing legs, no legs, fused legs, '
         'floating garments, '
-        # Vêtements
         'wrong garment color, color shift, inaccurate colors, missing garment, extra clothing, '
         'duplicate clothing, warped clothes, unrealistic fabric, incorrect pattern, '
         'floating fabric, wrinkle artifacts, '
-        # Pose / cadrage
-        'cropped head, cropped feet, partial body, side view, back view, '
-        'sitting pose, lying down, bent body, tilted mannequin, '
-        # Mannequin
-        'wooden mannequin, articulated dummy, toy figure, CGI dummy, '
-        'multiple mannequins, ghost mannequin'
+        'cropped feet, partial body, side view, back view, '
+        'sitting pose, lying down, bent body, '
+    )
+    if person_mode:
+        return base + (
+            'different person, changed face, changed hair, altered skin tone, '
+            'ugly face, deformed face, distorted face, bad face, disfigured, '
+            'cartoon, anime, illustration, painting, sketch, '
+            'multiple people, two people, group, crowd'
+        )
+    return base + (
+        'person, human, body, face, head, skin, visible model, '
+        'flat lay, overhead view, top-down, '
+        'wrong garment shape, wrong cut, wrong silhouette, '
+        'multiple separate items, messy arrangement'
     )
 
 
 def _build_claude_garment_context(outfit):
     """Construit la liste détaillée des vêtements pour le contexte Claude."""
     lines = []
-    for it in outfit.items:
+    for it in _sorted_outfit_items(outfit):
         parts = []
+        layer_label = _CATEGORY_LAYER_LABEL.get(it.category, 'ITEM')
+        parts.append(f'layer: {layer_label}')
         # Use AI-detected color first (more accurate), fall back to user-set color
         color = _clean_text(getattr(it, 'ai_color', '') or it.color or '')
         if color:
@@ -313,11 +367,17 @@ def _build_claude_garment_context(outfit):
     return '\n'.join(lines)
 
 
-def generate_prompt_with_claude(outfit, api_key=None):
+def generate_prompt_with_claude(outfit, api_key=None, person_mode=False, decor=None, gender='Homme'):
     if not api_key:
         api_key = os.environ.get('ANTHROPIC_API_KEY', '').strip()
     if not api_key:
-        return build_prompt(outfit), None
+        return build_prompt(outfit, person_mode=person_mode, decor=decor, gender=gender), None
+
+    is_female = gender.lower() in ('femme', 'female', 'woman', 'f')
+    gender_subject = 'woman' if is_female else 'man'
+    fashion_label = "women's fashion" if is_female else "men's fashion"
+    gender_adj = 'feminine' if is_female else 'masculine'
+    opposite_gender_rule = 'NEVER male — NEVER multiple people' if is_female else 'NEVER female — NEVER multiple people'
 
     try:
         import anthropic
@@ -328,6 +388,26 @@ def generate_prompt_with_claude(outfit, api_key=None):
         season_text = _normalize_season(outfit.season) if outfit.season else 'all-season'
         outfit_notes = f'\nOutfit notes: {_clean_text(outfit.description)}' if outfit.description else ''
 
+        background_text = DECOR_PROMPTS.get(decor, decor) if decor else 'white seamless studio background, soft box lighting'
+
+        if person_mode:
+            subject_rules = (
+                '- TASK: Edit the reference photo — keep the EXACT same person (same face, hair, skin tone, body shape, pose)\n'
+                '- Replace ALL clothing in the reference with the garments listed below\n'
+                '- Do NOT change the person\'s appearance in any way\n'
+                '- Full body, front view, head to toe\n'
+                '- Quality: photorealistic, 8K, sharp focus, preserve face identity\n'
+            )
+        else:
+            subject_rules = (
+                f'- Style: ghost mannequin / invisible mannequin product photography, front view, full body\n'
+                f'- {fashion_label} e-commerce\n'
+                '- Two arms MUST be visible, slightly away from body — two legs MUST be visible — symmetrical upright posture\n'
+                '- NO visible person, NO skin, NO face — floating clothes effect\n'
+                '- Reproduce EXACT garment shapes, cuts, and details as described\n'
+                '- Quality: photorealistic, 8K, sharp fabric textures, accurate colors\n'
+            )
+
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=500,
@@ -337,13 +417,12 @@ def generate_prompt_with_claude(outfit, api_key=None):
                     'You are an expert fashion image prompt engineer for FLUX diffusion models.\n'
                     'Write ONE English image generation prompt, comma-separated descriptors, max 160 words.\n\n'
                     'RULES:\n'
-                    '- Subject: male clothing mannequin (no face, no skin, matte white surface)\n'
-                    '- Shot: full body, front view, head to toe, white seamless studio background\n'
-                    '- Lighting: soft box studio lighting, no harsh shadows\n'
-                    '- Quality: e-commerce product photography, photorealistic, 8K, sharp focus\n'
-                    '- For EACH garment: state its EXACT color, material, silhouette, and key visual details\n'
+                    + subject_rules +
+                    f'- Background: {background_text}\n'
+                    '- MANDATORY: describe EVERY garment listed — no item may be omitted or generalized\n'
+                    '- For EACH garment: prefix with its layer label (e.g. "[PANTS]"), then state exact color, material, silhouette, and key visual details\n'
                     '- For any item with a "flux_visual_prompt:" field: insert that text VERBATIM for that item\n'
-                    '- Layer order: shoes → pants/skirt → top → outerwear\n'
+                    '- Layer order in prompt: shoes → pants/skirt → top → outerwear\n'
                     '- Be visually precise — no poetic or abstract language\n'
                     '- Reply ONLY with the prompt, no explanation, no markdown, no quotes\n\n'
                     f'Occasion: {occasion_text} | Season: {season_text}{outfit_notes}\n\n'
@@ -354,7 +433,7 @@ def generate_prompt_with_claude(outfit, api_key=None):
         return message.content[0].text.strip(), None
     except Exception as exc:
         current_app.logger.warning(f'Claude API error: {exc} — using fallback prompt')
-        return build_prompt(outfit), None
+        return build_prompt(outfit, person_mode=person_mode, decor=decor, gender=gender), None
 
 
 def _encode_shoe_reference(outfit):
@@ -389,10 +468,30 @@ def _encode_shoe_reference(outfit):
     return None, None
 
 
+_LAYER_ORDER = [
+    'Accessoires', 'Vestes & Manteaux', 'Pulls & Sweats', 'Hauts', 'T-shirts',
+    'Sport', 'Robes & Jupes', 'Pantalons', 'Jeans', 'Shorts',
+    'Sous-vêtements', 'Chaussures', 'Autre',
+]
+
+
+def _sorted_outfit_items(outfit):
+    """Retourne les articles triés tête → pieds selon _LAYER_ORDER."""
+    # Charger tous les items une seule fois pour éviter les problèmes de lazy-loading
+    all_items = list(outfit.items)
+    order_map = {cat: i for i, cat in enumerate(_LAYER_ORDER)}
+    return sorted(all_items, key=lambda it: order_map.get(it.category, len(_LAYER_ORDER)))
+
+
 def _build_outfit_composite(outfit):
-    """Construit un collage JPEG de tous les articles de la tenue ayant une image."""
+    """
+    Collage vertical tête→pieds — priorité aux thumb_path (article isolé).
+    Rendu : 2 colonnes, fond blanc, padding entre cellules, portrait.
+    """
+    items = _sorted_outfit_items(outfit)
     cells = []
-    for it in outfit.items:
+    for it in items:
+        # Priorité au thumb (article seul) ; image_path peut contenir un mannequin habillé
         img_rel = it.thumb_path or it.image_path
         if not img_rel:
             continue
@@ -401,30 +500,51 @@ def _build_outfit_composite(outfit):
             continue
         try:
             cells.append(Image.open(abs_path).convert('RGB'))
-        except Exception:
+        except Exception as exc:
+            current_app.logger.warning(f'Cannot load image for item {it.id}: {exc}')
             continue
 
+    current_app.logger.info(f'_build_outfit_composite: {len(items)} items, {len(cells)} with photos')
     if not cells:
         return None
 
-    CELL = 512
+    CELL = 480        # taille de chaque vignette
+    PAD  = 16         # espacement entre vignettes
+    BG   = (250, 250, 250)
+
     resized = []
     for img in cells:
         img.thumbnail((CELL, CELL), Image.LANCZOS)
-        cell = Image.new('RGB', (CELL, CELL), (248, 248, 248))
+        cell = Image.new('RGB', (CELL, CELL), BG)
         cell.paste(img, ((CELL - img.width) // 2, (CELL - img.height) // 2))
         resized.append(cell)
 
-    cols = min(len(resized), 3)
+    # 2 colonnes sauf pour 1 article seul
+    cols = 1 if len(resized) == 1 else 2
     rows = (len(resized) + cols - 1) // cols
-    composite = Image.new('RGB', (cols * CELL, rows * CELL), (248, 248, 248))
+
+    W = cols * CELL + (cols + 1) * PAD
+    H = rows * CELL + (rows + 1) * PAD
+    composite = Image.new('RGB', (W, H), BG)
     for i, cell in enumerate(resized):
         r, c = divmod(i, cols)
-        composite.paste(cell, (c * CELL, r * CELL))
+        x = PAD + c * (CELL + PAD)
+        y = PAD + r * (CELL + PAD)
+        composite.paste(cell, (x, y))
 
     buf = BytesIO()
-    composite.save(buf, 'JPEG', quality=85)
+    composite.save(buf, 'JPEG', quality=92)
     return buf.getvalue()
+
+
+def _save_composite_as_outfit(composite_bytes):
+    """Sauvegarde le composite PIL directement comme image de tenue. Retourne le chemin relatif."""
+    os.makedirs(OUTFIT_FOLDER, exist_ok=True)
+    filename = f'{uuid.uuid4().hex}.jpg'
+    path = os.path.join(OUTFIT_FOLDER, filename)
+    with open(path, 'wb') as f:
+        f.write(composite_bytes)
+    return f'uploads/outfits/{filename}'
 
 
 def _save_pollinations_response(resp):
@@ -436,69 +556,16 @@ def _save_pollinations_response(resp):
     return f'uploads/outfits/{filename}'
 
 
-def _generate_with_kontext(prompt, shoe_item, shoe_bytes, seed, encoded_negative, headers, image_model=None):
+def _is_public_url(url):
+    """Vérifie que l'URL est accessible publiquement (pas localhost)."""
+    return bool(url) and not any(h in url for h in ('localhost', '127.0.0.1', '0.0.0.0'))
+
+
+def _generate_with_kontext_url(prompt, image_url, seed, encoded_negative, headers, label='ref'):
     """
-    Génère une image via FLUX.1-Kontext (Pollinations) en POST multipart
-    avec la photo de la chaussure comme référence visuelle.
+    Génère via FLUX.1-Kontext (GET) avec une image de référence passée par URL publique.
+    Nouveau format API Pollinations — remplace les anciens appels multipart POST.
     """
-    ai_sub = _clean_text(getattr(shoe_item, 'ai_subcategory', '') or '')
-    ai_desc = _clean_text(getattr(shoe_item, 'ai_description', '') or '')
-    shoe_label = ai_sub if ai_sub else 'shoe'
-
-    if ai_desc:
-        # ai_description for shoes IS the Flux image_gen_prompt — use it for precise reference
-        shoe_ref = (
-            f'Reference image shows this exact shoe: {ai_desc[:200]}. '
-            f'Reproduce this shoe with full precision — same colorway, silhouette, sole, and visual details. '
-        )
-    else:
-        shoe_ref = f'Keep the exact design, colorway, sole shape and branding of the reference {shoe_label}. '
-
-    kontext_prompt = shoe_ref + prompt
-
-    kontext_model = image_model if image_model else 'kontext'
-    params = {
-        'width': POLLINATIONS_WIDTH,
-        'height': POLLINATIONS_HEIGHT,
-        'seed': seed,
-        'model': kontext_model,
-        'enhance': 'false',
-        'safe': 'true' if POLLINATIONS_SAFE else 'false',
-        'negative_prompt': urllib.parse.unquote(encoded_negative),
-    }
-
-    current_app.logger.info(
-        f'Calling Pollinations kontext (POST) | shoe={shoe_label} | model={kontext_model} '
-        f'| size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} | seed={seed}'
-    )
-
-    try:
-        encoded_prompt = urllib.parse.quote(kontext_prompt, safe='')
-        url = f'https://gen.pollinations.ai/image/{encoded_prompt}'
-        files = {'image': ('shoe.jpg', shoe_bytes, 'image/jpeg')}
-        resp = requests.post(url, params=params, files=files, headers=headers, timeout=300)
-        current_app.logger.info(
-            f'Kontext response: {resp.status_code}, '
-            f'content-type: {resp.headers.get("content-type")}'
-        )
-        if not resp.ok:
-            current_app.logger.warning(f'Kontext error {resp.status_code}: {resp.text[:400]}')
-            return None, f'Kontext {resp.status_code}'
-        ct = (resp.headers.get('content-type') or '').lower()
-        if 'image' not in ct:
-            current_app.logger.warning(f'Kontext non-image response: {ct}')
-            return None, f'Kontext réponse invalide ({ct})'
-        return _save_pollinations_response(resp), None
-    except requests.Timeout:
-        current_app.logger.warning('Kontext timeout — fallback standard')
-        return None, 'Kontext timeout'
-    except Exception as exc:
-        current_app.logger.error(f'Kontext error: {exc}')
-        return None, str(exc)
-
-
-def _generate_with_outfit_reference(prompt, ref_bytes, seed, encoded_negative, headers):
-    """Génère via Kontext POST avec le collage visuel de la tenue comme référence."""
     params = {
         'width': POLLINATIONS_WIDTH,
         'height': POLLINATIONS_HEIGHT,
@@ -508,31 +575,30 @@ def _generate_with_outfit_reference(prompt, ref_bytes, seed, encoded_negative, h
         'safe': 'true' if POLLINATIONS_SAFE else 'false',
         'negative_prompt': urllib.parse.unquote(encoded_negative),
         'nologo': 'true',
+        'image': image_url,
     }
     encoded_prompt = urllib.parse.quote(prompt, safe='')
-    url = f'https://gen.pollinations.ai/image/{encoded_prompt}'
+    url = f'https://enter.pollinations.ai/prompt/{encoded_prompt}'
     current_app.logger.info(
-        f'Kontext outfit composite | size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} | seed={seed}'
+        f'Kontext GET ({label}) | img={image_url[:70]} | size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} | seed={seed}'
     )
     try:
-        files = {'image': ('outfit_ref.jpg', ref_bytes, 'image/jpeg')}
-        resp = requests.post(url, params=params, files=files, headers=headers, timeout=300)
+        resp = requests.get(url, params=params, headers=headers, timeout=300)
         current_app.logger.info(
-            f'Kontext outfit response: {resp.status_code}, '
-            f'content-type: {resp.headers.get("content-type")}'
+            f'Kontext {label} response: {resp.status_code}, content-type: {resp.headers.get("content-type")}'
         )
         if not resp.ok:
-            current_app.logger.warning(f'Kontext outfit error {resp.status_code}: {resp.text[:400]}')
+            current_app.logger.warning(f'Kontext {label} error {resp.status_code}: {resp.text[:400]}')
             return None, f'Kontext {resp.status_code}'
         ct = (resp.headers.get('content-type') or '').lower()
         if 'image' not in ct:
             return None, f'Kontext réponse invalide ({ct})'
         return _save_pollinations_response(resp), None
     except requests.Timeout:
-        current_app.logger.warning('Kontext outfit composite timeout — fallback standard')
-        return None, 'timeout'
+        current_app.logger.warning(f'Kontext {label} timeout')
+        return None, f'Kontext {label} timeout'
     except Exception as exc:
-        current_app.logger.error(f'Kontext outfit composite error: {exc}')
+        current_app.logger.error(f'Kontext {label} error: {exc}')
         return None, str(exc)
 
 
@@ -627,9 +693,17 @@ def _generate_local_comfyui(prompt, negative_prompt, url, checkpoint, width, hei
     return None, "ComfyUI timeout — génération trop longue (> 5 min)."
 
 
-def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_url=None, local_checkpoint=None):
+def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_url=None, local_checkpoint=None, face_path=None, person_mode=False, public_base_url=None, gender='Homme'):
     clean_prompt = ' '.join(str(prompt).split()).strip()
-    negative_prompt = build_negative_prompt()
+
+    # Kontext (image-to-image) is unavailable — "keep same person" prompt passed to text-only
+    # flux generates a woman. Override with ghost mannequin prompt so the outfit is correct.
+    if person_mode and outfit:
+        clean_prompt = build_prompt(outfit, person_mode=False, gender=gender)
+        person_mode = False
+        current_app.logger.info('person_mode: Kontext unavailable — overriding with ghost mannequin prompt')
+
+    negative_prompt = build_negative_prompt(person_mode=person_mode, gender=gender)
     encoded_negative = urllib.parse.quote(negative_prompt, safe='')
 
     seed = POLLINATIONS_FIXED_SEED if POLLINATIONS_FIXED_SEED else str(uuid.uuid4().int % 99999)
@@ -644,7 +718,7 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
 
     # Génération locale (A1111 ou ComfyUI)
     if effective_model in ('local-a1111', 'local-comfyui'):
-        negative_prompt = build_negative_prompt()
+        negative_prompt = build_negative_prompt(gender=gender)
         local_base = (local_url or 'http://localhost:7860').rstrip('/')
         current_app.logger.info(
             f'Local generation | provider={effective_model} | url={local_base} '
@@ -661,44 +735,8 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
                 local_checkpoint, POLLINATIONS_WIDTH, POLLINATIONS_HEIGHT, seed,
             )
 
-    # Génération avec référence visuelle (Kontext) — prioritaire pour cohérence avec les vrais vêtements
-    # Construit un collage de tous les articles ayant une image et l'envoie à FLUX Kontext
-    if outfit and effective_model not in ('local-a1111', 'local-comfyui'):
-        composite = _build_outfit_composite(outfit)
-        if composite:
-            # Build a per-item description for Kontext — much more precise than the generic prompt
-            item_tokens = [_item_visual_token(it) for it in outfit.items]
-            item_tokens = [t for t in item_tokens if t]
-            occasion_ctx = _normalize_occasion(outfit.occasion) if outfit.occasion else 'fashion lookbook'
-            season_ctx = _normalize_season(outfit.season) if outfit.season else 'all-season'
-            kontext_prompt = (
-                f'Fashion editorial photo, male clothing mannequin, front view, full body, '
-                f'white seamless studio background, soft box lighting. '
-                f'Wearing these exact garments from the reference grid: {" | ".join(item_tokens)}. '
-                f'Reproduce every item with precise color, material and design accuracy from the reference. '
-                f'Occasion: {occasion_ctx}, season: {season_ctx}. '
-                f'Photorealistic, 8K, sharp focus, accurate garment colors, no face, no skin, matte mannequin surface.'
-            )
-            path, _err = _generate_with_outfit_reference(
-                kontext_prompt, composite, seed, encoded_negative, headers
-            )
-            if path:
-                return path, None
-            current_app.logger.warning(
-                f'Outfit composite reference failed ({_err}), falling back to text-only'
-            )
-        elif effective_model == 'kontext':
-            # Fallback : référence chaussure seule si pas de composite
-            shoe_item, shoe_bytes = _encode_shoe_reference(outfit)
-            if shoe_item and shoe_bytes:
-                result = _generate_with_kontext(
-                    clean_prompt, shoe_item, shoe_bytes,
-                    seed, encoded_negative, headers,
-                    image_model=effective_model,
-                )
-                if result[0] is not None:
-                    return result
-                current_app.logger.warning('Kontext shoe-only failed, falling back to standard')
+    # Toujours essayer flux text-only en premier — le composite PIL n'est qu'un fallback
+    # (le composite montre les photos produits d'origine, pas une vraie image générée)
 
     # Génération standard — deux endpoints selon qu'une clé est fournie ou non
     # gen.pollinations.ai  → endpoint authentifié (requis si api_key)
@@ -784,10 +822,20 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
         img.save(path, 'JPEG', quality=92, optimize=True)
         return f'uploads/outfits/{filename}', None
     except requests.Timeout:
-        return None, 'Timeout — génération trop longue (> 5 min). Réessayez.'
+        current_app.logger.warning('Pollinations timeout — falling back to PIL composite')
     except requests.RequestException as exc:
-        current_app.logger.error(f'HTTP request error during image generation: {exc}')
-        return None, 'Erreur réseau pendant la génération.'
+        current_app.logger.error(f'HTTP request error during image generation: {exc} — falling back to PIL composite')
     except Exception as exc:
-        current_app.logger.error(f'Image generation error: {exc}')
-        return None, str(exc)
+        current_app.logger.error(f'Image generation error: {exc} — falling back to PIL composite')
+
+    # Fallback final : composite PIL des vraies photos (si flux a échoué ou timeout)
+    if outfit:
+        try:
+            composite = _build_outfit_composite(outfit)
+            if composite:
+                current_app.logger.info('Flux failed — using PIL photo composite as fallback')
+                return _save_composite_as_outfit(composite), None
+        except Exception as exc:
+            current_app.logger.error(f'PIL composite fallback also failed: {exc}')
+
+    return None, 'Génération échouée. Vérifiez votre connexion et réessayez.'
