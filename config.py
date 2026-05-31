@@ -23,12 +23,38 @@ CATEGORIES = [
     'Chaussures', 'Accessoires', 'Sous-vêtements', 'Sport', 'Autre'
 ]
 SEASONS = ['Printemps', 'Été', 'Automne', 'Hiver', 'Toutes saisons']
-SIZES = [
-    'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL',
-    '34', '36', '38', '40', '42', '44', '46', '48',
-    '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46',
-    'Taille unique'
-]
+
+def _shoe_sizes():
+    sizes = []
+    n = 30
+    while n <= 50:
+        full = int(n)
+        sizes.append(str(full) if n == full else f"{full}½")
+        n = round(n + 0.5, 1)
+    return sizes
+
+_LETTER      = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL']
+_NUM_GARMENT = ['34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56']
+_NUM_JEANS   = ['26', '27', '28', '29', '30', '31', '32', '33', '34', '36', '38', '40', '42', '44']
+
+SIZES_BY_CATEGORY = {
+    'Hauts':             _LETTER + _NUM_GARMENT,
+    'T-shirts':          _LETTER,
+    'Pulls & Sweats':    _LETTER + _NUM_GARMENT,
+    'Vestes & Manteaux': _LETTER + _NUM_GARMENT,
+    'Pantalons':         ['XS', 'S', 'M', 'L', 'XL', 'XXL'] + _NUM_GARMENT,
+    'Jeans':             ['XS', 'S', 'M', 'L', 'XL', 'XXL'] + _NUM_JEANS,
+    'Shorts':            ['XS', 'S', 'M', 'L', 'XL', 'XXL'] + _NUM_GARMENT[:8],
+    'Robes & Jupes':     _LETTER + _NUM_GARMENT,
+    'Chaussures':        _shoe_sizes(),
+    'Accessoires':       ['Taille unique', 'XS/S', 'S/M', 'M/L', 'L/XL'],
+    'Sous-vêtements':    _LETTER + _NUM_GARMENT,
+    'Sport':             _LETTER,
+    'Autre':             _LETTER + _NUM_GARMENT + ['Taille unique'],
+}
+
+# Kept for backwards compat (boutique scraper, seed scripts, etc.)
+SIZES = _LETTER + _NUM_GARMENT + _shoe_sizes() + ['Taille unique']
 COLORS = [
     'Blanc', 'Noir', 'Gris', 'Beige', 'Marron', 'Camel', 'Rouge', 'Rose',
     'Orange', 'Jaune', 'Vert', 'Bleu', 'Violet', 'Multicolore', 'Imprimé'

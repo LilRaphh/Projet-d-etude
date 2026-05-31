@@ -228,7 +228,7 @@
     </div>
 
     {# ── Nudges ── #}
-    {% if not anchor_indexed and indexed_count < 3 and not has_api_key %}
+    {% if indexed_count < 3 and not has_api_key %}
     <div class="cp-nudge">
       <div class="cp-nudge-ico">💡</div>
       <p>
@@ -444,7 +444,7 @@ function renderResults(d) {
 function buildCard(item, slot, idx) {
   var icon = CAT_ICONS[item.category] || '👗';
   var imgHTML = item.thumb
-    ? '<img src="/static/uploads/' + item.thumb + '" alt="' + escHtml(item.name) + '" loading="lazy">'
+    ? '<img src="/static/' + item.thumb + '" alt="' + escHtml(item.name) + '" loading="lazy">'
     : '<div class="cp-card-ph">' + icon + '</div>';
 
   var scorePct = item.score_pct;

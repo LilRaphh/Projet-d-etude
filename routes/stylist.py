@@ -118,6 +118,8 @@ def _suggest_claude(items, weather, prompt):
     if not key:
         return None, "Clé API Anthropic manquante — ajoutez-la dans les Paramètres ⚙️."
 
+    valid_ids = {item.id for item in items}
+
     lines = []
     for item in items:
         parts = [f"ID:{item.id}", item.name, item.category]
@@ -157,7 +159,14 @@ def _suggest_claude(items, weather, prompt):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-        return json.loads(raw.strip()).get("suggestions", []), None
+        suggestions = json.loads(raw.strip()).get("suggestions", [])
+        for s in suggestions:
+            original = s.get("item_ids", [])
+            s["item_ids"] = [iid for iid in original if iid in valid_ids]
+            dropped = set(original) - valid_ids
+            if dropped:
+                log.warning("_suggest_claude: Claude hallucinated item_ids %s (not in wardrobe)", dropped)
+        return suggestions, None
 
     except json.JSONDecodeError:
         return None, "Réponse IA invalide. Réessayez."
@@ -350,16 +359,19 @@ def today_suggest():
         iid = it.get("item_id")
         if not iid:
             continue
-        item_ids.append(iid)
         db_item = items_db.get(iid)
+        if not db_item:
+            log.warning("today_suggest: item_id %s not in user %s wardrobe, skipping", iid, _uid())
+            continue
+        item_ids.append(iid)
         enriched.append({
             "id": iid,
-            "name": it["name"],
-            "category": it["category"],
-            "color": it.get("color", ""),
-            "brand": db_item.brand if db_item else "",
-            "thumb": (db_item.thumb_path or db_item.image_path or "") if db_item else "",
-            "times_worn": (db_item.times_worn or 0) if db_item else 0,
+            "name": db_item.name,
+            "category": db_item.category,
+            "color": db_item.color or "",
+            "brand": db_item.brand or "",
+            "thumb": db_item.thumb_path or db_item.image_path or "",
+            "times_worn": db_item.times_worn or 0,
         })
 
     styles = [it.get("style", "") for it in best["items"] if it.get("style")]

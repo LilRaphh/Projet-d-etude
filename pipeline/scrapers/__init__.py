@@ -12,6 +12,10 @@ from pipeline.scrapers.bonnegueule import BonneGueuleScraper
 from pipeline.scrapers.merci import MerciScraper
 from pipeline.scrapers.isabelmarant import IsabelMarantScraper
 from pipeline.scrapers.amiparis import AmiParisScraper
+from pipeline.scrapers.stussy import StussyScraper
+from pipeline.scrapers.karhu import KarhuScraper
+from pipeline.scrapers.fillingpieces import FillingPiecesScraper
+from pipeline.scrapers.palace import PalaceScraper
 
 # Scrapers Playwright — optionnels (nécessitent : pip install playwright && playwright install chromium)
 try:
@@ -31,5 +35,6 @@ __all__ = [
     "ApcScraper", "BalzacScraper", "MaisonLabicheScraper",
     "RoujeScraper", "CabaiaScraper",
     "BonneGueuleScraper", "MerciScraper", "IsabelMarantScraper", "AmiParisScraper",
+    "StussyScraper", "KarhuScraper", "FillingPiecesScraper", "PalaceScraper",
     "JulesScraper", "NikeScraper", "GymsharkScraper",
 ]

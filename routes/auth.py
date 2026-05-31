@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from urllib.parse import urljoin, urlparse
 
 from flask import Blueprint, flash, redirect, render_template, request, session
@@ -73,6 +73,9 @@ def login():
             remember = request.form.get('remember') == '1'
             session.permanent = remember  # True = 30 j, False = expire à la fermeture du navigateur
             session['user_id'] = user.id
+            user.last_login_at = datetime.utcnow()
+            user.last_login_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+            db.session.commit()
             flash(f'Ravi de vous revoir, {user.username} !', 'success')
             next_url = request.args.get('next')
             return redirect(next_url if _is_safe_redirect_target(next_url) else '/')

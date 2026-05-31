@@ -51,7 +51,7 @@ def api_outfit_worn(oid):
 @api_bp.route('/analyze-all', methods=['POST'])
 @login_required
 def api_analyze_all():
-    from ai.vision import analyze_garment
+    from ai.pipeline import analyze_and_store_item
     from models import UserSetting
 
     me = current_user()
@@ -74,12 +74,16 @@ def api_analyze_all():
             last_error = None
             result = None
 
+            # Signal immédiat que l'inférence commence (Qwen + FashionCLIP peuvent durer plusieurs minutes)
+            yield f"data: {json.dumps({'type': 'processing', 'done': i, 'total': total, 'item': item.name})}\n\n"
+
             for attempt in range(3):
                 if attempt > 0:
-                    yield f"data: {json.dumps({'type': 'retry', 'done': i + 1, 'total': total, 'item': item.name, 'attempt': attempt + 1})}\n\n"
+                    yield f"data: {json.dumps({'type': 'retry', 'done': i, 'total': total, 'item': item.name, 'attempt': attempt + 1})}\n\n"
                     time.sleep(3)
                 try:
-                    result = analyze_garment(img_abs, vision_model=vision_model_pref)
+                    # Pipeline complet : Qwen2.5-VL (vision) + FashionCLIP (embedding)
+                    result = analyze_and_store_item(item, img_abs, vision_model=vision_model_pref)
                     last_error = None
                     break
                 except Exception as e:
@@ -96,6 +100,7 @@ def api_analyze_all():
                 item.ai_thickness = result.get('thickness')
                 item.ai_length = result.get('length')
                 item.ai_description = result.get('description')
+                item.ai_color = result.get('primary_color') or None
                 if not item.color and result.get('primary_color'):
                     item.color = result['primary_color']
                 item.ai_analyzed = True

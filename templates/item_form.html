@@ -48,7 +48,7 @@
           </div>
           <div class="fg">
             <label class="lbl">Catégorie *</label>
-            <select name="category" class="fc" required>
+            <select name="category" id="catSelect" class="fc" required>
               {% for c in cats %}<option value="{{ c }}" {% if item and item.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
             </select>
           </div>
@@ -60,7 +60,7 @@
         <hr class="fdiv">
         <div class="frow">
           <div class="fg"><label class="lbl">Taille</label>
-            <select name="size" class="fc"><option value="">—</option>{% for s in sizes %}<option value="{{ s }}" {% if item and item.size == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+            <select name="size" id="sizeSelect" class="fc"><option value="">—</option></select></div>
           <div class="fg"><label class="lbl">Couleur</label>
             <select name="color" class="fc"><option value="">—</option>{% for c in colors %}<option value="{{ c }}" {% if item and item.color == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
           <div class="fg"><label class="lbl">Saison</label>
@@ -94,6 +94,42 @@
 
 {% block extra_js %}
 <script>
+// ── Tailles par catégorie ──────────────────────────────────────────────────
+var SIZES_BY_CAT = {{ sizes_by_cat | tojson }};
+var SAVED_SIZE   = {{ (item.size or '') | tojson }};
+
+function updateSizes(cat, keepSelection) {
+  var sel  = document.getElementById('sizeSelect');
+  var prev = keepSelection ? sel.value : SAVED_SIZE;
+  var opts = SIZES_BY_CAT[cat] || [];
+
+  sel.innerHTML = '<option value="">—</option>';
+  var found = false;
+  opts.forEach(function(s) {
+    var o = document.createElement('option');
+    o.value = s; o.textContent = s;
+    if (s === prev) { o.selected = true; found = true; }
+    sel.appendChild(o);
+  });
+
+  // Si la taille enregistrée n'est pas dans la liste (données anciennes), l'ajouter quand même
+  if (prev && !found) {
+    var o = document.createElement('option');
+    o.value = prev; o.textContent = prev;
+    o.selected = true;
+    sel.insertBefore(o, sel.children[1]);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var catSel = document.getElementById('catSelect');
+  if (catSel) {
+    updateSizes(catSel.value, false);
+    catSel.addEventListener('change', function() { updateSizes(this.value, true); });
+  }
+});
+
+// ── Upload photo ───────────────────────────────────────────────────────────
 var upi = document.getElementById("upi");
 var upz = document.getElementById("upz");
 if (upi) {

@@ -40,6 +40,9 @@ class ShopifyBaseScraper(BaseScraper):
     DEFAULT_GENRE: str = "Adulte"
     DEFAULT_SEXE: str = "Mixte"
 
+    # Devise par défaut — surcharger si le store est en USD, GBP…
+    CURRENCY: str = "EUR"
+
     # ------------------------------------------------------------------
     def _infer_sexe(self, tags: List[str], title: str, product_type: str) -> Tuple[str, str]:
         """Infère (genre, sexe) depuis les métadonnées Shopify."""
@@ -77,6 +80,18 @@ class ShopifyBaseScraper(BaseScraper):
                 return part.capitalize()
 
         return self._find_color(desc) or self._find_color(title)
+
+    @staticmethod
+    def _is_valid_size(val: str) -> bool:
+        """Accepte les tailles lettrées (S/M/L…) et numériques entières ou demi (39, 39.5, 39½)."""
+        if val.upper() in SIZE_LABELS:
+            return True
+        cleaned = val.replace('½', '.5').replace(',', '.')
+        try:
+            n = float(cleaned)
+            return 28.0 <= n <= 54.0
+        except ValueError:
+            return False
 
     # ------------------------------------------------------------------
     def _fetch_all_products(self) -> List[dict]:
@@ -144,11 +159,11 @@ class ShopifyBaseScraper(BaseScraper):
             size = None
             if size_idx is not None and opts[size_idx]:
                 val = opts[size_idx].strip()
-                if val.upper() in SIZE_LABELS or (val.isdigit() and 28 <= int(val) <= 54):
+                if self._is_valid_size(val):
                     size = val.upper()
             elif size_idx is None and len(options) == 1 and opts[0]:
                 val = opts[0].strip()
-                if val.upper() in SIZE_LABELS:
+                if self._is_valid_size(val):
                     size = val.upper()
 
             if size and size not in all_tailles:
@@ -163,7 +178,7 @@ class ShopifyBaseScraper(BaseScraper):
         return Product(
             name         = name,
             price_value  = price,
-            currency     = "EUR",
+            currency     = self.CURRENCY,
             description  = desc,
             genre        = genre,
             sexe         = sexe,

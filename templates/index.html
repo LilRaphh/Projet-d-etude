@@ -322,12 +322,20 @@ function startAnalyzeAll() {
 function handleAnalyzeEvent(ev) {
   if (ev.type === "start") {
     if (ev.total === 0) {
+      document.getElementById("analyzeProgressLabel").textContent = "Aucun vêtement à analyser.";
       showAnalyzeDone(0, 0, 0);
       return;
     }
     document.getElementById("analyzeProgressLabel").textContent = "Analyse en cours…";
     document.getElementById("analyzeProgressCount").textContent = "0 / " + ev.total;
+  } else if (ev.type === "processing") {
+    // Feedback immédiat dès que l'inférence d'un item commence (peut durer plusieurs minutes)
+    var pct = ev.total > 0 ? Math.round(ev.done / ev.total * 100) : 0;
+    document.getElementById("analyzeProgressBar").style.width = pct + "%";
+    document.getElementById("analyzeProgressCount").textContent = ev.done + " / " + ev.total;
+    document.getElementById("analyzeProgressLabel").textContent = "Analyse de « " + ev.item.slice(0, 40) + " »…";
   } else if (ev.type === "retry") {
+    document.getElementById("analyzeProgressLabel").textContent = "Nouvelle tentative…";
     var log = document.getElementById("analyzeLog");
     var entry = document.createElement("div");
     entry.style.cssText = "display:flex;align-items:center;gap:.35rem;color:var(--tm)";
@@ -338,6 +346,7 @@ function handleAnalyzeEvent(ev) {
     var pct = Math.round(ev.done / ev.total * 100);
     document.getElementById("analyzeProgressBar").style.width = pct + "%";
     document.getElementById("analyzeProgressCount").textContent = ev.done + " / " + ev.total;
+    document.getElementById("analyzeProgressLabel").textContent = ev.done < ev.total ? "Analyse en cours…" : "Finalisation…";
     var log = document.getElementById("analyzeLog");
     var entry = document.createElement("div");
     entry.style.cssText = "display:flex;align-items:center;gap:.35rem";
@@ -355,6 +364,9 @@ function handleAnalyzeEvent(ev) {
 
 function showAnalyzeDone(ok, errors, total) {
   document.getElementById("analyzeProgressBar").style.width = "100%";
+  if (total > 0) {
+    document.getElementById("analyzeProgressLabel").textContent = errors === 0 ? "Analyse terminée." : "Terminé avec erreurs.";
+  }
   var msg = document.getElementById("analyzeDoneMsg");
   msg.style.display = "";
   if (total === 0) {

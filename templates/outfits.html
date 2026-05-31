@@ -8,12 +8,14 @@
 .ogrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 1.25rem; }
 .ocard { background: var(--sur); border-radius: var(--rl); overflow: hidden; border: 1px solid var(--bor); transition: box-shadow var(--tr), transform var(--tr); }
 .ocard:hover { box-shadow: var(--shh); transform: translateY(-3px); }
-.ocard-imgs { height: 160px; background: var(--bg); display: flex; overflow: hidden; position: relative; }
-.ocard-img { flex: 1; overflow: hidden; }
-.ocard-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
-.ocard:hover .ocard-img img { transform: scale(1.06); }
+.ocard-stack { height: 210px; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; position: relative; gap: 1px; }
+.ocard-layer { flex: 1; overflow: hidden; min-height: 0; }
+.ocard-layer img { width: 100%; height: 100%; object-fit: cover; object-position: center; transition: transform .4s; }
+.ocard-layer.shoes img { object-position: center bottom; }
+.ocard:hover .ocard-layer img { transform: scale(1.04); }
 .ocard-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 2rem; opacity: .15; }
 .ai-badge { position: absolute; top: .5rem; left: .5rem; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: #fff; font-size: .66rem; font-weight: 600; padding: .18rem .48rem; border-radius: 99px; }
+.ocard-count { position: absolute; bottom: .4rem; right: .45rem; background: rgba(0,0,0,.45); color: #fff; font-size: .65rem; font-weight: 600; padding: .1rem .38rem; border-radius: 99px; backdrop-filter: blur(4px); }
 .ocard-body { padding: .85rem 1rem 1rem; }
 .ocard-occasion { font-size: .68rem; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--a); margin-bottom: .2rem; }
 .ocard-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 400; margin-bottom: .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -49,23 +51,27 @@
   <div class="ogrid">
     {% for o in outfits %}
     <article class="ocard">
+      {% set layer_order = ['Accessoires','Vestes & Manteaux','Pulls & Sweats','Hauts','T-shirts','Sport','Robes & Jupes','Pantalons','Jeans','Shorts','Sous-vêtements','Chaussures','Autre'] %}
+      {% set ns = namespace(sorted=[]) %}
+      {% for cat in layer_order %}{% for it in o.items %}{% if it.category == cat %}{% set ns.sorted = ns.sorted + [it] %}{% endif %}{% endfor %}{% endfor %}
+      {% for it in o.items %}{% if it.category not in layer_order %}{% set ns.sorted = ns.sorted + [it] %}{% endif %}{% endfor %}
       <a href="/outfits/{{ o.id }}">
-        <div class="ocard-imgs">
+        <div class="ocard-stack">
           {% if o.generated_image %}
-            <div class="ocard-img"><img src="/static/{{ o.generated_image }}" alt="{{ o.name }}"></div>
+            <div class="ocard-layer"><img src="/static/{{ o.generated_image }}" alt="{{ o.name }}"></div>
             <span class="ai-badge">✦ IA</span>
-          {% else %}
-            {% set pitems = o.items[:3] %}
-            {% if pitems %}
-              {% for it in pitems %}
-              <div class="ocard-img">
-                {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
-                {% else %}<div class="ocard-ph">👗</div>{% endif %}
-              </div>
-              {% endfor %}
-            {% else %}
-              <div class="ocard-ph" style="width:100%;font-size:2.5rem">✦</div>
+          {% elif ns.sorted %}
+            {% for it in ns.sorted[:5] %}
+            <div class="ocard-layer{% if it.category == 'Chaussures' %} shoes{% endif %}">
+              {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+              {% else %}<div class="ocard-ph" style="font-size:1.1rem">{{ {'Accessoires':'🧢','Vestes & Manteaux':'🧥','Pulls & Sweats':'👕','Hauts':'👕','T-shirts':'👕','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Chaussures':'👟','Robes & Jupes':'👗'}.get(it.category,'👔') }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% if ns.sorted|length > 5 %}
+            <span class="ocard-count">+{{ ns.sorted|length - 5 }}</span>
             {% endif %}
+          {% else %}
+            <div class="ocard-ph" style="width:100%;font-size:2.5rem">✦</div>
           {% endif %}
         </div>
       </a>

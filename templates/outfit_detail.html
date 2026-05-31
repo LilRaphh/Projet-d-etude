@@ -44,12 +44,38 @@
 }
 .gen-error.visible { display: block; }
 
-.items-strip { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-.strip-item { text-align: center; }
-.strip-img { width: 72px; height: 72px; border-radius: var(--r); overflow: hidden; background: var(--bg); border: 1px solid var(--bor); }
-.strip-img img { width: 100%; height: 100%; object-fit: cover; }
-.strip-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; opacity: .2; }
-.strip-name { font-size: .62rem; color: var(--tm); margin-top: .25rem; max-width: 72px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.photo-tabs { display: flex; border-bottom: 1px solid var(--bor); }
+.photo-tab {
+  flex: 1; padding: .65rem; font-size: .8rem; font-weight: 500;
+  background: none; border: none; cursor: pointer;
+  color: var(--tl); transition: color .15s;
+}
+.photo-tab:hover { color: var(--fg); }
+.photo-tab.active { color: var(--a); box-shadow: inset 0 -2px 0 var(--a); }
+
+.upload-zone {
+  aspect-ratio: 9/16; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .75rem;
+  padding: 2rem; text-align: center; cursor: pointer;
+  background: linear-gradient(160deg, #0f0c1a, #1a0f2e);
+  transition: opacity .15s;
+}
+.upload-zone:hover { opacity: .85; }
+.upload-zone-ico { font-size: 2.5rem; opacity: .4; }
+.upload-zone-txt { color: #8888aa; font-size: .84rem; line-height: 1.6; }
+
+.pit-list { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1.5rem; }
+.pit-row { display: flex; align-items: center; gap: .7rem; padding: .48rem .6rem; border-radius: var(--r); border: 1px solid var(--bor); background: var(--bg); text-decoration: none; transition: all var(--tr); }
+.pit-row:hover { background: var(--sur); box-shadow: var(--sh); border-color: var(--a); }
+.pit-thumb { width: 54px; height: 54px; border-radius: calc(var(--r) - 2px); overflow: hidden; flex-shrink: 0; background: var(--sur); border: 1px solid var(--bor); }
+.pit-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pit-thumb-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; opacity: .18; }
+.pit-info { flex: 1; min-width: 0; }
+.pit-cat { font-size: .6rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--a); margin-bottom: .06rem; }
+.pit-name { font-size: .84rem; color: var(--tx); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pit-meta { font-size: .71rem; color: var(--tm); margin-top: .04rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pit-arrow { color: var(--tl); flex-shrink: 0; }
+.pit-layer-label { font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--tl); margin: .65rem 0 .25rem .1rem; }
 
 .d-cat { font-size: .72rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--a); margin-bottom: .46rem; }
 .d-name { font-family: var(--serif); font-size: clamp(1.65rem, 3.5vw, 2.4rem); font-weight: 300; line-height: 1.1; margin-bottom: .9rem; }
@@ -62,6 +88,29 @@
 .mi { padding: .6rem .82rem; background: var(--bg); border-radius: var(--r); border: 1px solid var(--bor); }
 .mi-lbl { font-size: .64rem; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--tl); margin-bottom: .12rem; }
 .mi-val { font-size: .84rem; }
+
+/* ── Style Analysis ── */
+.sa-section { margin-top: 2.5rem; border-top: 1px solid var(--bor); padding-top: 2rem; }
+.sa-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 300; margin-bottom: 1.25rem; }
+.sa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 640px) { .sa-grid { grid-template-columns: 1fr; } }
+.sa-card { background: var(--sur); border: 1px solid var(--bor); border-radius: var(--rl); padding: 1.1rem 1.25rem; }
+.sa-card-title { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--tm); margin-bottom: .85rem; }
+.sa-card.full { grid-column: 1/-1; }
+.sa-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .65rem; }
+.sa-info-item label { font-size: .68rem; color: var(--tl); display: block; margin-bottom: .08rem; }
+.sa-info-item span { font-size: .81rem; font-weight: 500; background: var(--bg); padding: .15rem .45rem; border-radius: 99px; display: inline-block; }
+.sa-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .45rem; }
+.sa-list li { font-size: .82rem; color: var(--tx); padding: .4rem .65rem; background: var(--bg); border-radius: var(--r); border-left: 3px solid var(--a); }
+.sa-list li.suggestion { border-left-color: #9b59b6; }
+.sa-color-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.sa-chip { padding: .22rem .6rem; border-radius: 99px; font-size: .74rem; font-weight: 500; background: var(--am); color: var(--a); border: 1px solid var(--a)33; }
+.sa-radar-wrap { display: flex; justify-content: center; min-height: 240px; }
+canvas#saRadar { max-width: 100%; max-height: 260px; }
+.sa-spinner { display: none; align-items: center; gap: .5rem; font-size: .82rem; color: var(--tm); margin-top: .55rem; }
+.sa-spinner.visible { display: flex; }
+.sa-err { display: none; margin-top: .55rem; padding: .55rem .75rem; background: #FFF0F0; border: 1px solid #F8C0C0; color: #8A1A1A; border-radius: var(--r); font-size: .8rem; }
+.sa-err.visible { display: block; }
 {% endblock %}
 
 {% block content %}
@@ -69,50 +118,103 @@
   <a href="/outfits" class="btn btn-ghost btn-sm" style="margin-bottom:1.3rem">← Mes tenues</a>
 
   <div class="dlay">
-    <!-- LEFT: image IA -->
+    <!-- LEFT: image IA + photo perso -->
     <div>
       <div class="ai-section">
-        <div class="ai-img-wrap" id="aiWrap">
-          {% if outfit.generated_image %}
-            <img id="aiImg" src="/static/{{ outfit.generated_image }}" alt="{{ outfit.name }}">
-          {% else %}
-            <div class="ai-placeholder" id="aiPlaceholder">
-              <div class="ai-placeholder-ico">✦</div>
-              <div class="ai-placeholder-txt">
-                Aucune image générée<br>
-                <span style="font-size:.74rem;opacity:.6">Cliquez sur Générer ci-dessous</span>
-              </div>
-            </div>
-          {% endif %}
+
+        <!-- Onglets -->
+        <div class="photo-tabs">
+          <button class="photo-tab active" id="tabAI" onclick="switchTab('ai')">Image IA</button>
+          <button class="photo-tab" id="tabMy" onclick="switchTab('my')">
+            Ma photo{% if outfit.user_photo %} ●{% endif %}
+          </button>
         </div>
 
-        <div class="ai-actions">
-          {% if outfit.ai_prompt %}
-          <div id="promptBox" class="ai-prompt-box">{{ outfit.ai_prompt }}</div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="togglePrompt()" style="margin-bottom:.65rem;font-size:.74rem">
-            Voir le prompt utilisé
-          </button>
-          <br>
-          {% endif %}
-
-          <button type="button" class="btn btn-ai" id="genBtn" onclick="generateImage()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-            </svg>
-            {% if outfit.generated_image %}Regénérer{% else %}Générer avec l'IA{% endif %}
-          </button>
-
-          <div class="gen-status" id="genStatus">
-            <div class="spinner"></div>
-            <span id="genMsg">Génération en cours...</span>
+        <!-- Pane IA -->
+        <div id="paneAI">
+          <div class="ai-img-wrap" id="aiWrap">
+            {% if outfit.generated_image %}
+              <img id="aiImg" src="/static/{{ outfit.generated_image }}" alt="{{ outfit.name }}">
+            {% else %}
+              <div class="ai-placeholder" id="aiPlaceholder">
+                <div class="ai-placeholder-ico">+</div>
+                <div class="ai-placeholder-txt">
+                  Aucune image générée<br>
+                  <span style="font-size:.74rem;opacity:.6">Cliquez sur Générer ci-dessous</span>
+                </div>
+              </div>
+            {% endif %}
           </div>
 
-          <div class="gen-error" id="genError"></div>
+          <div class="ai-actions">
+            {% if outfit.ai_prompt %}
+            <div id="promptBox" class="ai-prompt-box">{{ outfit.ai_prompt }}</div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="togglePrompt()" style="margin-bottom:.65rem;font-size:.74rem">
+              Voir le prompt utilisé
+            </button>
+            <br>
+            {% endif %}
 
-          <p style="font-size:.72rem;color:var(--tl);margin-top:.55rem;line-height:1.5">
-            Flux AI (Pollinations) · Gratuit · Sans clé requise
-          </p>
+            <button type="button" class="btn btn-ai" id="genBtn" onclick="generateImage()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              {% if outfit.generated_image %}Regénérer{% else %}Générer avec l'IA{% endif %}
+            </button>
+
+            <div class="gen-status" id="genStatus">
+              <div class="spinner"></div>
+              <span id="genMsg">Génération en cours...</span>
+            </div>
+
+            <div class="gen-error" id="genError"></div>
+
+            <p style="font-size:.72rem;color:var(--tl);margin-top:.55rem;line-height:1.5">
+              Flux AI (Pollinations) · Gratuit · Sans clé requise
+            </p>
+          </div>
         </div>
+
+        <!-- Pane Ma photo -->
+        <div id="paneMy" style="display:none">
+          <div class="ai-img-wrap" id="myWrap">
+            {% if outfit.user_photo %}
+              <img id="myImg" src="/static/{{ outfit.user_photo }}" alt="{{ outfit.name }}">
+            {% else %}
+              <label class="upload-zone" for="photoInput">
+                <div class="upload-zone-ico"></div>
+                <div class="upload-zone-txt">
+                  Cliquez pour uploader une photo<br>
+                  <span style="font-size:.74rem;opacity:.6">JPEG, PNG, WebP</span>
+                </div>
+              </label>
+            {% endif %}
+          </div>
+
+          <div class="ai-actions">
+            <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadPhoto(this)">
+
+            <label for="photoInput" class="btn btn-primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:.35rem">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              {% if outfit.user_photo %}Remplacer{% else %}Uploader une photo{% endif %}
+            </label>
+
+            {% if outfit.user_photo %}
+            <button type="button" id="deletePhotoBtn" class="btn btn-ghost" onclick="deletePhoto()" style="color:#C0392B;border-color:#F0C0C0">
+              Supprimer
+            </button>
+            {% endif %}
+
+            <div class="gen-status" id="uploadStatus">
+              <div class="spinner"></div>
+              <span>Upload en cours...</span>
+            </div>
+            <div class="gen-error" id="uploadError"></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -124,7 +226,7 @@
       <div class="pills">
         {% if outfit.rating %}
         <span class="pill">
-          <span class="stars">{% for i in range(outfit.rating) %}★{% endfor %}{% for i in range(5 - outfit.rating) %}☆{% endfor %}</span>
+          <span class="stars">{{ outfit.rating }}/5</span>
         </span>
         {% endif %}
         {% if outfit.season %}<span class="pill">{{ outfit.season }}</span>{% endif %}
@@ -137,23 +239,39 @@
       {% endif %}
 
       <div class="lbl" style="margin-bottom:.55rem">Pièces de la tenue</div>
-      <div class="items-strip">
-        {% set emo = {'Hauts':'👔','T-shirts':'👕','Pulls & Sweats':'🧥','Vestes & Manteaux':'🧥','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Robes & Jupes':'👗','Chaussures':'👟','Accessoires':'👜'} %}
-        {% for it in outfit.items %}
-        <a href="/item/{{ it.id }}" class="strip-item">
-          <div class="strip-img">
-            {% if it.thumb_path %}
-              <img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}">
-            {% else %}
-              <div class="strip-ph">{{ emo.get(it.category, '👗') }}</div>
-            {% endif %}
-          </div>
-          <div class="strip-name" title="{{ it.name }}">{{ it.name }}</div>
-        </a>
-        {% else %}
-        <span style="font-size:.82rem;color:var(--tl);font-style:italic">Aucune pièce associée</span>
+      {% set layer_order = ['Accessoires','Vestes & Manteaux','Pulls & Sweats','Hauts','T-shirts','Sport','Robes & Jupes','Pantalons','Jeans','Shorts','Sous-vêtements','Chaussures','Autre'] %}
+      {% set layer_icons = {'Accessoires':'🧢','Vestes & Manteaux':'🧥','Pulls & Sweats':'👕','Hauts':'👕','T-shirts':'👕','Pantalons':'👖','Jeans':'👖','Shorts':'🩳','Chaussures':'👟','Robes & Jupes':'👗','Sport':'🏃','Sous-vêtements':'🩱'} %}
+      {% set ns = namespace(sorted=[]) %}
+      {% for cat in layer_order %}{% for it in outfit.items %}{% if it.category == cat %}{% set ns.sorted = ns.sorted + [it] %}{% endif %}{% endfor %}{% endfor %}
+      {% for it in outfit.items %}{% if it.category not in layer_order %}{% set ns.sorted = ns.sorted + [it] %}{% endif %}{% endfor %}
+      {% if ns.sorted %}
+      <div class="pit-list">
+        {% set ns2 = namespace(last_cat='') %}
+        {% for it in ns.sorted %}
+          {% if it.category != ns2.last_cat %}
+          <div class="pit-layer-label">{{ layer_icons.get(it.category, '👔') }} {{ it.category }}</div>
+          {% set ns2.last_cat = it.category %}
+          {% endif %}
+          <a href="/item/{{ it.id }}" class="pit-row">
+            <div class="pit-thumb">
+              {% if it.thumb_path %}<img src="/static/{{ it.thumb_path }}" alt="{{ it.name }}" loading="lazy">
+              {% else %}<div class="pit-thumb-ph">{{ layer_icons.get(it.category, '👔') }}</div>{% endif %}
+            </div>
+            <div class="pit-info">
+              <div class="pit-name">{{ it.name }}</div>
+              {% set meta_parts = [] %}
+              {% if it.brand %}{% set _ = meta_parts.append(it.brand) %}{% endif %}
+              {% if it.color %}{% set _ = meta_parts.append(it.color) %}{% endif %}
+              {% if it.size %}{% set _ = meta_parts.append(it.size) %}{% endif %}
+              {% if meta_parts %}<div class="pit-meta">{{ meta_parts | join(' · ') }}</div>{% endif %}
+            </div>
+            <svg class="pit-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
         {% endfor %}
       </div>
+      {% else %}
+      <span style="font-size:.82rem;color:var(--tl);font-style:italic">Aucune pièce associée</span>
+      {% endif %}
 
       <div class="d-acts">
         <button type="button" class="btn btn-ghost" onclick="wornToday()">
@@ -169,14 +287,36 @@
           <button type="submit" class="btn btn-ghost" style="color:#C0392B;border-color:#F0C0C0">Supprimer</button>
         </form>
       </div>
+
+      <div style="margin-top:1rem">
+        <button type="button" class="btn btn-ghost" id="saBtn" onclick="analyzeStyle()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          {% if outfit.style_analysis %}Relancer l'analyse{% else %}Analyser le style{% endif %}
+        </button>
+        <div class="sa-spinner" id="saSpinner">
+          <div class="spinner"></div>
+          <span>Analyse Groq en cours…</span>
+        </div>
+        <div class="sa-err" id="saErr"></div>
+      </div>
     </div>
   </div>
+
+  <!-- Section Analyse du style -->
+  <div class="sa-section" id="saSection" {% if not outfit.style_analysis %}style="display:none"{% endif %}>
+    <h2 class="sa-title">Analyse du style</h2>
+    <div class="sa-grid" id="saGrid"></div>
+  </div>
+
 </div></div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 var OUTFIT_ID = {{ outfit.id }};
+var SAVED_ANALYSIS = {{ outfit.style_analysis | tojson if outfit.style_analysis else 'null' }};
+var saRadarChart = null;
 
 function generateImage() {
   console.log("generateImage() called — outfit", OUTFIT_ID);
@@ -210,9 +350,12 @@ function generateImage() {
     .then(function(response) {
       console.log("HTTP status:", response.status);
       if (!response.ok) {
-        return response.text().then(function(txt) {
-          throw new Error("Erreur serveur " + response.status + ": " + txt.slice(0, 200));
-        });
+        return response.json()
+          .then(function(data) { throw new Error(data.error || "Erreur " + response.status); })
+          .catch(function(e) {
+            if (e instanceof SyntaxError) throw new Error("Erreur serveur " + response.status);
+            throw e;
+          });
       }
       return response.json();
     })
@@ -265,6 +408,210 @@ function generateImage() {
 function togglePrompt() {
   var pb = document.getElementById("promptBox");
   if (pb) pb.classList.toggle("visible");
+}
+
+function switchTab(tab) {
+  document.getElementById("paneAI").style.display = tab === "ai" ? "" : "none";
+  document.getElementById("paneMy").style.display = tab === "my" ? "" : "none";
+  document.getElementById("tabAI").classList.toggle("active", tab === "ai");
+  document.getElementById("tabMy").classList.toggle("active", tab === "my");
+}
+
+function uploadPhoto(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+
+  var status  = document.getElementById("uploadStatus");
+  var errBox  = document.getElementById("uploadError");
+  errBox.classList.remove("visible");
+  errBox.textContent = "";
+  status.classList.add("visible");
+
+  var fd = new FormData();
+  fd.append("photo", file);
+
+  csrfFetch("/outfits/" + OUTFIT_ID + "/upload-photo", { method: "POST", body: fd })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || "Erreur " + r.status); });
+      return r.json();
+    })
+    .then(function(d) {
+      status.classList.remove("visible");
+      var wrap = document.getElementById("myWrap");
+      wrap.innerHTML = "";
+      var img = document.createElement("img");
+      img.id  = "myImg";
+      img.src = "/static/" + d.photo_path + "?t=" + Date.now();
+      img.style.width = "100%";
+      wrap.appendChild(img);
+
+      // Mise à jour bouton supprimer
+      var del = document.getElementById("deletePhotoBtn");
+      if (!del) {
+        del = document.createElement("button");
+        del.type = "button";
+        del.id   = "deletePhotoBtn";
+        del.className = "btn btn-ghost";
+        del.style.cssText = "color:#C0392B;border-color:#F0C0C0";
+        del.textContent = "Supprimer";
+        del.onclick = deletePhoto;
+        status.parentElement.insertBefore(del, status);
+      }
+
+      // Badge onglet
+      document.getElementById("tabMy").textContent = "Ma photo ●";
+    })
+    .catch(function(err) {
+      status.classList.remove("visible");
+      errBox.textContent = err.message || "Erreur upload";
+      errBox.classList.add("visible");
+    });
+}
+
+function deletePhoto() {
+  csrfFetch("/outfits/" + OUTFIT_ID + "/delete-photo", { method: "POST" })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      var wrap = document.getElementById("myWrap");
+      wrap.innerHTML = [
+        '<label class="upload-zone" for="photoInput">',
+        '  <div class="upload-zone-ico"></div>',
+        '  <div class="upload-zone-txt">Cliquez pour uploader une photo<br>',
+        '    <span style="font-size:.74rem;opacity:.6">JPEG, PNG, WebP</span></div>',
+        '</label>'
+      ].join("");
+      var del = document.getElementById("deletePhotoBtn");
+      if (del) del.remove();
+      document.getElementById("tabMy").textContent = "Ma photo";
+    });
+}
+
+function analyzeStyle() {
+  var btn     = document.getElementById('saBtn');
+  var spinner = document.getElementById('saSpinner');
+  var errBox  = document.getElementById('saErr');
+  errBox.classList.remove('visible');
+  errBox.textContent = '';
+  btn.disabled = true;
+  spinner.classList.add('visible');
+
+  csrfFetch('/outfits/' + OUTFIT_ID + '/analyze-style', { method: 'POST' })
+    .then(function(r) {
+      if (!r.ok) return r.json().then(function(d) { throw new Error(d.error || 'Erreur ' + r.status); });
+      return r.json();
+    })
+    .then(function(data) {
+      spinner.classList.remove('visible');
+      btn.disabled = false;
+      btn.textContent = 'Relancer l\'analyse';
+      renderStyleAnalysis(data);
+    })
+    .catch(function(err) {
+      spinner.classList.remove('visible');
+      btn.disabled = false;
+      errBox.textContent = err.message || 'Erreur inconnue';
+      errBox.classList.add('visible');
+    });
+}
+
+function renderStyleAnalysis(data) {
+  var section = document.getElementById('saSection');
+  var grid    = document.getElementById('saGrid');
+  grid.innerHTML = '';
+  section.style.display = '';
+
+  // Carte 1 : Résumé
+  var summaryHTML = '<div class="sa-info-grid">';
+  summaryHTML += saInfoItem('Style global', data.style_global);
+  summaryHTML += saInfoItem('Occasion', data.occasion);
+  summaryHTML += saInfoItem('Saison', data.saison);
+  summaryHTML += saInfoItem('Harmonie colorielle', data.harmonie);
+  summaryHTML += '</div>';
+  if (data.description) {
+    summaryHTML += '<p style="margin-top:.75rem;font-size:.83rem;color:var(--tm);line-height:1.65">' + data.description + '</p>';
+  }
+  grid.appendChild(saCard('Résumé', summaryHTML));
+
+  // Carte 2 : Couleurs
+  var colorsHTML = '<div class="sa-color-chips">';
+  var colors = data.couleurs || [];
+  colors.forEach(function(c) {
+    colorsHTML += '<span class="sa-chip">' + c + '</span>';
+  });
+  colorsHTML += '</div>';
+  grid.appendChild(saCard('Couleurs dominantes', colorsHTML));
+
+  // Carte 3 : Points forts
+  var pfHTML = '<ul class="sa-list">';
+  (data.points_forts || []).forEach(function(p) { pfHTML += '<li>' + p + '</li>'; });
+  pfHTML += '</ul>';
+  grid.appendChild(saCard('Points forts', pfHTML));
+
+  // Carte 4 : Suggestions
+  var sgHTML = '<ul class="sa-list">';
+  (data.suggestions || []).forEach(function(s) { sgHTML += '<li class="suggestion">' + s + '</li>'; });
+  sgHTML += '</ul>';
+  grid.appendChild(saCard('Suggestions', sgHTML));
+
+  // Carte 5 : Radar (full width)
+  var radarCard = saCard('Radar des styles', '<div class="sa-radar-wrap"><canvas id="saRadar"></canvas></div>', true);
+  grid.appendChild(radarCard);
+
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  requestAnimationFrame(function() { buildSaRadar(data.radar || {}); });
+}
+
+function saCard(title, content, full) {
+  var div = document.createElement('div');
+  div.className = 'sa-card' + (full ? ' full' : '');
+  div.innerHTML = '<div class="sa-card-title">' + title + '</div>' + content;
+  return div;
+}
+
+function saInfoItem(label, value) {
+  return '<div class="sa-info-item"><label>' + label + '</label><span>' + (value || '—') + '</span></div>';
+}
+
+function buildSaRadar(radarData) {
+  var ctx = document.getElementById('saRadar');
+  if (!ctx) return;
+  if (saRadarChart) saRadarChart.destroy();
+  var accent = getComputedStyle(document.documentElement).getPropertyValue('--a').trim() || '#C8956C';
+  saRadarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: Object.keys(radarData),
+      datasets: [{
+        label: 'Style',
+        data: Object.values(radarData),
+        backgroundColor: accent + '33',
+        borderColor: accent,
+        borderWidth: 2,
+        pointBackgroundColor: accent,
+        pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 1,
+          ticks: { stepSize: .25, callback: function(v) { return (v*100)+'%'; }, font: { size: 9 } },
+          pointLabels: { font: { size: 10 } },
+          grid: { color: '#e5e5e5' }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+// Charger l'analyse sauvegardée au démarrage
+if (SAVED_ANALYSIS) {
+  try {
+    var parsed = typeof SAVED_ANALYSIS === 'string' ? JSON.parse(SAVED_ANALYSIS) : SAVED_ANALYSIS;
+    renderStyleAnalysis(parsed);
+  } catch(e) {}
 }
 
 function wornToday() {

@@ -108,20 +108,37 @@ class BaseScraper(ABC):
             (["combinaison"],                                            "Combinaison"),
             (["crewneck", "crew neck", "1/4 zip", "quarter zip"],               "Sweat"),
             (["sweat", "sweatshirt"],                                            "Sweat"),
-            (["hoodie", "hoody", "capuche"],                                     "Hoodie"),
+            (["hoodie", "hoody", "capuche", " hood "],                          "Hoodie"),
             (["chemise", "shirt"],                                               "Chemise"),
             (["veste", "blazer", "costume"],                                     "Veste"),
             (["blouson", "bomber", "vest", "jacket", "track jacket",
-              "windbreaker"],                                                     "Veste"),
+              "windbreaker", "windparka", "mock jacket"],                        "Veste"),
             (["manteau", "parka", "anorak"],                                     "Manteau"),
             (["doudoune"],                                                        "Doudoune"),
             (["court", "short", "bermuda"],                                      "Short"),
             (["sweatpant", "sweat pant", "track pant", "jogger", "trouser"],    "Pantalon"),
-            (["jogging", "pantalon", "chino", "cargo"],                         "Pantalon"),
+            (["jogging", "pantalon", "chino", "cargo", " pant ", " pants"],    "Pantalon"),
             (["legging"],                                                "Legging"),
             (["jupe"],                                                   "Jupe"),
-            (["débardeur"],                                              "Débardeur"),
+            (["débardeur", "tank top", "tank"],                         "Débardeur"),
             (["blazer"],                                                 "Blazer"),
+            (["snapback", "6-panel", "5-panel", "trucker", "skullcap",
+              "skull cap", "bucket hat", "baseball cap", "dad hat",
+              "new era", "59fifty", "pal hat", "p-frame", "p frame",
+              "boonie", " cap ", "cap\n"],                              "Casquette"),
+            (["beanie", "bonnet"],                                       "Bonnet"),
+            (["sock ", "crew sock", "ankle sock"],                       "Chaussette"),
+            (["bandana", "bandanna"],                                    "Bandana"),
+            (["sunglasses", "lunettes", "eyewear"],                     "Lunettes"),
+            (["belt", "ceinture"],                                       "Ceinture"),
+            (["knit", "knitwear"],                                       "Pull"),
+            (["funnel", "funnel neck", "mock neck"],                     "Pull"),
+            (["rugby"],                                                   "T-shirt"),
+            (["scarf", "écharpe", "snood"],                             "Écharpe"),
+            (["swimsuit", "one piece", "bikini", "maillot de bain",
+              "swim trunk", "board short"],                              "Maillot"),
+            (["longsleeve", "long sleeve", "long-sleeve", "ls tee",
+              " l/s ", " ls "],                                          "T-shirt"),
             (["sneaker", "baskets", "basket", "air max", "dunk",
               "force 1", "running", "espadrille"],                      "Sneakers"),
             (["bottines", "boots"],                                      "Bottines"),
@@ -145,13 +162,15 @@ class BaseScraper(ABC):
         if any(k in name_lower for k in ["manteau", "veste", "blouson", "parka",
                                           "anorak", "doudoune", "trench", "blazer",
                                           "jacket", "vest", "bomber", "windbreaker",
-                                          "track jacket"]):
+                                          "windparka", "mock jacket", "track jacket"]):
             return "Manteau/Veste"
         if any(k in name_lower for k in ["pantalon", "jean", "jupe", "legging",
                                           "short", "bermuda", "jogger", "trouser",
-                                          "track pant", "sweatpant"]):
+                                          "track pant", "sweatpant", "board short",
+                                          "swim trunk", " pant ", " pants"]):
             return "Bas"
-        if any(k in name_lower for k in ["robe", "combinaison", "dress"]) \
+        if any(k in name_lower for k in ["robe", "combinaison", "dress",
+                                          "swimsuit", "one piece"]) \
                 and "robe di kappa" not in name_lower:
             return "Robe/Combinaison"
         if any(k in text for k in ["pull", "t-shirt", "tee shirt", "tee-shirt",
@@ -159,7 +178,9 @@ class BaseScraper(ABC):
                                     "débardeur", "polo", "cardigan", "gilet",
                                     "brassière", "crop", "maillot", "shirt", "tee",
                                     "tank", "sweater", "knitwear", "knit",
-                                    "jersey", "crewneck", "crew neck", "long sleeve"]):
+                                    "jersey", "crewneck", "crew neck", "long sleeve",
+                                    "longsleeve", " hood ", "mock neck",
+                                    "bikini", "ls tee"]):
             return "Haut"
         return "Autre"
 

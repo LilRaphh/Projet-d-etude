@@ -1,7 +1,7 @@
 from flask import Blueprint, flash, redirect, render_template, request
 from sqlalchemy import distinct
 
-from config import CATEGORIES, COLORS, CONDITIONS, ITEMS_PER_PAGE, SEASONS, SIZES
+from config import CATEGORIES, COLORS, CONDITIONS, ITEMS_PER_PAGE, SEASONS, SIZES, SIZES_BY_CATEGORY
 from extensions import db
 from models import ClothingItem
 from utils.auth import current_user, get_ctx, login_required
@@ -137,7 +137,7 @@ def add():
         item=None,
         back='/',
         cats=CATEGORIES,
-        sizes=SIZES,
+        sizes_by_cat=SIZES_BY_CATEGORY,
         colors=COLORS,
         seasons=SEASONS,
         conds=CONDITIONS,
@@ -188,7 +188,7 @@ def edit(iid):
         item=item,
         back=f'/item/{iid}',
         cats=CATEGORIES,
-        sizes=SIZES,
+        sizes_by_cat=SIZES_BY_CATEGORY,
         colors=COLORS,
         seasons=SEASONS,
         conds=CONDITIONS,

@@ -144,119 +144,103 @@ _FIT_MAP = {
     'fitted': 'fitted silhouette',
 }
 
+_SHOE_SUBCATS = {'shoe', 'sneaker', 'boot', 'loafer', 'sandal', 'mule', 'oxford', 'derby', 'moccasin', 'espadrille'}
+
+
+def _is_shoe_item(it) -> bool:
+    cat = _normalize_category(it.category)
+    sub = _clean_text(getattr(it, 'ai_subcategory', '') or '').lower()
+    return 'shoe' in cat or 'chaussure' in it.category.lower() or any(k in sub for k in _SHOE_SUBCATS)
+
+
+def _item_visual_token(it) -> str:
+    """Builds the richest possible visual description for one garment item."""
+    ai_analyzed = getattr(it, 'ai_analyzed', False)
+    ai_description = _clean_text(getattr(it, 'ai_description', '') or '')
+    ai_subcategory = _clean_text(getattr(it, 'ai_subcategory', '') or '').lower()
+    ai_material = _clean_text(getattr(it, 'ai_material', '') or '').lower()
+    ai_pattern = _clean_text(getattr(it, 'ai_pattern', '') or '').lower()
+    ai_fit = _clean_text(getattr(it, 'ai_fit', '') or '').lower()
+    ai_length = _normalize_length(getattr(it, 'ai_length', '') or '')
+    ai_secondary_color = _normalize_color(getattr(it, 'ai_secondary_color', '') or '')
+    # Prefer AI-detected color (always up-to-date) over user-set color
+    color = _normalize_color(getattr(it, 'ai_color', '') or it.color or '')
+    category = _normalize_category(it.category)
+    brand = _clean_text(it.brand)
+
+    # Shoes with AI analysis: ai_description IS the Flux image_gen_prompt — use verbatim
+    if _is_shoe_item(it) and ai_analyzed and ai_description:
+        return ai_description
+
+    # Build structured token for all other items
+    parts = []
+    if color:
+        if ai_secondary_color and ai_secondary_color != color:
+            parts.append(f'{color} and {ai_secondary_color}')
+        else:
+            parts.append(color)
+
+    garment_type = ai_subcategory if ai_subcategory else category
+    if ai_pattern and ai_pattern not in ('plain', 'solid', 'uni', 'none', ''):
+        garment_type = f'{ai_pattern}-patterned {garment_type}'
+    parts.append(garment_type)
+
+    if ai_material:
+        texture = _MATERIAL_TEXTURE_MAP.get(ai_material, '')
+        if texture:
+            parts.append(texture.replace('realistic ', '').replace(' texture', ''))
+        else:
+            parts.append(ai_material)
+
+    if ai_fit:
+        parts.append(_FIT_MAP.get(ai_fit, ai_fit))
+
+    if ai_length and ai_length not in ('regular', 'standard', 'mi-long', ''):
+        parts.append(f'{ai_length}-length')
+
+    if brand:
+        parts.append(f'by {brand}')
+
+    return ' '.join(parts).strip() or category
+
 
 def build_prompt(outfit):
     garments = []
     has_shoes = False
     texture_hints = set()
     style_hints = set()
-    fit_hints = set()
-    pattern_hints = set()
 
     for it in outfit.items:
-        color = _normalize_color(it.color)
-        category = _normalize_category(it.category)
-        brand = _clean_text(it.brand)
-        notes = _clean_text(it.notes).lower()
+        token = _item_visual_token(it)
+        if token:
+            garments.append(token)
 
-        # Champs IA — prioritaires sur les notes textuelles
         ai_subcategory = _clean_text(getattr(it, 'ai_subcategory', '') or '').lower()
-        ai_material = _clean_text(getattr(it, 'ai_material', '') or '').lower()
-        ai_pattern = _clean_text(getattr(it, 'ai_pattern', '') or '').lower()
-        ai_fit = _clean_text(getattr(it, 'ai_fit', '') or '').lower()
         ai_style = _clean_text(getattr(it, 'ai_style', '') or '').lower()
-        ai_secondary_color = _normalize_color(getattr(it, 'ai_secondary_color', '') or '')
-        ai_length = _normalize_length(getattr(it, 'ai_length', '') or '')
-        ai_description = _clean_text(getattr(it, 'ai_description', '') or '')
-        ai_analyzed = getattr(it, 'ai_analyzed', False)
+        ai_material = _clean_text(getattr(it, 'ai_material', '') or '').lower()
 
-        # Construction du token de vêtement
-        token_parts = []
-        if color:
-            color_token = color
-            if ai_secondary_color and ai_secondary_color != color:
-                color_token += f' and {ai_secondary_color}'
-            token_parts.append(color_token)
-
-        # Préférer la sous-catégorie IA (plus précise) à la catégorie générique
-        garment_type = ai_subcategory if ai_subcategory else category
-        if ai_pattern and ai_pattern not in ('plain', 'solid', 'uni'):
-            garment_type = f'{ai_pattern} {garment_type}'
-        token_parts.append(garment_type)
-
-        if ai_fit:
-            mapped_fit = _FIT_MAP.get(ai_fit, ai_fit)
-            token_parts.append(mapped_fit)
-            fit_hints.add(mapped_fit)
-        if ai_length and ai_length not in ('regular', 'standard'):
-            token_parts.append(f'{ai_length}-length')
-
-        if brand:
-            token_parts.append(f'by {brand}')
-
-        garment_text = ' '.join(token_parts).strip()
-
-        # Si la description IA est disponible, extraire les détails visuels clés
-        # (on ne prend pas la description brute pour ne pas noyer le prompt)
-        if ai_analyzed and ai_description:
-            # Extraire max 2 adjectifs visuels pertinents depuis la description
-            desc_words = ai_description.lower().split()
-            visual_keywords = [
-                w for w in desc_words
-                if w in {
-                    'distressed', 'washed', 'faded', 'embroidered', 'printed',
-                    'ribbed', 'cable-knit', 'quilted', 'waxed', 'raw', 'hem',
-                    'tapered', 'flared', 'pleated', 'button-up', 'zip-up',
-                    'hooded', 'crewneck', 'turtleneck', 'v-neck', 'collarless',
-                    'double-breasted', 'single-breasted', 'patch', 'cargo',
-                    'elasticated', 'drawstring',
-                }
-            ]
-            if visual_keywords:
-                garment_text = f'{", ".join(visual_keywords[:2])} {garment_text}'
-
-        garments.append(garment_text)
-
-        # Catégorie chaussures
-        if 'shoe' in category or 'shoe' in garment_type or 'sneaker' in garment_type or 'boot' in garment_type:
+        if _is_shoe_item(it):
             has_shoes = True
 
-        # Textures — source IA prioritaire, fallback sur les notes
-        material_source = ai_material if ai_material else notes
-        for keyword, texture_label in _MATERIAL_TEXTURE_MAP.items():
-            if keyword in material_source:
-                texture_hints.add(texture_label)
-                break  # une texture par vêtement suffit
-
-        # Hints de style
         if ai_style:
             style_hints.add(f'{ai_style} styling')
-        else:
-            if any(x in notes for x in ['oversize', 'oversized']):
-                style_hints.add('balanced oversized fit')
-            if any(x in notes for x in ['cargo']):
-                style_hints.add('modern utility styling')
-            if any(x in notes for x in ['minimal', 'sobre', 'clean']):
-                style_hints.add('minimal clean styling')
 
-        # Patterns globaux
-        if ai_pattern and ai_pattern not in ('plain', 'solid', 'uni', ''):
-            pattern_hints.add(ai_pattern)
+        for keyword, texture_label in _MATERIAL_TEXTURE_MAP.items():
+            if keyword in ai_material:
+                texture_hints.add(texture_label)
+                break
 
     garments_text = ' | '.join(garments) if garments else 'modern coordinated casual outfit'
     occasion_text = _normalize_occasion(outfit.occasion) if outfit.occasion else 'fashion lookbook'
     season_text = _normalize_season(outfit.season) if outfit.season else 'all-season'
     texture_parts = sorted(texture_hints) if texture_hints else ['realistic fabric textures']
     style_parts = sorted(style_hints) if style_hints else ['coherent modern styling']
-    pattern_part = f', {", ".join(sorted(pattern_hints))} pattern' if pattern_hints else ''
     footwear_part = 'shoes on feet' if has_shoes else 'complete footwear visible'
 
-    # Prompt compact orienté Flux : sujet → vêtements → contexte → qualité
-    # Les virgules séparant les tokens sont comprises nativement par Flux/SDXL
     return (
         f"full body studio fashion photo, male clothing mannequin, front view, head to toe, "
         f"{garments_text}, "
-        f"{', '.join(texture_parts)}{pattern_part}, "
+        f"{', '.join(texture_parts)}, "
         f"{', '.join(style_parts)}, "
         f"{occasion_text}, {season_text}, {footwear_part}, "
         "white seamless background, soft box lighting, accurate garment colors, "
@@ -293,7 +277,8 @@ def _build_claude_garment_context(outfit):
     lines = []
     for it in outfit.items:
         parts = []
-        color = _clean_text(it.color)
+        # Use AI-detected color first (more accurate), fall back to user-set color
+        color = _clean_text(getattr(it, 'ai_color', '') or it.color or '')
         if color:
             parts.append(f'color: {color}')
         ai_secondary = _clean_text(getattr(it, 'ai_secondary_color', '') or '')
@@ -316,7 +301,11 @@ def _build_claude_garment_context(outfit):
             parts.append(f'length: {ai_length}')
         ai_desc = _clean_text(getattr(it, 'ai_description', '') or '')
         if ai_desc:
-            parts.append(f'details: {ai_desc[:120]}')
+            # For shoes: ai_description IS the Flux image_gen_prompt — preserve fully
+            if _is_shoe_item(it):
+                parts.append(f'flux_visual_prompt: {ai_desc}')
+            else:
+                parts.append(f'details: {ai_desc[:160]}')
         brand = _clean_text(it.brand)
         if brand:
             parts.append(f'brand: {brand}')
@@ -341,23 +330,24 @@ def generate_prompt_with_claude(outfit, api_key=None):
 
         message = client.messages.create(
             model=ANTHROPIC_MODEL,
-            max_tokens=400,
+            max_tokens=500,
             messages=[{
                 'role': 'user',
                 'content': (
-                    'You are a fashion image prompt engineer specializing in FLUX diffusion models.\n'
-                    'Write ONE English image generation prompt, comma-separated keywords, max 120 words.\n\n'
+                    'You are an expert fashion image prompt engineer for FLUX diffusion models.\n'
+                    'Write ONE English image generation prompt, comma-separated descriptors, max 160 words.\n\n'
                     'RULES:\n'
-                    '- Subject: male clothing mannequin (no face, no skin, matte surface)\n'
+                    '- Subject: male clothing mannequin (no face, no skin, matte white surface)\n'
                     '- Shot: full body, front view, head to toe, white seamless studio background\n'
-                    '- Lighting: soft box studio lighting\n'
-                    '- Style: e-commerce product photography, photorealistic, 8K, sharp focus\n'
-                    '- Describe EACH garment with its EXACT color, material, fit, and distinctive details\n'
-                    '- Respect the garment layer order (bottom to top)\n'
-                    '- End with quality tags: photorealistic, sharp focus, accurate colors\n'
-                    '- Reply ONLY with the prompt, no quotes, no markdown, no explanation\n\n'
+                    '- Lighting: soft box studio lighting, no harsh shadows\n'
+                    '- Quality: e-commerce product photography, photorealistic, 8K, sharp focus\n'
+                    '- For EACH garment: state its EXACT color, material, silhouette, and key visual details\n'
+                    '- For any item with a "flux_visual_prompt:" field: insert that text VERBATIM for that item\n'
+                    '- Layer order: shoes → pants/skirt → top → outerwear\n'
+                    '- Be visually precise — no poetic or abstract language\n'
+                    '- Reply ONLY with the prompt, no explanation, no markdown, no quotes\n\n'
                     f'Occasion: {occasion_text} | Season: {season_text}{outfit_notes}\n\n'
-                    f'Garments to wear:\n{garment_context}'
+                    f'Garments:\n{garment_context}'
                 )
             }]
         )
@@ -399,6 +389,44 @@ def _encode_shoe_reference(outfit):
     return None, None
 
 
+def _build_outfit_composite(outfit):
+    """Construit un collage JPEG de tous les articles de la tenue ayant une image."""
+    cells = []
+    for it in outfit.items:
+        img_rel = it.thumb_path or it.image_path
+        if not img_rel:
+            continue
+        abs_path = os.path.join(BASE_DIR, 'static', img_rel)
+        if not os.path.isfile(abs_path):
+            continue
+        try:
+            cells.append(Image.open(abs_path).convert('RGB'))
+        except Exception:
+            continue
+
+    if not cells:
+        return None
+
+    CELL = 512
+    resized = []
+    for img in cells:
+        img.thumbnail((CELL, CELL), Image.LANCZOS)
+        cell = Image.new('RGB', (CELL, CELL), (248, 248, 248))
+        cell.paste(img, ((CELL - img.width) // 2, (CELL - img.height) // 2))
+        resized.append(cell)
+
+    cols = min(len(resized), 3)
+    rows = (len(resized) + cols - 1) // cols
+    composite = Image.new('RGB', (cols * CELL, rows * CELL), (248, 248, 248))
+    for i, cell in enumerate(resized):
+        r, c = divmod(i, cols)
+        composite.paste(cell, (c * CELL, r * CELL))
+
+    buf = BytesIO()
+    composite.save(buf, 'JPEG', quality=85)
+    return buf.getvalue()
+
+
 def _save_pollinations_response(resp):
     """Sauvegarde la réponse image Pollinations en JPEG. Retourne le chemin relatif."""
     os.makedirs(OUTFIT_FOLDER, exist_ok=True)
@@ -414,12 +442,19 @@ def _generate_with_kontext(prompt, shoe_item, shoe_bytes, seed, encoded_negative
     avec la photo de la chaussure comme référence visuelle.
     """
     ai_sub = _clean_text(getattr(shoe_item, 'ai_subcategory', '') or '')
+    ai_desc = _clean_text(getattr(shoe_item, 'ai_description', '') or '')
     shoe_label = ai_sub if ai_sub else 'shoe'
 
-    kontext_prompt = (
-        f'Keep the exact design, colorway, sole shape and branding of the reference {shoe_label}. '
-        f'{prompt}'
-    )
+    if ai_desc:
+        # ai_description for shoes IS the Flux image_gen_prompt — use it for precise reference
+        shoe_ref = (
+            f'Reference image shows this exact shoe: {ai_desc[:200]}. '
+            f'Reproduce this shoe with full precision — same colorway, silhouette, sole, and visual details. '
+        )
+    else:
+        shoe_ref = f'Keep the exact design, colorway, sole shape and branding of the reference {shoe_label}. '
+
+    kontext_prompt = shoe_ref + prompt
 
     kontext_model = image_model if image_model else 'kontext'
     params = {
@@ -459,6 +494,45 @@ def _generate_with_kontext(prompt, shoe_item, shoe_bytes, seed, encoded_negative
         return None, 'Kontext timeout'
     except Exception as exc:
         current_app.logger.error(f'Kontext error: {exc}')
+        return None, str(exc)
+
+
+def _generate_with_outfit_reference(prompt, ref_bytes, seed, encoded_negative, headers):
+    """Génère via Kontext POST avec le collage visuel de la tenue comme référence."""
+    params = {
+        'width': POLLINATIONS_WIDTH,
+        'height': POLLINATIONS_HEIGHT,
+        'seed': seed,
+        'model': 'kontext',
+        'enhance': 'false',
+        'safe': 'true' if POLLINATIONS_SAFE else 'false',
+        'negative_prompt': urllib.parse.unquote(encoded_negative),
+        'nologo': 'true',
+    }
+    encoded_prompt = urllib.parse.quote(prompt, safe='')
+    url = f'https://gen.pollinations.ai/image/{encoded_prompt}'
+    current_app.logger.info(
+        f'Kontext outfit composite | size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} | seed={seed}'
+    )
+    try:
+        files = {'image': ('outfit_ref.jpg', ref_bytes, 'image/jpeg')}
+        resp = requests.post(url, params=params, files=files, headers=headers, timeout=300)
+        current_app.logger.info(
+            f'Kontext outfit response: {resp.status_code}, '
+            f'content-type: {resp.headers.get("content-type")}'
+        )
+        if not resp.ok:
+            current_app.logger.warning(f'Kontext outfit error {resp.status_code}: {resp.text[:400]}')
+            return None, f'Kontext {resp.status_code}'
+        ct = (resp.headers.get('content-type') or '').lower()
+        if 'image' not in ct:
+            return None, f'Kontext réponse invalide ({ct})'
+        return _save_pollinations_response(resp), None
+    except requests.Timeout:
+        current_app.logger.warning('Kontext outfit composite timeout — fallback standard')
+        return None, 'timeout'
+    except Exception as exc:
+        current_app.logger.error(f'Kontext outfit composite error: {exc}')
         return None, str(exc)
 
 
@@ -587,43 +661,91 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
                 local_checkpoint, POLLINATIONS_WIDTH, POLLINATIONS_HEIGHT, seed,
             )
 
-    # Kontext (image-to-image) uniquement si l'utilisateur l'a explicitement choisi
-    if effective_model == 'kontext':
-        shoe_item, shoe_bytes = _encode_shoe_reference(outfit) if outfit else (None, None)
-        if shoe_item and shoe_bytes:
-            result = _generate_with_kontext(
-                clean_prompt, shoe_item, shoe_bytes,
-                seed, encoded_negative, headers,
-                image_model=effective_model,
+    # Génération avec référence visuelle (Kontext) — prioritaire pour cohérence avec les vrais vêtements
+    # Construit un collage de tous les articles ayant une image et l'envoie à FLUX Kontext
+    if outfit and effective_model not in ('local-a1111', 'local-comfyui'):
+        composite = _build_outfit_composite(outfit)
+        if composite:
+            # Build a per-item description for Kontext — much more precise than the generic prompt
+            item_tokens = [_item_visual_token(it) for it in outfit.items]
+            item_tokens = [t for t in item_tokens if t]
+            occasion_ctx = _normalize_occasion(outfit.occasion) if outfit.occasion else 'fashion lookbook'
+            season_ctx = _normalize_season(outfit.season) if outfit.season else 'all-season'
+            kontext_prompt = (
+                f'Fashion editorial photo, male clothing mannequin, front view, full body, '
+                f'white seamless studio background, soft box lighting. '
+                f'Wearing these exact garments from the reference grid: {" | ".join(item_tokens)}. '
+                f'Reproduce every item with precise color, material and design accuracy from the reference. '
+                f'Occasion: {occasion_ctx}, season: {season_ctx}. '
+                f'Photorealistic, 8K, sharp focus, accurate garment colors, no face, no skin, matte mannequin surface.'
             )
-            if result[0] is not None:
-                return result
-            current_app.logger.warning('Kontext failed, falling back to standard generation')
+            path, _err = _generate_with_outfit_reference(
+                kontext_prompt, composite, seed, encoded_negative, headers
+            )
+            if path:
+                return path, None
+            current_app.logger.warning(
+                f'Outfit composite reference failed ({_err}), falling back to text-only'
+            )
+        elif effective_model == 'kontext':
+            # Fallback : référence chaussure seule si pas de composite
+            shoe_item, shoe_bytes = _encode_shoe_reference(outfit)
+            if shoe_item and shoe_bytes:
+                result = _generate_with_kontext(
+                    clean_prompt, shoe_item, shoe_bytes,
+                    seed, encoded_negative, headers,
+                    image_model=effective_model,
+                )
+                if result[0] is not None:
+                    return result
+                current_app.logger.warning('Kontext shoe-only failed, falling back to standard')
 
-    # Génération standard
+    # Génération standard — deux endpoints selon qu'une clé est fournie ou non
+    # gen.pollinations.ai  → endpoint authentifié (requis si api_key)
+    # image.pollinations.ai → endpoint public gratuit (fallback sans clé)
     encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
-    url = (
-        f'https://gen.pollinations.ai/image/{encoded_prompt}'
-        f'?width={POLLINATIONS_WIDTH}'
-        f'&height={POLLINATIONS_HEIGHT}'
-        f'&seed={seed}'
-        f'&model={effective_model}'
-        f"&enhance={'true' if POLLINATIONS_ENHANCE else 'false'}"
-        f"&safe={'true' if POLLINATIONS_SAFE else 'false'}"
-        f'&negative_prompt={encoded_negative}'
-    )
 
-    current_app.logger.info(
-        f'Calling Pollinations | model={effective_model} '
-        f'| size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} '
-        f"| seed={seed} | key={'yes' if bool(api_key) else 'no'}"
-    )
+    def _build_url(use_auth_endpoint: bool) -> str:
+        base_params = (
+            f'?width={POLLINATIONS_WIDTH}'
+            f'&height={POLLINATIONS_HEIGHT}'
+            f'&seed={seed}'
+            f'&model={effective_model}'
+            f"&enhance={'true' if POLLINATIONS_ENHANCE else 'false'}"
+            f"&safe={'true' if POLLINATIONS_SAFE else 'false'}"
+            f'&nologo=true'
+        )
+        if use_auth_endpoint:
+            return f'https://gen.pollinations.ai/image/{encoded_prompt}{base_params}&negative_prompt={encoded_negative}'
+        return f'https://image.pollinations.ai/prompt/{encoded_prompt}{base_params}'
+
+    def _attempt(use_auth: bool, hdrs: dict):
+        u = _build_url(use_auth)
+        endpoint_name = 'gen.pollinations.ai' if use_auth else 'image.pollinations.ai'
+        current_app.logger.info(
+            f'Calling {endpoint_name} | model={effective_model} '
+            f'| size={POLLINATIONS_WIDTH}x{POLLINATIONS_HEIGHT} '
+            f"| seed={seed} | key={'yes' if bool(api_key) else 'no'}"
+        )
+        return requests.get(u, timeout=300, headers=hdrs)
 
     try:
-        resp = requests.get(url, timeout=300, headers=headers)
+        # Premier essai : endpoint authentifié si clé dispo, public sinon
+        resp = _attempt(use_auth=bool(api_key), hdrs=headers)
         current_app.logger.info(
             f"Pollinations response: {resp.status_code}, content-type: {resp.headers.get('content-type')}"
         )
+
+        # Si 401/403 (auth refusée), réessai sur l'endpoint public sans clé
+        if resp.status_code in (401, 403) and api_key:
+            current_app.logger.warning(
+                f'Pollinations auth error {resp.status_code} — retrying without key on public endpoint'
+            )
+            fallback_headers = {'User-Agent': 'Wardrobe/5.0'}
+            resp = _attempt(use_auth=False, hdrs=fallback_headers)
+            current_app.logger.info(
+                f"Pollinations fallback response: {resp.status_code}, content-type: {resp.headers.get('content-type')}"
+            )
 
         if not resp.ok:
             body = ''
@@ -631,16 +753,19 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
                 body = resp.text[:800]
             except Exception:
                 pass
-            current_app.logger.error(f'Pollinations error body: {body}')
+            current_app.logger.error(f'Pollinations error {resp.status_code}: {body}')
             if resp.status_code == 402:
                 return None, (
                     f'Solde Pollinations insuffisant pour le modèle « {effective_model} ». '
                     'Changez de modèle dans Paramètres IA (choisissez Flux — gratuit) '
                     'ou rechargez votre solde sur pollinations.ai.'
                 )
-            if resp.status_code == 401:
-                return None, 'Clé API Pollinations invalide ou expirée. Vérifiez dans Paramètres IA.'
-            return None, f'Erreur Pollinations {resp.status_code}'
+            if resp.status_code in (401, 403):
+                return None, (
+                    'Génération d\'image refusée par Pollinations. '
+                    'Vérifiez votre clé API dans Paramètres IA ou laissez le champ vide pour utiliser la version gratuite.'
+                )
+            return None, f'Erreur Pollinations {resp.status_code} — réessayez dans quelques instants.'
 
         ct = (resp.headers.get('content-type') or '').lower()
         if 'image' not in ct:

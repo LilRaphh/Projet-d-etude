@@ -109,6 +109,60 @@ def _cosine(a, b) -> float:
     return dot / (na * nb) if na and nb else 0.0
 
 
+# Mots-clés couleur à détecter dans les noms d'articles quand le champ color est absent/générique
+_COLOR_NAME_MAP = {
+    "pink": "rose", "rose": "rose",
+    "red": "rouge", "rouge": "rouge",
+    "blue": "bleu", "bleu": "bleu",
+    "green": "vert", "vert": "vert",
+    "yellow": "jaune", "jaune": "jaune",
+    "purple": "violet", "violet": "violet",
+    "orange": "orange",
+    "brown": "marron", "marron": "marron",
+    "black": "noir", "noir": "noir",
+    "white": "blanc", "blanc": "blanc",
+    "beige": "beige",
+    "grey": "gris", "gray": "gris", "gris": "gris",
+    "navy": "marine", "marine": "marine",
+    "khaki": "kaki", "kaki": "kaki",
+    "camel": "camel",
+    "bordeaux": "bordeaux",
+    "coral": "corail", "corail": "corail",
+    "turquoise": "turquoise",
+    "lavender": "lavande", "lavande": "lavande",
+    "cream": "crème", "crème": "crème", "ivory": "ivoire",
+    "gold": "or", "silver": "argent",
+    "olive": "olive", "khaki": "kaki",
+}
+_GENERIC_COLORS = {"autre", "multicolore", "divers", "multi", "color", "colour", ""}
+
+
+def _effective_color(color: Optional[str], name: str = "") -> Optional[str]:
+    """
+    Retourne la couleur la plus précise possible :
+    - Couleur stockée si elle est non-neutre/non-générique
+    - Si stockée est neutre ou absente, tente de lire une couleur non-neutre dans le nom
+    """
+    stored = (color or "").strip().lower()
+    name_lower = f" {name.lower()} "
+
+    if not stored or stored in _GENERIC_COLORS:
+        # Pas de couleur stockée : chercher dans le nom
+        for kw, resolved in _COLOR_NAME_MAP.items():
+            if f" {kw} " in name_lower or f"-{kw}" in name_lower or f"{kw}-" in name_lower:
+                return resolved
+        return stored or None
+
+    # Couleur stockée présente mais neutre : le nom peut révéler une couleur plus précise
+    if _color_group(stored) == "neutral":
+        for kw, resolved in _COLOR_NAME_MAP.items():
+            if (f" {kw} " in name_lower or f"-{kw}" in name_lower or f"{kw}-" in name_lower) \
+                    and _color_group(resolved) != "neutral":
+                return resolved
+
+    return stored
+
+
 # ---------------------------------------------------------------------------
 # Moteur local (FashionCLIP)
 # ---------------------------------------------------------------------------
@@ -140,6 +194,8 @@ def _complete_local(anchor: ClothingItem, user_id: int, occasion: str) -> dict:
 
     anchor_formality = anchor.ai_formality or 2
     f_range = OCCASION_FORMALITY.get(occasion or "Autre", (1, 5))
+    # Couleur effective de l'ancre : ai_color (toujours détectée) > color (user) > nom
+    anchor_color = _effective_color(anchor.ai_color or anchor.color, anchor.name)
 
     candidates: dict = {}
 
@@ -156,11 +212,9 @@ def _complete_local(anchor: ClothingItem, user_id: int, occasion: str) -> dict:
 
         emb = json.loads(row.embedding_json)
 
-        # Similarité stylistique (cosine)
-        sim = max(0.0, _cosine(anchor_emb, emb)) if anchor_emb else 0.5
-
-        # Harmonie des couleurs
-        color_s = _color_compat(anchor.color, item.color)
+        # Harmonie des couleurs : ai_color > color > extraction depuis le nom
+        item_color = _effective_color(item.ai_color or item.color, item.name)
+        color_s = _color_compat(anchor_color, item_color)
 
         # Cohérence de formalisme
         item_f = item.ai_formality or 2
@@ -170,7 +224,13 @@ def _complete_local(anchor: ClothingItem, user_id: int, occasion: str) -> dict:
         in_range = (f_range[0] - 1) <= item_f <= (f_range[1] + 1)
         occasion_b = 0.05 if in_range else 0.0
 
-        total = 0.50 * sim + 0.30 * color_s + 0.20 * formality_s + occasion_b
+        if anchor_emb:
+            # Mode complet : similarité visuelle + couleur + formalisme
+            sim = max(0.0, _cosine(anchor_emb, emb))
+            total = 0.50 * sim + 0.30 * color_s + 0.20 * formality_s + occasion_b
+        else:
+            # Pas d'embedding ancre : couleur devient le facteur principal
+            total = 0.65 * color_s + 0.35 * formality_s + occasion_b
 
         candidates.setdefault(slot, []).append({
             "id": item.id,
@@ -184,7 +244,7 @@ def _complete_local(anchor: ClothingItem, user_id: int, occasion: str) -> dict:
             "score": round(total, 3),
             "score_pct": round(total * 100),
             "breakdown": {
-                "style": round(sim * 100),
+                "style": round(sim * 100) if anchor_emb else None,
                 "color": round(color_s * 100),
                 "formality": round(formality_s * 100),
             },
@@ -372,7 +432,7 @@ def complete_api(item_id: int):
     # Choisir le moteur
     use_local = (
         force_mode == "local"
-        or (force_mode == "auto" and anchor_indexed and indexed_count >= 3)
+        or (force_mode == "auto" and indexed_count >= 3)
     )
 
     mode_used = "local"

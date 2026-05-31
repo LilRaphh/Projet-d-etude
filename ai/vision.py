@@ -55,7 +55,7 @@ _PROMPT = """You are analyzing a clothing item photo. Return ONLY valid JSON, no
 {
   "category": "one of: tops, t-shirts, shirts, sweaters, hoodies, jackets, coats, blazers, pants, jeans, shorts, dresses, skirts, shoes, sneakers, boots, accessories, underwear, sportswear",
   "subcategory": "specific type e.g. bomber jacket, crewneck sweater, straight jeans",
-  "primary_color": "main color in French: noir, blanc, gris, beige, marron, camel, rouge, rose, orange, jaune, vert, bleu, violet, bleu marine, bordeaux, kaki, rouille, or other",
+  "primary_color": "main color in French: noir, blanc, gris, beige, marron, camel, rouge, rose, orange, jaune, vert, bleu, violet, bleu marine, bordeaux, kaki, rouille, or other. IMPORTANT: use the actual hue for pastel/light colors — a pale pink is 'rose' NOT 'beige', a pale lavender is 'violet' NOT 'gris', a light mint is 'vert' NOT 'blanc'. Only use 'beige' for tan/sand/nude tones with no chromatic hue.",
   "secondary_color": "secondary color in French or null",
   "style": "one of: casual, chic, streetwear, sport, boheme, minimaliste, vintage, business",
   "season": "one of: printemps, été, automne, hiver, toutes saisons",
@@ -233,7 +233,7 @@ def check_ollama() -> dict:
         {"running": bool, "model_available": bool, "available_models": list}
     """
     try:
-        resp = requests.get(f"{OLLAMA_BASE}/api/tags", timeout=4)
+        resp = requests.get(f"{OLLAMA_BASE}/api/tags", timeout=2)
         resp.raise_for_status()
         models = [m["name"] for m in resp.json().get("models", [])]
         model_available = any(VISION_MODEL.split(":")[0] in m for m in models)

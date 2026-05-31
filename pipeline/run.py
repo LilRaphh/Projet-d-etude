@@ -20,6 +20,7 @@ from pipeline.scrapers import (
     ApcScraper, BalzacScraper, MaisonLabicheScraper,
     RoujeScraper, CabaiaScraper,
     BonneGueuleScraper, MerciScraper, IsabelMarantScraper, AmiParisScraper,
+    StussyScraper, KarhuScraper, FillingPiecesScraper, PalaceScraper,
     _PLAYWRIGHT_AVAILABLE,
 )
 from pipeline.models import Product
@@ -43,6 +44,10 @@ SCRAPERS = {
     "merci":           MerciScraper,
     "isabelmarant":    IsabelMarantScraper,
     "amiparis":        AmiParisScraper,
+    "stussy":          StussyScraper,
+    "karhu":           KarhuScraper,
+    "fillingpieces":   FillingPiecesScraper,
+    "palace":          PalaceScraper,
 }
 if _PLAYWRIGHT_AVAILABLE:
     SCRAPERS["nike"]     = NikeScraper

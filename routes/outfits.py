@@ -1,12 +1,17 @@
+import base64
+import json
 import os
+import uuid
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request
+from PIL import Image, ImageOps
 
-from config import BASE_DIR, OCCASIONS, SEASONS
+from config import BASE_DIR, OCCASIONS, OUTFIT_FOLDER, SEASONS
 from extensions import db
 from models import ClothingItem, Outfit, UserSetting
 from utils.ai import generate_image, generate_prompt_with_claude
 from utils.auth import current_user, get_ctx, login_required
+from utils.images import allowed
 
 outfits_bp = Blueprint('outfits', __name__, url_prefix='/outfits')
 
@@ -153,7 +158,7 @@ def outfit_generate(oid):
 
     prompt, err = generate_prompt_with_claude(outfit, api_key=anthropic_key)
     if err:
-        return jsonify(error=err), 500
+        return jsonify(error=err), 422
 
     img_path, err2 = generate_image(
         prompt, api_key=pollinations_key, outfit=outfit,
@@ -161,7 +166,7 @@ def outfit_generate(oid):
         local_url=local_sd_url, local_checkpoint=local_sd_checkpoint,
     )
     if err2:
-        return jsonify(error=err2), 500
+        return jsonify(error=err2), 422
 
     if outfit.generated_image:
         old = os.path.join(BASE_DIR, 'static', outfit.generated_image)
@@ -172,3 +177,86 @@ def outfit_generate(oid):
     outfit.ai_prompt = prompt
     db.session.commit()
     return jsonify(image_path=img_path, prompt=prompt)
+
+
+@outfits_bp.route('/<int:oid>/upload-photo', methods=['POST'])
+@login_required
+def outfit_upload_photo(oid):
+    me = current_user()
+    outfit = me.outfits.filter_by(id=oid).first()
+    if not outfit:
+        return jsonify(error='Tenue introuvable.'), 404
+
+    f = request.files.get('photo')
+    if not f or not f.filename:
+        return jsonify(error='Aucun fichier envoyé.'), 400
+    if not allowed(f.filename, f.stream):
+        return jsonify(error='Format non supporté. Utilisez JPEG, PNG ou WebP.'), 400
+
+    if outfit.user_photo:
+        old = os.path.join(BASE_DIR, 'static', outfit.user_photo)
+        if os.path.isfile(old):
+            os.remove(old)
+
+    img = ImageOps.exif_transpose(Image.open(f.stream)).convert('RGB')
+    os.makedirs(OUTFIT_FOLDER, exist_ok=True)
+    filename = f'user_{uuid.uuid4().hex}.jpg'
+    img.save(os.path.join(OUTFIT_FOLDER, filename), 'JPEG', quality=90, optimize=True)
+
+    rel_path = f'uploads/outfits/{filename}'
+    outfit.user_photo = rel_path
+    db.session.commit()
+    return jsonify(photo_path=rel_path)
+
+
+@outfits_bp.route('/<int:oid>/analyze-style', methods=['POST'])
+@login_required
+def outfit_analyze_style(oid):
+    me = current_user()
+    outfit = me.outfits.filter_by(id=oid).first()
+    if not outfit:
+        return jsonify(error='Tenue introuvable.'), 404
+
+    # Priorité : photo perso > image générée
+    img_rel = outfit.user_photo or outfit.generated_image
+    if not img_rel:
+        return jsonify(error='Aucune image disponible. Uploadez une photo ou générez une image IA d\'abord.'), 400
+
+    abs_path = os.path.join(BASE_DIR, 'static', img_rel)
+    if not os.path.isfile(abs_path):
+        return jsonify(error='Fichier image introuvable.'), 400
+
+    try:
+        from io import BytesIO
+        buf = BytesIO()
+        Image.open(abs_path).convert('RGB').save(buf, 'JPEG', quality=85)
+        image_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    except Exception as exc:
+        return jsonify(error=f'Impossible de lire l\'image : {exc}'), 500
+
+    from routes.style_check import analyze_outfit_image
+    result, err = analyze_outfit_image(image_b64, 'image/jpeg')
+    if err:
+        status = 429 if ('429' in err or 'Quota' in err) else 500
+        return jsonify(error=err), status
+
+    outfit.style_analysis = json.dumps(result, ensure_ascii=False)
+    db.session.commit()
+    return jsonify(result)
+
+
+@outfits_bp.route('/<int:oid>/delete-photo', methods=['POST'])
+@login_required
+def outfit_delete_photo(oid):
+    me = current_user()
+    outfit = me.outfits.filter_by(id=oid).first()
+    if not outfit:
+        return jsonify(error='Tenue introuvable.'), 404
+
+    if outfit.user_photo:
+        path = os.path.join(BASE_DIR, 'static', outfit.user_photo)
+        if os.path.isfile(path):
+            os.remove(path)
+        outfit.user_photo = None
+        db.session.commit()
+    return jsonify(ok=True)

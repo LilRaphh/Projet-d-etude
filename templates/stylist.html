@@ -609,7 +609,7 @@ function renderTdSuggestion(s, weather) {
   (s.items||[]).forEach(function(item){
     var icon = CAT_ICONS[item.category]||'👗';
     var imgHTML = item.thumb
-      ? '<img src="/static/uploads/'+item.thumb+'" alt="'+esc(item.name)+'" loading="lazy">'
+      ? '<img src="/static/'+item.thumb+'" alt="'+esc(item.name)+'" loading="lazy">'
       : '<div class="sug-item-ph">'+icon+'</div>';
     var a = document.createElement('a');
     a.className = 'sug-item'; a.href = '/item/'+item.id; a.target='_blank'; a.rel='noopener';

@@ -410,10 +410,12 @@
         {% if p.url %}
         <button class="wish-btn {{ 'wished' if p.url in wishlisted_urls else '' }}"
           title="{{ 'Retirer de la wishlist' if p.url in wishlisted_urls else 'Ajouter à la wishlist' }}"
-          onclick="toggleWishlist(this,{{ p | tojson }})">{{ '♥' if p.url in wishlisted_urls else '♡' }}</button>
+          data-product='{{ p | tojson }}'
+          onclick="toggleWishlist(this)">{{ '♥' if p.url in wishlisted_urls else '♡' }}</button>
         {% endif %}
         <button class="add-wr-btn" title="Ajouter à ma garde-robe"
-          onclick="addToWardrobe(this,{{ p | tojson }})">+</button>
+          data-product='{{ p | tojson }}'
+          onclick="addToWardrobe(this)">+</button>
 
         <div class="prod-body">
           <div class="prod-brand">{{ p.brand_source or '—' }}</div>
@@ -703,18 +705,36 @@ function lancerConseil() {
       var div = document.createElement('div');
       div.className = 'cm-item';
       var price = p.price_value ? (parseFloat(p.price_value).toFixed(2) + ' ' + (p.currency || '€')) : '';
-      var addBtnId = 'awb_' + Math.random().toString(36).slice(2);
-      div.innerHTML =
-        '<div style="position:relative">' +
-          (p.image ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" onerror="this.style.display=\'none\'" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block">' : '') +
-          '<button id="' + addBtnId + '" class="add-wr-btn" title="Ajouter à ma garde-robe" style="z-index:2" onclick="addToWardrobeById(\'' + addBtnId + '\',' + JSON.stringify(p) + ')">+</button>' +
-        '</div>' +
-        '<div class="cm-item-body">' +
-          '<div class="cm-item-brand">' + esc(p.brand_source || '') + '</div>' +
-          '<div class="cm-item-name">' + esc(p.name || '') + '</div>' +
-          (price ? '<div class="cm-item-price">' + esc(price) + '</div>' : '') +
-          (p.url ? '<a class="cm-item-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">Voir en boutique →</a>' : '') +
-        '</div>';
+
+      var imgWrap = document.createElement('div');
+      imgWrap.style.position = 'relative';
+      if (p.image) {
+        var img = document.createElement('img');
+        img.src = p.image;
+        img.alt = p.name || '';
+        img.loading = 'lazy';
+        img.style.cssText = 'width:100%;aspect-ratio:3/4;object-fit:cover;display:block';
+        img.onerror = function(){ this.style.display = 'none'; };
+        imgWrap.appendChild(img);
+      }
+      var addBtn = document.createElement('button');
+      addBtn.className = 'add-wr-btn';
+      addBtn.title = 'Ajouter à ma garde-robe';
+      addBtn.style.zIndex = '2';
+      addBtn.textContent = '+';
+      addBtn.dataset.product = JSON.stringify(p);
+      addBtn.addEventListener('click', function(){ _doAddToWardrobe(this, JSON.parse(this.dataset.product)); });
+      imgWrap.appendChild(addBtn);
+      div.appendChild(imgWrap);
+
+      var body = document.createElement('div');
+      body.className = 'cm-item-body';
+      body.innerHTML =
+        '<div class="cm-item-brand">' + esc(p.brand_source || '') + '</div>' +
+        '<div class="cm-item-name">' + esc(p.name || '') + '</div>' +
+        (price ? '<div class="cm-item-price">' + esc(price) + '</div>' : '') +
+        (p.url ? '<a class="cm-item-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">Voir en boutique →</a>' : '');
+      div.appendChild(body);
       row.appendChild(div);
     });
 
@@ -743,8 +763,10 @@ function lancerConseil() {
 
 function esc(str){ var d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
 
-function toggleWishlist(btn, product) {
+function toggleWishlist(btn) {
   if (btn.classList.contains('loading')) return;
+  var product;
+  try { product = JSON.parse(btn.dataset.product); } catch(e) { return; }
   var prev = btn.textContent;
   btn.classList.add('loading');
   btn.textContent = '…';
@@ -795,12 +817,18 @@ function toggleWishlist(btn, product) {
   });
 }
 
-function addToWardrobe(btn, product) {
+function addToWardrobe(btn) {
+  var product;
+  try { product = JSON.parse(btn.dataset.product); } catch(e) { return; }
   _doAddToWardrobe(btn, product);
 }
 
-function addToWardrobeById(id, product) {
-  _doAddToWardrobe(document.getElementById(id), product);
+function addToWardrobeById(id) {
+  var btn = document.getElementById(id);
+  if (!btn) return;
+  var product;
+  try { product = JSON.parse(btn.dataset.product); } catch(e) { return; }
+  _doAddToWardrobe(btn, product);
 }
 
 function _doAddToWardrobe(btn, product) {

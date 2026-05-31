@@ -228,7 +228,7 @@ canvas#radarChart { max-width: 100%; max-height: 280px }
 
     {% if not gemini_ok %}
     <div class="no-key-notice">
-      <div class="no-key-notice-ico">⚠️</div>
+      <div class="no-key-notice-ico">!</div>
       <div>
         <h3>Clé API Groq manquante</h3>
         <p>
@@ -239,12 +239,28 @@ canvas#radarChart { max-width: 100%; max-height: 280px }
     </div>
     {% endif %}
 
+    <!-- Source tabs -->
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+      <button class="btn btn-primary" id="tabUpload" onclick="switchSource('upload')" style="flex:1">Uploader une photo</button>
+      <button class="btn btn-ghost" id="tabOutfit" onclick="switchSource('outfit')" style="flex:1">Depuis mes tenues</button>
+    </div>
+
     <!-- Upload -->
+    <div id="panelUpload">
     <div class="drop-zone" id="dropZone">
       <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
-      <div class="drop-ico">📸</div>
+      <div class="drop-ico"></div>
       <div class="drop-label">Glisse ton image ici ou <b onclick="document.getElementById('fileInput').click()">parcourir</b></div>
       <div class="drop-hint">JPG, PNG, WEBP – max 10 Mo</div>
+    </div>
+    </div>
+
+    <!-- Outfit picker -->
+    <div id="panelOutfit" style="display:none">
+      <div style="font-size:.84rem;color:var(--tm);margin-bottom:.85rem">Sélectionne une tenue avec photo pour l'analyser :</div>
+      <div id="outfitList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.75rem">
+        <div style="font-size:.8rem;color:var(--tl);font-style:italic">Chargement…</div>
+      </div>
     </div>
 
     <div class="err-banner" id="errBanner"></div>
@@ -260,7 +276,7 @@ canvas#radarChart { max-width: 100%; max-height: 280px }
           Image prête à analyser. Clique sur le bouton pour lancer l'analyse Groq Vision.
         </p>
         <button class="btn btn-primary btn-analyze" id="analyzeBtn" {% if not gemini_ok %}disabled{% endif %} onclick="analyzeImage()">
-          ✦ Analyser ma tenue
+          Analyser ma tenue
         </button>
       </div>
     </div>
@@ -299,6 +315,55 @@ const PALETTE = {
 
 let currentFile = null;
 let radarChart = null;
+let outfitsLoaded = false;
+
+// ── Source tabs ──
+function switchSource(src) {
+  var isUpload = src === 'upload';
+  document.getElementById('panelUpload').style.display = isUpload ? '' : 'none';
+  document.getElementById('panelOutfit').style.display = isUpload ? 'none' : '';
+  document.getElementById('tabUpload').className = isUpload ? 'btn btn-primary' : 'btn btn-ghost';
+  document.getElementById('tabOutfit').className = isUpload ? 'btn btn-ghost' : 'btn btn-primary';
+  if (!isUpload && !outfitsLoaded) loadOutfits();
+}
+
+function loadOutfits() {
+  outfitsLoaded = true;
+  fetch('/style-check/outfits').then(function(r) { return r.json(); }).then(function(list) {
+    var container = document.getElementById('outfitList');
+    if (!list.length) {
+      container.innerHTML = '<div style="font-size:.82rem;color:var(--tl);font-style:italic">Aucune tenue avec photo disponible.<br>Ajoutez une photo ou générez une image IA depuis <a href="/outfits">Mes tenues</a>.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    list.forEach(function(o) {
+      var card = document.createElement('div');
+      card.style.cssText = 'cursor:pointer;border-radius:var(--r);overflow:hidden;border:2px solid var(--bor);background:var(--sur);transition:border-color .15s';
+      card.innerHTML = [
+        '<img src="/static/' + o.image + '" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block">',
+        '<div style="padding:.4rem .5rem;font-size:.72rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + o.name + '</div>'
+      ].join('');
+      card.addEventListener('mouseenter', function() { card.style.borderColor = 'var(--a)'; });
+      card.addEventListener('mouseleave', function() { card.style.borderColor = 'var(--bor)'; });
+      card.addEventListener('click', function() { selectOutfitImage(o); });
+      container.appendChild(card);
+    });
+  }).catch(function() {
+    document.getElementById('outfitList').innerHTML = '<div style="font-size:.82rem;color:#dc2626">Erreur de chargement.</div>';
+  });
+}
+
+function selectOutfitImage(outfit) {
+  // Fetch the image and convert to a pseudo-File for analysis
+  fetch('/static/' + outfit.image)
+    .then(function(r) { return r.blob(); })
+    .then(function(blob) {
+      var file = new File([blob], 'outfit.jpg', { type: 'image/jpeg' });
+      handleFile(file);
+      switchSource('upload');
+    })
+    .catch(function() { showError('Impossible de charger l\'image de la tenue.'); });
+}
 
 // ── Drag & drop ──
 const dropZone = document.getElementById('dropZone');
@@ -400,7 +465,7 @@ function renderResults(data) {
   const acc = tenue.accessoires || {};
 
   // ── Carte 1 : Profil & style global ──
-  grid.appendChild(makeCard('🤍 Profil & style global', `
+  grid.appendChild(makeCard('Profil & style global', `
     <div class="info-grid">
       ${infoItem('Tranche d\'âge', personne.age_tranche)}
       ${infoItem('Genre apparent', personne.genre_apparent)}
@@ -413,7 +478,7 @@ function renderResults(data) {
   `));
 
   // ── Carte 2 : Vêtements ──
-  grid.appendChild(makeCard('👗 Descriptif de la tenue', `
+  grid.appendChild(makeCard('Descriptif de la tenue', `
     <div style="display:flex;flex-direction:column;gap:.85rem">
       ${vetCard('Haut', haut)}
       ${vetCard('Bas', bas)}
@@ -436,14 +501,14 @@ function renderResults(data) {
       ${infoItem('Couleur dominante', acc.couleur_generale)}
     </div>`;
   }
-  grid.appendChild(makeCard('💎 Accessoires', accHTML));
+  grid.appendChild(makeCard('Accessoires', accHTML));
 
   // ── Carte 4 : Radar ──
-  const radarCard = makeCard('📊 Radar des styles', `<div class="radar-wrap"><canvas id="radarChart"></canvas></div>`);
+  const radarCard = makeCard('Radar des styles', `<div class="radar-wrap"><canvas id="radarChart"></canvas></div>`);
   grid.appendChild(radarCard);
 
   // ── Carte 5 : Couleurs (full width) ──
-  const colorsCard = makeCard('🎨 Palette de couleurs', buildColorsHTML(data.couleurs || {}), true);
+  const colorsCard = makeCard('Palette de couleurs', buildColorsHTML(data.couleurs || {}), true);
   grid.appendChild(colorsCard);
 
   document.getElementById('resultsSection').style.display = 'block';
@@ -559,7 +624,7 @@ function buildRadar(radarData) {
 
 function showError(msg) {
   const b = document.getElementById('errBanner');
-  b.textContent = '⚠ ' + msg;
+  b.textContent = msg;
   b.style.display = 'block';
 }
 function hideError() {

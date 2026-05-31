@@ -9,7 +9,7 @@ import os
 import requests
 from flask import Blueprint, jsonify, render_template, request
 
-from utils.auth import get_ctx, login_required
+from utils.auth import get_ctx, login_required, current_user
 
 style_check_bp = Blueprint('style_check', __name__)
 
@@ -139,6 +139,113 @@ def _groq_call(image_b64: str, mime_type: str):
         return json.loads(text), None
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         return None, f"Réponse Groq invalide : {str(e)}"
+
+
+OUTFIT_STYLE_PROMPT = """Tu es un expert en mode et styling.
+Analyse cette tenue (photo portée, mannequin ou à plat) et retourne UN SEUL JSON.
+Réponds UNIQUEMENT avec le JSON, sans texte autour, sans balises markdown.
+
+{
+  "style_global": "",
+  "occasion": "",
+  "saison": "",
+  "description": "",
+  "radar": {
+    "Sportif": 0, "Décontracté": 0, "Streetwear": 0, "Urbain": 0,
+    "Minimaliste": 0, "Élégant": 0, "Professionnel": 0, "Classique": 0,
+    "Vintage": 0, "Bohème": 0, "Avant-garde": 0
+  },
+  "couleurs": [],
+  "harmonie": "",
+  "points_forts": [],
+  "suggestions": []
+}
+
+Règles :
+- style_global : un ou deux mots résumant le style dominant
+- occasion : "Quotidien" "Travail" "Soirée" "Sport" "Voyage" "Cérémonie" "Autre"
+- saison : "Printemps" "Été" "Automne" "Hiver" "Toute saison"
+- description : phrase courte décrivant l'ensemble (max 80 mots)
+- radar : valeur entre 0.0 et 1.0
+- couleurs : liste des 2-4 couleurs dominantes visibles
+- harmonie : "Monochrome" "Complémentaire" "Neutre + accent" "Analogique" "Tricolore" "Autre"
+- points_forts : exactement 2 points positifs de la tenue
+- suggestions : exactement 2 suggestions pour améliorer ou varier
+"""
+
+
+def analyze_outfit_image(image_b64: str, mime_type: str):
+    """Analyse une image de tenue via Groq Vision. Retourne (dict, erreur)."""
+    api_key = os.environ.get('GROQ_API_KEY', '').strip()
+    if not api_key:
+        return None, "Clé API Groq manquante (GROQ_API_KEY dans .env)"
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": OUTFIT_STYLE_PROMPT},
+                {"type": "image_url", "image_url": {
+                    "url": f"data:{mime_type};base64,{image_b64}"
+                }}
+            ]
+        }],
+        "max_tokens": 1200,
+        "temperature": 0.1
+    }
+    try:
+        resp = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=60)
+    except requests.exceptions.Timeout:
+        return None, "Timeout – Groq met trop de temps à répondre."
+    except requests.exceptions.RequestException as e:
+        return None, f"Erreur réseau : {str(e)[:200]}"
+
+    if resp.status_code != 200:
+        try:
+            msg = resp.json().get('error', {}).get('message', resp.text)[:300]
+        except Exception:
+            msg = resp.text[:300]
+        if resp.status_code == 429:
+            return None, f"Quota Groq dépassé. Attends quelques secondes. ({msg})"
+        if resp.status_code in (401, 403):
+            return None, "Clé API Groq invalide. Vérifie GROQ_API_KEY dans ton .env."
+        return None, f"Erreur Groq {resp.status_code} : {msg}"
+
+    try:
+        text = resp.json()['choices'][0]['message']['content'].strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+        return json.loads(text), None
+    except (KeyError, IndexError, json.JSONDecodeError) as e:
+        return None, f"Réponse Groq invalide : {str(e)}"
+
+
+@style_check_bp.route('/style-check/outfits')
+@login_required
+def style_check_outfits():
+    """Retourne la liste des tenues ayant une image (user_photo ou generated_image)."""
+    me = current_user()
+    from models import Outfit
+    outfits = me.outfits.order_by(Outfit.created_at.desc()).all()
+    result = []
+    for o in outfits:
+        img = o.user_photo or o.generated_image
+        if img:
+            result.append({
+                'id': o.id,
+                'name': o.name,
+                'image': img,
+                'occasion': o.occasion or '',
+            })
+    return jsonify(result)
 
 
 @style_check_bp.route('/style-check', methods=['GET'])

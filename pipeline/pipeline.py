@@ -14,16 +14,57 @@ logger = logging.getLogger(__name__)
 _UNDERWEAR_KEYWORDS = [
     "sous-vêtement", "sous vetement", "sousvetement",
     "slip", "boxer", "caleçon", "culotte", "string", "shorty", "tanga", "thong",
-    "soutien-gorge", "soutien gorge", "brassière de sport" ,
+    "soutien-gorge", "soutien gorge", "brassière de sport",
     "lingerie", "collant", "body", "nuisette", "déshabillé", "kimono",
     "underwear", "briefs", "knickers", "panties", "bra ",
     "pack boxer", "pack slip", "lot boxer", "lot slip",
+]
+
+# Mots-clés qui signalent un produit clairement non vestimentaire
+_NON_FASHION_KEYWORDS = [
+    # Tabac / papeterie
+    "rolling papers", "rolling tray", "rizla", " ashtray",
+    # Papeterie / stylos
+    "kaweco pen", " ballpoint", " fountain pen",
+    # Quincaillerie skate
+    " bolts", "grip tape", "skateboard deck", "skate deck",
+    # Maison / stockage
+    "storage bin", "round bin", "storage box", "trash can",
+    # Ustensiles
+    " mug", "water bottle", "nalgene", " jug",
+    # Loisirs
+    " frisbee", "frisbee ",
+    # Services
+    "gift card", "digital gift",
+    # Serviettes / linge de maison
+    "beach towel",
+    # Bijoux / quincaillerie non portée
+    " keychain", "key chain",
+    # Bagagerie non vestimentaire (sacs portés, pas portés sur soi)
+    " tote bag", "market tote", "extra large tote", " tote ",
+    " pouch",
+    # Maison / divers
+    "air freshener", "dog collar", "dog lead",
+    # Skate decks
+    "pro s43", " board 8.", " board 7.", " board 9.",
+    # Petite quincaillerie / bibelots
+    "pin badge", "compact mirror", " zippo", "sticker pack",
+    " keyring", "key ring",
+    # Bouteilles / contenants
+    " bottle ", "moflo bottle",
+    # Divers non portables
+    "swimming pool float", " float ",
 ]
 
 
 def _is_underwear(name: str, description: str = "", product_type: str = "") -> bool:
     text = f"{name} {description} {product_type}".lower()
     return any(k in text for k in _UNDERWEAR_KEYWORDS)
+
+
+def _is_non_fashion(name: str) -> bool:
+    text = f" {name} ".lower()
+    return any(k in text for k in _NON_FASHION_KEYWORDS)
 
 
 class SmartWearPipeline:
@@ -39,6 +80,18 @@ class SmartWearPipeline:
                 kept.append(p)
         if removed:
             logger.info("[Pipeline] Sous-vêtements exclus : %d produits", len(removed))
+        return kept
+
+    @staticmethod
+    def _filter_non_fashion(products: List[Product]) -> List[Product]:
+        kept, removed = [], []
+        for p in products:
+            if _is_non_fashion(p.name):
+                removed.append(p.name)
+            else:
+                kept.append(p)
+        if removed:
+            logger.info("[Pipeline] Non-vêtements exclus : %d produits", len(removed))
         return kept
 
     @staticmethod
@@ -101,6 +154,7 @@ class SmartWearPipeline:
     def run(self, products: List[Product], output_filename: str = "SmartWear_DB.json") -> List[dict]:
         logger.info("[Pipeline] Démarrage — %d produits reçus", len(products))
         products = self._filter_underwear(products)
+        products = self._filter_non_fashion(products)
         data = self._to_dicts(products)
         logger.info("[Pipeline] Normalisation terminée")
         self._save_json(data, output_filename)

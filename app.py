@@ -89,6 +89,20 @@ def create_app():
     with app.app_context():
         from models import CalendarEntry, ClothingItem, Outfit, Tag, User, UserSetting, WishlistItem  # noqa: F401
         db.create_all()
+        # Migrations manuelles pour colonnes ajoutées après le déploiement initial
+        with db.engine.connect() as conn:
+            for stmt in [
+                "ALTER TABLE outfits ADD COLUMN user_photo VARCHAR(255)",
+                "ALTER TABLE outfits ADD COLUMN style_analysis TEXT",
+                "ALTER TABLE wishlist_items ADD COLUMN price_alert BOOLEAN NOT NULL DEFAULT 1",
+                "ALTER TABLE wishlist_items ADD COLUMN last_known_price FLOAT",
+                "ALTER TABLE clothing_items ADD COLUMN ai_color VARCHAR(40)",
+            ]:
+                try:
+                    conn.execute(db.text(stmt))
+                    conn.commit()
+                except Exception:
+                    pass
 
     from ai.ollama_setup import ensure_ollama
     ensure_ollama(app)

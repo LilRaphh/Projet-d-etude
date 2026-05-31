@@ -124,7 +124,11 @@ def boutique():
     if q_style:
         filtered = [p for p in filtered if p.get('style') == q_style]
     if q_sexe:
-        filtered = [p for p in filtered if p.get('sexe') == q_sexe]
+        q_sexe_lower = q_sexe.lower()
+        filtered = [
+            p for p in filtered
+            if (p.get('sexe') or '').lower() in (q_sexe_lower, 'mixte', 'unisexe')
+        ]
     if price_max is not None:
         filtered = [p for p in filtered if p.get('price_value') is not None and p['price_value'] <= price_max]
 
@@ -209,12 +213,12 @@ _WARDROBE_SLOT = {
 }
 
 _NEEDED_SLOTS = {
-    'top':       ['bottom', 'shoes', 'outer'],
+    'top':       ['bottom', 'shoes'],
     'outer':     ['top', 'bottom', 'shoes'],
-    'bottom':    ['top', 'shoes', 'outer'],
-    'shoes':     ['top', 'bottom', 'outer'],
-    'full':      ['shoes', 'outer'],
-    'accessory': ['top', 'bottom', 'shoes'],
+    'bottom':    ['top', 'shoes'],
+    'shoes':     ['top', 'bottom'],
+    'full':      ['shoes'],
+    'accessory': ['top', 'bottom'],
 }
 
 _SLOT_LABELS = {
@@ -288,22 +292,22 @@ def _complete_wardrobe_inner():
 
     anchor_slot  = _WARDROBE_SLOT.get(item.category, 'top')
     needed_slots = _NEEDED_SLOTS.get(anchor_slot, ['top', 'bottom', 'shoes'])
-    user_gender  = (me.gender or '').strip()
+    user_gender  = (me.gender or '').strip().lower()
 
-    # Valeurs acceptées par genre (inclut variantes enfant + mixte + vide)
-    _GENDER_ACCEPT = {
-        'Homme': {'homme', 'mixte', 'unisexe', ''},
-        'Femme': {'femme',  'mixte', 'unisexe', ''},
-    }
-    accepted = _GENDER_ACCEPT.get(user_gender)
+    # Toujours filtrer : sexe de l'utilisateur + mixte + unisexe + vide
+    # Si genre inconnu, on garde mixte/unisexe/vide uniquement
+    _GENDER_SEXE = {'homme': 'homme', 'femme': 'femme'}
+    gender_sexe = _GENDER_SEXE.get(user_gender)
+    accepted = {'mixte', 'unisexe', ''}
+    if gender_sexe:
+        accepted.add(gender_sexe)
 
     products = _load_products()
 
-    if accepted is not None:
-        products = [
-            p for p in products
-            if (p.get('sexe') or '').lower() in accepted
-        ]
+    products = [
+        p for p in products
+        if (p.get('sexe') or '').lower() in accepted
+    ]
 
     # Grouper par slot détecté
     by_slot: dict = {}
@@ -572,7 +576,11 @@ def boutique_wishlist_toggle():
         last_known_price=initial_price,
     )
     db.session.add(w)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify(wishlisted=True)
     return jsonify(wishlisted=True)
 
 
