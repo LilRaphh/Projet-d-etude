@@ -11,7 +11,9 @@ logs/
 .DS_Store
 *.log
 finetune/
-pipeline/
+pipeline/dags/
+pipeline/logs/
+pipeline/__pycache__/
 monitoring/
 wardrobe_split/
 data/

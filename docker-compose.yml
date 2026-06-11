@@ -1,9 +1,10 @@
 # =============================================================
-#  docker-compose.yml — Wardrobe app + Ollama
+#  docker-compose.yml — Wardrobe app + Ollama + ngrok
 #
 #  Démarrer : docker compose up -d
 #  Arrêter  : docker compose down
 #  Logs     : docker compose logs -f app
+#  URL ngrok: docker compose logs -f ngrok
 #
 #  App → http://localhost:5001
 # =============================================================
@@ -21,14 +22,16 @@ services:
       OLLAMA_URL: http://ollama:11434
       HF_HOME: /app/data/hf_cache
       DATABASE_URL: sqlite:////app/data/wardrobe.db
+      VISION_MODEL: llava:7b
+      TEXT_MODEL: llava:7b
     volumes:
-      - uploads:/app/static/uploads
-      - app_data:/app/data
+      - ./static/uploads:/app/static/uploads
+      - ./data:/app/data
       - ./logs:/app/logs
     depends_on:
       - ollama
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -43,7 +46,17 @@ services:
     volumes:
       - ollama_data:/root/.ollama
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: wardrobe_ngrok
+    restart: unless-stopped
+    command: http app:5001 --log=stdout
+    ports:
+      - "4040:4040"
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+    depends_on:
+      - app
+
 volumes:
-  uploads:
-  app_data:
   ollama_data:
