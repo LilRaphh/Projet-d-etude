@@ -12,3 +12,4 @@ _archive_old/
 pipeline/output/
 pipeline/logs/
 .claude
+data/hf_cache/

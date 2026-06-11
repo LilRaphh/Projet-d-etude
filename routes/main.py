@@ -1,9 +1,9 @@
-from flask import Blueprint, flash, redirect, render_template, request
+from flask import Blueprint, flash, jsonify, redirect, render_template, request
 from sqlalchemy import distinct
 
 from config import CATEGORIES, COLORS, CONDITIONS, ITEMS_PER_PAGE, SEASONS, SIZES, SIZES_BY_CATEGORY
 from extensions import db
-from models import ClothingItem
+from models import ClothingItem, UserSetting
 from utils.auth import current_user, get_ctx, login_required
 from utils.images import delete_images, save_image
 from utils.tags import get_tags
@@ -132,7 +132,6 @@ def add():
         flash('Vêtement ajouté !', 'success')
         return redirect('/')
 
-    from models import UserSetting
     default_sizes = {
         'top':    UserSetting.get(me.id, 'default_size_top', ''),
         'bottom': UserSetting.get(me.id, 'default_size_bottom', ''),
@@ -190,7 +189,6 @@ def edit(iid):
         flash('Vêtement mis à jour !', 'success')
         return redirect(f'/item/{iid}')
 
-    from models import UserSetting
     default_sizes = {
         'top':    UserSetting.get(me.id, 'default_size_top', ''),
         'bottom': UserSetting.get(me.id, 'default_size_bottom', ''),
@@ -239,8 +237,6 @@ def delete(iid):
 @main_bp.route('/settings', methods=['POST'])
 @login_required
 def save_settings():
-    from models import UserSetting
-
     me = current_user()
     for key in ('app_name', 'accent', 'currency', 'city'):
         value = request.form.get(key, '').strip()
@@ -259,8 +255,6 @@ def save_settings():
 @main_bp.route('/forecast')
 @login_required
 def forecast():
-    from models import UserSetting
-
     ctx = get_ctx()
     me = ctx['me']
     city = UserSetting.get(me.id, "city", "").strip()
@@ -282,7 +276,6 @@ def forecast():
 @main_bp.route('/settings/ai', methods=['GET'])
 @login_required
 def settings_ai_get():
-    from models import UserSetting
     from ai.vision import check_ollama
 
     ctx = get_ctx()
@@ -307,8 +300,6 @@ def settings_ai_get():
 @main_bp.route('/settings/ai', methods=['POST'])
 @login_required
 def settings_ai_post():
-    from models import UserSetting
-
     me = current_user()
     for key in ('vision_model', 'image_gen_model', 'local_sd_url', 'local_sd_checkpoint'):
         value = request.form.get(key, '').strip()
@@ -341,7 +332,6 @@ def add_bulk():
 @main_bp.route('/api/add-bulk', methods=['POST'])
 @login_required
 def add_bulk_post():
-    from flask import jsonify
     me = current_user()
 
     count = request.form.get('count', '0')

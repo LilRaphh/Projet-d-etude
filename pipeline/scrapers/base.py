@@ -158,7 +158,7 @@ class BaseScraper(ABC):
         if any(k in text for k in ["chaussure", "bottine", "sneaker", "sandal",
                                     "mocassin", "derby", "air max", "jordan",
                                     "shoe", "boot"]):
-            return "Autre"
+            return "Chaussures"
         if any(k in name_lower for k in ["manteau", "veste", "blouson", "parka",
                                           "anorak", "doudoune", "trench", "blazer",
                                           "jacket", "vest", "bomber", "windbreaker",

@@ -4,6 +4,7 @@ ai/vision.py — Brique vision : analyse d'un vêtement via Qwen2.5-VL (Ollama l
 Modèle requis : ollama pull qwen2.5vl:7b
 """
 import base64
+import io
 import json
 import logging
 import os
@@ -11,6 +12,7 @@ import re
 from typing import Optional
 
 import requests
+from PIL import Image
 
 log = logging.getLogger(__name__)
 
@@ -103,9 +105,19 @@ Return only the JSON object, nothing else."""
 _SHOE_CATEGORIES = {"shoes", "sneakers", "boots"}
 
 
+_OLLAMA_MAX_PX = 768  # Qwen2.5-VL n'a pas besoin de plus pour la classification vêtement
+
+
 def _encode_image(path: str) -> str:
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+    """Encode l'image en base64 après redimensionnement à max _OLLAMA_MAX_PX px."""
+    img = Image.open(path).convert("RGB")
+    w, h = img.size
+    if max(w, h) > _OLLAMA_MAX_PX:
+        scale = _OLLAMA_MAX_PX / max(w, h)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85, optimize=True)
+    return base64.b64encode(buf.getvalue()).decode()
 
 
 def _parse_json(text: str) -> Optional[dict]:
@@ -171,7 +183,8 @@ def _analyze_shoe_detail(img_b64: str, model: Optional[str] = None) -> Optional[
 
 
 def analyze_garment(image_path: str, vision_model: Optional[str] = None,
-                    item_name: Optional[str] = None, item_category: Optional[str] = None) -> dict:
+                    item_name: Optional[str] = None, item_category: Optional[str] = None,
+                    item_description: Optional[str] = None) -> dict:
     """
     Analyse une photo de vêtement avec Qwen2.5-VL via Ollama.
 
@@ -196,6 +209,11 @@ def analyze_garment(image_path: str, vision_model: Optional[str] = None,
         focus_parts.append(f'The item to analyze is: "{item_name}".')
     if item_category:
         focus_parts.append(f'It belongs to the category: {item_category}.')
+    if item_description:
+        focus_parts.append(
+            f'The retailer description of this item is: "{item_description}". '
+            'Use it to improve accuracy (material, fit, pattern, etc.) but rely primarily on the photo.'
+        )
     focus_hint = (' ' + ' '.join(focus_parts)) if focus_parts else ''
     prompt = _PROMPT_HEADER + focus_hint + _PROMPT_BODY
 

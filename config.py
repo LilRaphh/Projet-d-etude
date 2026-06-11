@@ -66,6 +66,9 @@ GENDERS = ['Homme', 'Femme']
 AESTHETICS = ['Casual', 'Chic', 'Streetwear', 'Sport', 'Bohème', 'Minimaliste', 'Vintage', 'Business', 'Autre']
 BUDGETS = ['Économique', 'Moyen', 'Premium', 'Luxe']
 
+ANALYSIS_MAX_RETRIES = 3
+ANALYSIS_RETRY_DELAY = 3  # seconds between retries
+
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')

@@ -48,6 +48,127 @@ SIZE_LABELS = {
     "T1", "T2", "T3", "T4",
 }
 
+# Mots-clés présents dans les NOMS de produits non-vestimentaires —
+# liste intentionnellement courte et précise pour éviter les faux positifs.
+_NON_CLOTHING_NAME_KEYWORDS = frozenset([
+    # Éclairage / déco murale
+    "applique en", "applique murale", "applique porcelaine",
+    "abat-jour", "lustre", "luminaire",
+    # Rideaux / quincaillerie
+    "anneaux de rideaux", "anneau de rideau", "rideau ",
+    "tringle à rideaux", "patère", "porte-manteau",
+    # Maison / déco
+    "bougie", "candle", "vase", "coussin", "plaid", "nappe",
+    "torchon", "plateau", "miroir", "cadre photo",
+    # Cuisine / table
+    "vaisselle", "assiette", "tasse", "mug", "carafe",
+    "casserole", "théière", "cafetière", "saladier", "bowl ",
+    # Entretien textile & soin — les descriptions mentionnent "pull/veste"
+    # donc le double-Autre ne suffit pas, le nom est la seule source fiable
+    "rasoir anti", "rasoir ", "défriseur", "détachant ",
+    "brosse anti", "brosse à habits",
+    # Beauté / cosmétiques
+    "eau de toilette", "huile essentielle", "crème hydratante",
+    "sérum ", "élixir ", "masque visage", "baume lèvres",
+    # Pins & bijoux
+    "badge ", "badge merci", "broche ",
+    "médaille ", "médaille merci",
+    # Maroquinerie & accessoires non-vestimentaires
+    "porte-clé", "porte-clés", "porte clé", "keychain",
+    "mallette", "valise", "sac à dos", "sac bandoulière",
+    "portefeuille", "porte-monnaie",
+    # Papeterie / édition
+    "stylo", "agenda", "cahier de",
+    # Plantes / jardinage
+    "pot de fleurs", "plante verte",
+])
+
+# Mots qui, présents N'IMPORTE OÙ dans le candidat avant " – ",
+# signalent un nom de produit plutôt qu'une marque.
+_MERCI_NON_BRAND_WORDS = frozenset([
+    # ── Vêtements (types, pas des marques) ───────────────────────────
+    "bonnet", "bob", "casquette", "chapeau", "béret", "beanie",
+    "chemise", "chemisier", "crewneck", "sweat", "pull", "pullover",
+    "hoodie", "cardigan", "débardeur", "polo", "top",
+    "t-shirt", "tee-shirt", "tee",
+    "jean", "jeans", "pantalon", "chinos", "short", "legging", "jupe",
+    "veste", "blazer", "manteau", "doudoune", "parka", "trench",
+    "robe", "combinaison", "salopette", "kimono",
+    "chaussettes", "chaussons", "chaussures", "sneakers", "basket",
+    "bottines", "mocassins", "sandales", "escarpins",
+    # ── Éclairage / luminaires ────────────────────────────────────────
+    "lampe", "lampadaire", "applique", "lustre", "plafonnier",
+    "spot", "liseuse", "veilleuse", "luminaire", "abat-jour",
+    # ── Literie / linge de maison ─────────────────────────────────────
+    "drap", "housse", "taie", "couette", "traversin", "oreiller",
+    "plaid", "coussin", "serviette", "torchon", "nappe",
+    # ── Vaisselle & cuisine ───────────────────────────────────────────
+    "verre", "assiette", "bol", "tasse", "mug", "coupe", "flûte",
+    "carafe", "pichet", "théière", "cafetière", "saladier", "plateau",
+    "casserole", "poêle", "moule", "passoire", "fouet", "spatule",
+    "couteau", "fourchette", "cuillère",
+    # ── Déco / maison ────────────────────────────────────────────────
+    "vase", "bougie", "bougeoir", "miroir", "cadre", "tableau",
+    "sculpture", "objet", "panier", "corbeille",
+    # ── Papeterie / édition ───────────────────────────────────────────
+    "carnet", "cahier", "stylo", "crayon", "livre", "affiche",
+    "poster", "calendrier", "agenda",
+    # ── Audio / tech ─────────────────────────────────────────────────
+    "enceinte", "casque",
+    # ── Beauté / cosmétiques / parfumerie ─────────────────────────────
+    "parfum", "cologne", "toilette",
+    "crème", "sérum", "huile", "baume", "gel",
+    "masque", "exfoliant", "lotion", "savon",
+    "vernis", "fond", "rouge", "mascara",
+    "diffuseur",
+    # ── Alimentation ─────────────────────────────────────────────────
+    "chocolat", "biscuit", "confiture", "café", "thé",
+    "épices", "sel", "poivre", "miel", "sauce", "vinaigre",
+    "barre",
+    # ── Accessoires non-vestimentaires ───────────────────────────────
+    "badge", "broche", "médaille", "bandana",
+    "étole", "châle", "foulard",
+    "bague", "collier", "bracelet", "pendentif", "boucles",
+    "cabas", "sac", "pochette", "tote",
+    "bouteille", "gourde", "thermos",
+    "carte", "chariot", "banane",
+])
+
+# Un vrai nom de marque ne contient JAMAIS de prépositions/articles français au milieu.
+_FRENCH_FUNCTION_WORDS = frozenset([
+    "en", "de", "du", "des", "au", "aux",
+    "la", "le", "les", "un", "une",
+    "à", "par", "pour", "sur", "sous", "avec", "d",
+])
+
+_BRAND_CASING_MAP = {
+    "carhartt wip":   "Carhartt WIP",
+    "a.p.c":          "A.P.C.",
+    "a.p.c.":         "A.P.C.",
+    "apc":            "A.P.C.",
+    "ami paris":      "AMI Paris",
+    "amiparis":       "AMI Paris",
+    "maison kitsune": "Maison Kitsuné",
+    "maison kitsuné": "Maison Kitsuné",
+    "épice":          "Épice",
+    "epice":          "Épice",
+}
+
+
+def _normalize_brand(brand: str) -> str:
+    return _BRAND_CASING_MAP.get(brand.lower(), brand)
+
+
+def _looks_like_product_name(candidate: str) -> bool:
+    """Retourne True si le candidat ressemble à un nom de produit (pas une marque)."""
+    words = candidate.lower().split()
+    if any(w in _MERCI_NON_BRAND_WORDS for w in words):
+        return True
+    if any(w in _FRENCH_FUNCTION_WORDS for w in words if w != "x"):
+        return True
+    return False
+
+
 SHOE_KEYWORDS = [
     # Français
     "chaussure", "sneaker", "bottine", "mocassin", "botte", "espadrille",
@@ -80,6 +201,25 @@ class ShopifyBaseScraper(BaseScraper):
     # Mettre True pour les marques 100 % chaussures (Karhu, Filling Pieces…).
     # Tous les produits seront forcés en type "Chaussures" sans passer par SHOE_KEYWORDS.
     FORCE_SHOE: bool = False
+
+    # Mettre True pour les concept stores multi-marques (Merci…).
+    # Extrait la vraie marque depuis le titre "Marque – Nom produit – Couleur".
+    EXTRACT_BRAND_FROM_NAME: bool = False
+
+    @staticmethod
+    def _split_brand_from_name(raw: str) -> tuple:
+        """Extrait (brand, clean_name) depuis 'Marque – Produit [– Couleur]'.
+        Fonctionne avec – (tiret cadratin) et - (trait d'union entouré d'espaces).
+        Retourne (None, raw) si le préfixe ressemble à un nom de produit."""
+        for sep in [" – ", " - "]:
+            if sep in raw:
+                candidate, rest = raw.split(sep, 1)
+                candidate = candidate.strip()
+                if candidate and len(candidate) <= 50 and candidate[0].isupper():
+                    if not _looks_like_product_name(candidate):
+                        return _normalize_brand(candidate), rest.strip()
+                break
+        return None, raw
 
     # ------------------------------------------------------------------
     def _infer_sexe(self, tags: List[str], title: str, product_type: str) -> Tuple[str, str]:
@@ -163,13 +303,21 @@ class ShopifyBaseScraper(BaseScraper):
 
     # ------------------------------------------------------------------
     def _parse_product(self, item: dict) -> Optional[Product]:
-        name       = item.get("title", "Inconnu").strip()
+        raw_name   = item.get("title", "Inconnu").strip()
         desc       = re.sub(r'<[^>]+>', '', item.get("body_html", "") or "").strip()
         handle     = item.get("handle", "")
         url        = f"{self.BASE_URL}/products/{handle}"
         tags       = item.get("tags", [])
         p_type_raw = item.get("product_type", "") or ""
         options    = item.get("options", [])
+
+        # Extraction de la vraie marque pour les concept stores multi-marques
+        if self.EXTRACT_BRAND_FROM_NAME:
+            extracted_brand, name = self._split_brand_from_name(raw_name)
+            brand_source = extracted_brand or self.BRAND_SOURCE
+        else:
+            name         = raw_name
+            brand_source = self.BRAND_SOURCE
 
         genre, sexe = self._infer_sexe(tags, name, p_type_raw)
 
@@ -216,11 +364,21 @@ class ShopifyBaseScraper(BaseScraper):
         if self.STRICT_CLOTHING:
             p_type_lower = p_type_raw.lower()
             # Rejeter si le product_type Shopify correspond à une catégorie non-vestimentaire
-            if any(nct in p_type_lower for nct in _NON_CLOTHING_TYPES if p_type_lower):
+            if p_type_lower and any(nct in p_type_lower for nct in _NON_CLOTHING_TYPES):
                 logger.debug("[%s] Ignoré (product_type non-vêtement) : %s [%s]", self.BRAND_SOURCE, name, p_type_raw)
                 return None
+            # Rejeter si le NOM lui-même contient des mots-clés clairement non-vestimentaires
+            name_lower = name.lower()
+            if any(nct in name_lower for nct in _NON_CLOTHING_NAME_KEYWORDS):
+                logger.debug("[%s] Ignoré (nom non-vêtement) : %s", self.BRAND_SOURCE, name)
+                return None
+            # Rejeter si ni le style ni la catégorie ne sont identifiables (double Autre)
+            inferred_cat   = self.infer_categorie(name, desc, p_type)
+            inferred_style = self.infer_style(name, desc)
+            if inferred_cat == "Autre" and inferred_style == "Autre" and not is_shoe:
+                logger.debug("[%s] Ignoré (style+catégorie=Autre) : %s", self.BRAND_SOURCE, name)
+                return None
             # Rejeter si catégorie inférée = "Autre" ET aucune taille vestimentaire
-            inferred_cat = self.infer_categorie(name, desc, p_type)
             if inferred_cat == "Autre" and not all_tailles and not is_shoe:
                 logger.debug("[%s] Ignoré (Autre + sans tailles) : %s", self.BRAND_SOURCE, name)
                 return None
@@ -241,7 +399,7 @@ class ShopifyBaseScraper(BaseScraper):
             style        = self.infer_style(name, desc),
             image        = main_image,
             url          = url,
-            brand_source = self.BRAND_SOURCE,
+            brand_source = brand_source,
         )
 
     # ------------------------------------------------------------------

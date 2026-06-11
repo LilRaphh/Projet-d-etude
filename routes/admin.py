@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, flash, redirect, render_template, request
 
-from extensions import db
+from extensions import db, limiter
 from models import ClothingItem, Outfit, User, WishlistItem
 from utils.auth import admin_required, get_ctx
 
@@ -93,14 +93,15 @@ def toggle_admin(user_id):
 
 @admin_bp.route('/users/<int:user_id>/reset-password', methods=['POST'])
 @admin_required
+@limiter.limit("10 per hour")
 def reset_password(user_id):
     user = db.session.get(User, user_id)
     if not user:
         flash('Utilisateur introuvable.', 'error')
         return redirect('/admin/users')
     new_pw = request.form.get('password', '').strip()
-    if len(new_pw) < 6:
-        flash('Mot de passe trop court (6 car. min.).', 'error')
+    if len(new_pw) < 8:
+        flash('Mot de passe trop court (8 car. min.).', 'error')
         return redirect(f'/admin/users/{user_id}')
     user.set_password(new_pw)
     db.session.commit()

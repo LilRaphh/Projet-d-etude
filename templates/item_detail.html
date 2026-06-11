@@ -25,6 +25,10 @@
 .ai-attr { font-size: .78rem; color: var(--tm); }
 .ai-attr strong { color: var(--tx); }
 .ai-pending { font-size: .8rem; color: var(--tm); font-style: italic; }
+.ai-progress-wrap { display: none; margin: .5rem 0 .2rem; }
+.ai-progress-bar-bg { height: 5px; background: var(--bor); border-radius: 99px; overflow: hidden; }
+.ai-progress-bar { height: 100%; width: 0%; background: var(--a); border-radius: 99px; transition: width .6s ease; }
+.ai-progress-label { font-size: .72rem; color: var(--tm); margin-top: .35rem; display: flex; justify-content: space-between; }
 {% endblock %}
 
 {% block content %}
@@ -72,6 +76,10 @@
       <!-- Attributs IA -->
       <div class="ai-box" id="aiBox">
         <div class="ai-box-ttl">Analyse IA locale</div>
+        <div class="ai-progress-wrap" id="aiProgressWrap">
+          <div class="ai-progress-bar-bg"><div class="ai-progress-bar" id="aiProgressBar"></div></div>
+          <div class="ai-progress-label"><span id="aiProgressStep">Démarrage…</span><span id="aiProgressPct">0%</span></div>
+        </div>
         {% if item.ai_analyzed %}
         {% if item.ai_description %}<p style="font-size:.82rem;color:var(--tm);font-style:italic;margin-bottom:.6rem">{{ item.ai_description }}</p>{% endif %}
         <div class="ai-attrs" id="aiAttrs">
@@ -111,44 +119,87 @@ function worn(id) {
 function analyzeItem(id) {
   var btn = document.getElementById("aiBtn");
   var pending = document.getElementById("aiPending");
+  var progressWrap = document.getElementById("aiProgressWrap");
+  var progressBar = document.getElementById("aiProgressBar");
+  var progressStep = document.getElementById("aiProgressStep");
+  var progressPct = document.getElementById("aiProgressPct");
+
   btn.disabled = true;
   btn.textContent = "Analyse en cours…";
-  if (pending) pending.textContent = "Qwen2.5-VL analyse la photo… (30-60 s)";
+  if (pending) pending.style.display = "none";
+  progressWrap.style.display = "block";
+
+  // Étapes simulées : vision (~10-20s après resize 768px), CLIP (~2s), indexation (<1s)
+  var stages = [
+    { pct: 5,  label: "Démarrage…",                  delay: 200  },
+    { pct: 20, label: "Analyse visuelle Qwen2.5-VL…", delay: 2000 },
+    { pct: 50, label: "Analyse visuelle Qwen2.5-VL…", delay: 6000 },
+    { pct: 72, label: "Analyse visuelle Qwen2.5-VL…", delay: 8000 },
+    { pct: 82, label: "Encodage FashionCLIP…",         delay: 2000 },
+    { pct: 92, label: "Encodage FashionCLIP…",         delay: 1500 },
+    { pct: 96, label: "Indexation…",                   delay: 1000 },
+    { pct: 98, label: "Finalisation…",                 delay: 1000 },
+  ];
+
+  var timers = [];
+  var elapsed = 0;
+  stages.forEach(function(s) {
+    elapsed += s.delay;
+    timers.push(setTimeout(function(st) {
+      return function() {
+        progressBar.style.width = st.pct + "%";
+        progressStep.textContent = st.label;
+        progressPct.textContent = st.pct + "%";
+      };
+    }(s), elapsed));
+  });
+
+  function clearTimers() { timers.forEach(clearTimeout); }
 
   csrfFetch("/ai/analyze/" + id, { method: "POST" })
     .then(function(r) { return r.json(); })
     .then(function(d) {
+      clearTimers();
       if (d.error) {
+        progressWrap.style.display = "none";
         btn.disabled = false;
         btn.textContent = "Réessayer";
-        if (pending) pending.textContent = "Erreur : " + d.error;
+        if (pending) { pending.textContent = "Erreur : " + d.error; pending.style.display = ""; }
         return;
       }
-      btn.textContent = "Re-analyser IA";
-      btn.disabled = false;
-      // Mise à jour de la boîte IA sans rechargement
-      var attrs = d.attrs;
-      var rows = "";
-      var map = {
-        subcategory: "Sous-catégorie", style: "Style",
-        formality: "Formalisme", material_guess: "Matière",
-        pattern: "Motif", fit: "Coupe",
-        thickness: "Épaisseur", length: "Longueur",
-        secondary_color: "Couleur secondaire"
-      };
-      for (var key in map) {
-        var val = attrs[key];
-        if (key === "formality" && val) val = val + "/5";
-        if (val) rows += '<div class="ai-attr"><strong>' + map[key] + '</strong> ' + val + '</div>';
-      }
-      var desc = attrs.description ? '<p style="font-size:.82rem;color:var(--tm);font-style:italic;margin-bottom:.6rem">' + attrs.description + '</p>' : '';
-      var box = document.getElementById("aiBox");
-      box.innerHTML = '<div class="ai-box-ttl">Analyse IA locale</div>' + desc + '<div class="ai-attrs">' + rows + '</div>';
+      // Complétion visuelle avant d'afficher les résultats
+      progressBar.style.width = "100%";
+      progressStep.textContent = "Analyse terminée";
+      progressPct.textContent = "100%";
+      setTimeout(function() {
+        progressWrap.style.display = "none";
+        btn.textContent = "Re-analyser IA";
+        btn.disabled = false;
+        var attrs = d.attrs;
+        var rows = "";
+        var map = {
+          subcategory: "Sous-catégorie", style: "Style",
+          formality: "Formalisme", material_guess: "Matière",
+          pattern: "Motif", fit: "Coupe",
+          thickness: "Épaisseur", length: "Longueur",
+          secondary_color: "Couleur secondaire"
+        };
+        for (var key in map) {
+          var val = attrs[key];
+          if (key === "formality" && val) val = val + "/5";
+          if (val) rows += '<div class="ai-attr"><strong>' + map[key] + '</strong> ' + val + '</div>';
+        }
+        var desc = attrs.description ? '<p style="font-size:.82rem;color:var(--tm);font-style:italic;margin-bottom:.6rem">' + attrs.description + '</p>' : '';
+        var box = document.getElementById("aiBox");
+        box.innerHTML = '<div class="ai-box-ttl">Analyse IA locale</div>' + desc + '<div class="ai-attrs">' + rows + '</div>';
+      }, 600);
     })
     .catch(function(e) {
+      clearTimers();
+      progressWrap.style.display = "none";
       btn.disabled = false;
       btn.textContent = "Réessayer";
-      if (pending) pending.textContent = "Erreur réseau : " + e;
+      if (pending) { pending.textContent = "Erreur réseau : " + e; pending.style.display = ""; }
     });
 }
 </script>

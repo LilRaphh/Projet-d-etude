@@ -356,6 +356,22 @@ class AsosScraper(BaseScraper):
         return result
 
     # ------------------------------------------------------------------
+    @staticmethod
+    def _extract_brand(raw_name: str) -> tuple:
+        """
+        Les noms ASOS suivent le format 'Marque - Description [- Couleur]'.
+        Retourne (brand, cleaned_name) en séparant sur le premier ' - '.
+        Si le préfixe ne ressemble pas à une marque, renvoie ("ASOS", raw_name).
+        """
+        if " - " in raw_name:
+            brand, rest = raw_name.split(" - ", 1)
+            brand = brand.strip()
+            # Un nom de marque : court, commence par une majuscule, pas de verbe
+            if brand and len(brand) <= 40 and brand[0].isupper():
+                return brand, rest.strip()
+        return "ASOS", raw_name
+
+    # ------------------------------------------------------------------
     def _make_product(
         self,
         name: str,
@@ -370,8 +386,10 @@ class AsosScraper(BaseScraper):
         image: Optional[str],
         url: str,
     ) -> Product:
+        brand, clean_name = self._extract_brand(name)
+
         is_shoe = (type_hint == "Chaussures") or any(
-            k in name.lower()
+            k in clean_name.lower()
             for k in ["sneaker", "basket", "chaussure", "boot", "bottine", "sandal", "mocassin"]
         )
         p_type = "Chaussures" if is_shoe else "Vêtement"
@@ -391,7 +409,7 @@ class AsosScraper(BaseScraper):
             taille_out = self._normalize_taille(raw_sizes)
 
         return Product(
-            name         = name,
+            name         = clean_name,
             price_value  = price,
             currency     = "EUR",
             description  = description,
@@ -402,11 +420,11 @@ class AsosScraper(BaseScraper):
             color        = color,
             rating       = rating,
             type         = p_type,
-            categorie    = self.infer_categorie(name, description, p_type),
-            style        = self.infer_style(name, description),
+            categorie    = self.infer_categorie(clean_name, description, p_type),
+            style        = self.infer_style(clean_name, description),
             image        = image,
             url          = url,
-            brand_source = self.BRAND_SOURCE,
+            brand_source = brand,
         )
 
     # ------------------------------------------------------------------

@@ -3,17 +3,16 @@ routes/stylist.py — Styliste unifié : Aujourd'hui · Claude · IA Locale
 """
 import json
 import logging
-import os
 import re
 from datetime import date
 from typing import Optional
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from config import ANTHROPIC_MODEL, OCCASIONS
 from extensions import db
-from models import ClothingItem, Outfit, User, UserSetting
-from utils.auth import get_ctx
+from models import ClothingItem, Outfit, UserSetting
+from utils.auth import get_api_key as _api_key, get_ctx, get_uid as _uid
 from utils.weather import WeatherService
 
 log = logging.getLogger(__name__)
@@ -23,18 +22,6 @@ stylist_bp = Blueprint("stylist", __name__)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _uid() -> Optional[int]:
-    return session.get("user_id")
-
-
-def _api_key() -> str:
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if key:
-        return key
-    uid = _uid()
-    return UserSetting.get(uid, "anthropic_key", "") if uid else ""
-
 
 def _city() -> str:
     uid = _uid()

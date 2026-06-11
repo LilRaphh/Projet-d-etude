@@ -514,7 +514,15 @@ textarea.fc{resize:vertical;min-height:80px}
     </div>
     <div class="fg">
       <label class="lbl">Devise</label>
-      <input name="currency" class="fc" value="{{ currency }}" maxlength="4">
+      <select name="currency" class="fc">
+        {% set _cur = currency | upper %}
+        {% set _cur = 'EUR' if _cur in ('€','') else _cur %}
+        {% set _cur = 'USD' if _cur == '$' else _cur %}
+        {% set _cur = 'GBP' if _cur == '£' else _cur %}
+        {% for code, sym in [('EUR','€ — Euro'),('USD','$ — Dollar US'),('GBP','£ — Livre sterling'),('CHF','Fr. — Franc suisse'),('CAD','CA$ — Dollar canadien'),('JPY','¥ — Yen japonais'),('AUD','A$ — Dollar australien'),('MAD','MAD — Dirham marocain'),('SEK','kr — Couronne suédoise'),('NOK','kr — Couronne norvégienne'),('DKK','kr — Couronne danoise'),('PLN','zł — Zloty polonais'),('CZK','Kč — Couronne tchèque')] %}
+        <option value="{{ code }}" {% if _cur == code %}selected{% endif %}>{{ sym }}</option>
+        {% endfor %}
+      </select>
     </div>
     <hr class="s-sep">
     <p class="s-ttl" style="font-size:1.05rem">Génération IA</p>

@@ -38,7 +38,7 @@ DEFAULT_HEADERS = {
 GENRE_VALUES = ["Enfant", "Adolescent", "Adulte"]
 SEXE_VALUES = ["Femme", "Homme", "Fille", "Garçon"]
 TYPE_VALUES = ["Vêtement", "Chaussures", "Autre"]
-CATEGORIE_VALUES = ["Haut", "Bas", "Robe/Combinaison", "Manteau/Veste", "Autre"]
+CATEGORIE_VALUES = ["Haut", "Bas", "Robe/Combinaison", "Manteau/Veste", "Chaussures", "Autre"]
 STYLE_VALUES = [
     "Jean", "Pull", "T-shirt", "Crop-top", "Robe", "Combinaison",
     "Chemise", "Sweat", "Hoodie", "Polo", "Veste", "Manteau", "Short",
