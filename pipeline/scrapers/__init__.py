@@ -22,12 +22,14 @@ try:
     from pipeline.scrapers.jules import JulesScraper
     from pipeline.scrapers.nike import NikeScraper
     from pipeline.scrapers.gymshark import GymsharkScraper
+    from pipeline.scrapers.asos import AsosScraper
     _PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     _PLAYWRIGHT_AVAILABLE = False
     JulesScraper    = None  # type: ignore
     NikeScraper     = None  # type: ignore
     GymsharkScraper = None  # type: ignore
+    AsosScraper     = None  # type: ignore
 
 __all__ = [
     "MangoScraper", "KappaScraper", "LeCoqSportifScraper",
@@ -36,5 +38,5 @@ __all__ = [
     "RoujeScraper", "CabaiaScraper",
     "BonneGueuleScraper", "MerciScraper", "IsabelMarantScraper", "AmiParisScraper",
     "StussyScraper", "KarhuScraper", "FillingPiecesScraper", "PalaceScraper",
-    "JulesScraper", "NikeScraper", "GymsharkScraper",
+    "JulesScraper", "NikeScraper", "GymsharkScraper", "AsosScraper",
 ]

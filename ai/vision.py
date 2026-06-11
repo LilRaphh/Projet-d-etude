@@ -4,6 +4,7 @@ ai/vision.py — Brique vision : analyse d'un vêtement via Qwen2.5-VL (Ollama l
 Modèle requis : ollama pull qwen2.5vl:7b
 """
 import base64
+import io
 import json
 import logging
 import os
@@ -11,11 +12,13 @@ import re
 from typing import Optional
 
 import requests
+from PIL import Image
 
 log = logging.getLogger(__name__)
 
 OLLAMA_BASE = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 VISION_MODEL = os.environ.get("VISION_MODEL", "qwen2.5vl:7b")
+OLLAMA_TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "300"))
 
 # Mapping catégories AI -> catégories app
 CATEGORY_MAP = {
@@ -102,9 +105,19 @@ Return only the JSON object, nothing else."""
 _SHOE_CATEGORIES = {"shoes", "sneakers", "boots"}
 
 
+_OLLAMA_MAX_PX = 768  # Qwen2.5-VL n'a pas besoin de plus pour la classification vêtement
+
+
 def _encode_image(path: str) -> str:
-    with open(path, "rb") as f:
-        return base64.b64encode(f.read()).decode()
+    """Encode l'image en base64 après redimensionnement à max _OLLAMA_MAX_PX px."""
+    img = Image.open(path).convert("RGB")
+    w, h = img.size
+    if max(w, h) > _OLLAMA_MAX_PX:
+        scale = _OLLAMA_MAX_PX / max(w, h)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=85, optimize=True)
+    return base64.b64encode(buf.getvalue()).decode()
 
 
 def _parse_json(text: str) -> Optional[dict]:
@@ -139,14 +152,19 @@ def _call_ollama(img_b64: str, prompt: str, model: Optional[str] = None) -> Opti
         "options": {"temperature": 0.05, "seed": 42},
     }
     try:
-        resp = requests.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=120)
+        resp = requests.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=OLLAMA_TIMEOUT)
+        if resp.status_code == 404:
+            used_model = model if model else VISION_MODEL
+            raise RuntimeError(f"MODEL_NOT_FOUND:{used_model}")
         resp.raise_for_status()
     except requests.ConnectionError:
         raise RuntimeError(
-            "Ollama inaccessible. Lancez `ollama serve` puis vérifiez que le modèle est bien installé."
+            "Ollama inaccessible. Vérifiez que le service est démarré."
         )
     except requests.Timeout:
-        raise RuntimeError("Délai d'attente dépassé pour Qwen2.5-VL (120 s). Réessayez.")
+        raise RuntimeError(f"Délai d'attente dépassé pour Ollama ({OLLAMA_TIMEOUT}s). Réessayez.")
+    except RuntimeError:
+        raise
     except requests.RequestException as e:
         raise RuntimeError(f"Erreur réseau Ollama : {e}")
     raw = resp.json().get("message", {}).get("content", "")
@@ -165,7 +183,8 @@ def _analyze_shoe_detail(img_b64: str, model: Optional[str] = None) -> Optional[
 
 
 def analyze_garment(image_path: str, vision_model: Optional[str] = None,
-                    item_name: Optional[str] = None, item_category: Optional[str] = None) -> dict:
+                    item_name: Optional[str] = None, item_category: Optional[str] = None,
+                    item_description: Optional[str] = None) -> dict:
     """
     Analyse une photo de vêtement avec Qwen2.5-VL via Ollama.
 
@@ -190,6 +209,11 @@ def analyze_garment(image_path: str, vision_model: Optional[str] = None,
         focus_parts.append(f'The item to analyze is: "{item_name}".')
     if item_category:
         focus_parts.append(f'It belongs to the category: {item_category}.')
+    if item_description:
+        focus_parts.append(
+            f'The retailer description of this item is: "{item_description}". '
+            'Use it to improve accuracy (material, fit, pattern, etc.) but rely primarily on the photo.'
+        )
     focus_hint = (' ' + ' '.join(focus_parts)) if focus_parts else ''
     prompt = _PROMPT_HEADER + focus_hint + _PROMPT_BODY
 

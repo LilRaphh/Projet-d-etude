@@ -151,6 +151,23 @@
 .picker-item-meta { font-size: .72rem; color: var(--tm) }
 .picker-empty { text-align: center; padding: 2rem; color: var(--tl); font-size: .85rem }
 
+/* Widget météo top */
+.cal-weather-top {
+  display: flex; align-items: center; gap: .75rem;
+  background: var(--sur); border: 1px solid var(--bor);
+  border-radius: var(--rl); padding: .75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.cal-wx-top-icon { font-size: 2rem; line-height: 1; flex-shrink: 0 }
+.cal-wx-top-body { flex: 1; min-width: 0 }
+.cal-wx-top-temp { font-size: 1.5rem; font-weight: 600; color: var(--tx); line-height: 1 }
+.cal-wx-top-label { font-size: .78rem; color: var(--tm); margin-top: .1rem }
+.cal-wx-top-layer { font-size: .73rem; color: var(--a); margin-top: .15rem; font-style: italic }
+.cal-wx-top-city { font-size: .7rem; color: var(--tl); text-align: right; flex-shrink: 0 }
+
+/* Masquer sur desktop (déjà visible dans la nav globale) */
+@media (min-width: 641px) { .cal-weather-top { display: none } }
+
 @media (max-width: 640px) {
   .cal-cell { min-height: 72px; padding: .3rem }
   .cal-wx-icon { font-size: .9rem }
@@ -168,6 +185,20 @@
 
     <h1 class="cal-h">Mon <em>calendrier</em></h1>
     <p class="cal-sub">Météo du mois et organisation de ta garde-robe au quotidien.</p>
+
+    {% if global_weather %}
+    <div class="cal-weather-top">
+      <div class="cal-wx-top-icon">{{ global_weather.icon }}</div>
+      <div class="cal-wx-top-body">
+        <div class="cal-wx-top-temp">{{ global_weather.temp }}°</div>
+        <div class="cal-wx-top-label">{{ global_weather.label }}</div>
+        {% if global_weather.layer %}
+        <div class="cal-wx-top-layer">{{ global_weather.layer }}</div>
+        {% endif %}
+      </div>
+      <div class="cal-wx-top-city">📍 {{ global_weather.city }}</div>
+    </div>
+    {% endif %}
 
     {% if not city %}
     <div class="no-city-banner">

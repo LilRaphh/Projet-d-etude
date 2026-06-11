@@ -1,4 +1,6 @@
 import functools
+import os
+from typing import Optional
 
 from flask import flash, redirect, request, session, url_for
 
@@ -6,9 +8,22 @@ from extensions import db
 from models import User, UserSetting
 
 
-def current_user():
+def current_user() -> Optional[User]:
     uid = session.get('user_id')
     return db.session.get(User, uid) if uid else None
+
+
+def get_uid() -> Optional[int]:
+    return session.get('user_id')
+
+
+def get_api_key(uid: Optional[int] = None) -> str:
+    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if key:
+        return key
+    if uid is None:
+        uid = get_uid()
+    return UserSetting.get(uid, "anthropic_key", "") if uid else ""
 
 
 def login_required(view_func):

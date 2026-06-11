@@ -108,9 +108,12 @@
         {% endif %}
 
         <button class="wish-btn wished" title="Retirer de la wishlist"
-          onclick="removeFromWishlist(this, {{ p|tojson }}, 'wl-card-{{ loop.index }}')">♥</button>
+          data-product='{{ p|tojson }}'
+          data-card-id="wl-card-{{ loop.index }}"
+          onclick="removeFromWishlist(this)">♥</button>
         <button class="add-wr-btn" title="Ajouter à ma garde-robe"
-          onclick="addToWardrobe(this, {{ p|tojson }})">+</button>
+          data-product='{{ p|tojson }}'
+          onclick="addToWardrobe(this)">+</button>
 
         <div class="prod-body">
           <div class="prod-brand">{{ p.brand_source or '—' }}</div>
@@ -170,8 +173,11 @@
 
 {% block extra_js %}
 <script>
-function removeFromWishlist(btn, product, cardId) {
+function removeFromWishlist(btn) {
   if (btn.classList.contains('loading')) return;
+  var product;
+  try { product = JSON.parse(btn.dataset.product); } catch(e) { return; }
+  var cardId = btn.dataset.cardId;
   btn.classList.add('loading');
   csrfFetch('/boutique/wishlist/toggle', {
     method: 'POST',
@@ -197,7 +203,9 @@ function removeFromWishlist(btn, product, cardId) {
 
 function esc(str){ var d=document.createElement('div'); d.appendChild(document.createTextNode(str||'')); return d.innerHTML; }
 
-function addToWardrobe(btn, product) {
+function addToWardrobe(btn) {
+  var product;
+  try { product = JSON.parse(btn.dataset.product); } catch(e) { return; }
   if (!btn || btn.classList.contains('added') || btn.classList.contains('loading')) return;
   btn.classList.add('loading');
   btn.textContent = '…';

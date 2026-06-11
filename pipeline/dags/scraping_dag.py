@@ -6,13 +6,14 @@
 #    scrape_gymshark      ─┤
 #    scrape_nike          ─┤
 #    scrape_jules         ─┤
-#    scrape_apc           ─┼─→ run_pipeline → run_audit → run_check
-#    scrape_balzac        ─┤
+#    scrape_apc           ─┤
+#    scrape_balzac        ─┼─→ run_pipeline → run_audit → run_check
 #    scrape_maisonlabiche ─┤
 #    scrape_lcs           ─┤
 #    scrape_tac           ─┤
 #    scrape_kappa         ─┤
-#    scrape_lotto         ─┘
+#    scrape_lotto         ─┤
+#    scrape_asos          ─┘
 #
 #  Déploiement :
 #    Copier ce fichier (ou créer un symlink) dans le dossier
@@ -53,6 +54,7 @@ SCRAPER_NAMES = [
     "rouje", "cabaia", "bonnegueule",
     "merci", "isabelmarant", "amiparis",
     "lecoqsportif", "tacchini", "kappa", "lotto",
+    "asos",
 ]
 
 
@@ -70,6 +72,7 @@ def _scrape(scraper_name: str, **context) -> str:
         RoujeScraper, CabaiaScraper, BonneGueuleScraper,
         MerciScraper, IsabelMarantScraper, AmiParisScraper,
         LeCoqSportifScraper, TacchiniScraper, KappaScraper, LottoScraper,
+        AsosScraper,
     )
     SCRAPERS = {
         "mango":          MangoScraper,
@@ -89,6 +92,7 @@ def _scrape(scraper_name: str, **context) -> str:
         "tacchini":       TacchiniScraper,
         "kappa":          KappaScraper,
         "lotto":          LottoScraper,
+        "asos":           AsosScraper,
     }
 
     cls = SCRAPERS[scraper_name]

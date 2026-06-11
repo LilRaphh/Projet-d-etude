@@ -124,13 +124,13 @@ def create_app():
 
     @app.errorhandler(CSRFError)
     def csrf_error(e):
-        app.logger.warning(f"CSRF error: {e}")
+        app.logger.warning("CSRF error: %s", e)
         flash('Requête invalide (token expiré). Veuillez réessayer.', 'error')
         return redirect(request.referrer or '/'), 400
 
     @app.errorhandler(404)
     def not_found(e):
-        app.logger.warning(f"404 — {request.path}")
+        app.logger.warning("404 — %s", request.path)
         try:
             ctx = get_ctx()
         except Exception:
@@ -140,7 +140,7 @@ def create_app():
 
     @app.errorhandler(500)
     def server_error(e):
-        app.logger.error(f"500 — {e}", exc_info=True)
+        app.logger.error("500 — %s", e, exc_info=True)
         from flask import render_template
         return render_template('errors/500.html'), 500
 

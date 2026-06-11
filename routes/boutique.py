@@ -3,17 +3,22 @@ routes/boutique.py
 Page "Boutique" — affiche les produits scrapés depuis SmartWear_DB.json
 """
 import json
+import logging
 import os
 import random
 import re
+import threading
 import uuid
 from pathlib import Path
 
 from flask import Blueprint, jsonify, render_template, request
 
+_logger = logging.getLogger(__name__)
+
 from extensions import db
 from models import ClothingItem, WishlistItem
 from utils.auth import current_user, get_ctx, login_required
+from utils.currency import apply_to_products, convert_price, get_rate, normalize as normalize_currency, symbol as currency_symbol
 
 boutique_bp = Blueprint('boutique', __name__)
 
@@ -21,41 +26,87 @@ DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'pipeline', 'output', 'S
 PER_PAGE = 24
 
 _cache = None
+_filters = None  # {'brands': [...], 'types': [...], 'cats': [...], 'styles': [...], 'sexes': [...]}
+_cache_mtime = None   # dernière date de modification du JSON au moment du chargement
+_scraping_in_progress = False
+_cache_lock = threading.Lock()
 
 # ── Filtres qualité produit ───────────────────────────────────────────────────
 
 _CHILD_SEXE = frozenset(['fille', 'garçon', 'garcon'])
 
 _NON_CLOTHING_STARTS = (
-    # Bougies & éclairage
-    'bougie', 'bougies', 'cierge', 'bougeoir', 'lampe', 'suspension',
-    # Vaisselle & cuisine
-    'tasse', 'assiette', 'verre', 'couteau', 'cuillère', 'fourchette',
-    'sabre', 'bol', 'pichet', 'carafe', 'théière', 'cafetière',
-    'torchon', 'nappe', 'serviette',
-    # Déco & maison
-    'coussin', 'drap', 'taie', 'housse', 'vase', 'plateau', 'peluche',
-    'canapé', 'miroir', 'plaid', 'plante', 'gourde', 'jouet', 'magnet',
-    # Papeterie & livres
-    'carnet', 'affiche', 'stylo', 'livre', 'crayons', 'jeu de',
-    'planche de stickers', 'poster',
-    # Beauté & parfumerie
-    'diffuseur', 'parfum ', 'eau de parfum', 'eau de cologne',
-    'trudon -', 'savon', 'lotion', 'gel douche', 'le sérum',
-    "huile d'", 'huile d',
-    # Coffrets & sets maison
+    # ── Éclairage ────────────────────────────────────────────────────
+    'lampe', 'lampadaire', 'lustre', 'plafonnier', 'liseuse',
+    'veilleuse', 'luminaire', 'abat-jour', 'bougie', 'bougies',
+    'cierge', 'bougeoir', 'applique ', 'applique en', 'suspension ',
+    # ── Vaisselle & cuisine ───────────────────────────────────────────
+    'verre', 'assiette', 'tasse', 'mug', 'bol', 'coupe ', 'flûte ',
+    'pichet', 'carafe', 'théière', 'cafetière', 'saladier',
+    'couteau', 'cuillère', 'fourchette', 'sabre', 'couvert',
+    'casserole', 'poêle', 'moule ', 'fouet ', 'spatule', 'passoire',
+    'louche', 'râpe ', 'économe', 'ustensile', 'torchon', 'nappe',
+    'plat ', 'plat à', 'cocotte', 'rouleau', 'ouvre-',
+    'tire-bouchon', 'pince ',
+    # ── Déco & maison ────────────────────────────────────────────────
+    'coussin', 'vase', 'plateau', 'miroir', 'plaid', 'peluche',
+    'canapé', 'plante', 'jouet', 'magnet', 'cadre', 'tableau',
+    'sculpture', 'objet', 'outil ', 'panier', 'corbeille',
+    'anneaux de', 'anneau de', 'rideau', 'rideaux',
+    'poignée', 'crochet ', 'patère', 'porte-manteau',
+    # ── Literie / linge de maison ─────────────────────────────────────
+    'drap', 'drap-housse', 'taie', 'housse', 'couette', 'traversin',
+    'oreiller', 'serviette',
+    # ── Papeterie & livres ────────────────────────────────────────────
+    'carnet', 'cahier', 'affiche', 'poster', 'stylo', 'crayon',
+    'livre', 'crayons', 'jeu de', 'planche de stickers', 'agenda',
+    # ── Audio / tech ─────────────────────────────────────────────────
+    'enceinte ', 'haut-parleur',
+    # ── Beauté / cosmétiques / parfumerie ─────────────────────────────
+    'parfum ', "parfum d'intérieur",
+    'eau de parfum', 'eau de cologne', 'eau de toilette',
+    'diffuseur', 'savon', 'lotion', 'gel douche',
+    'sérum ', 'élixir ', 'exfoliant', 'masque ', 'masque visage',
+    'crème ', 'baume ', 'contour des yeux', 'huile corps',
+    "huile d'", 'huile d', 'le sérum',
+    'vernis ', 'fond de teint', 'trudon -',
+    'rasoir ', 'rasoir anti', 'défriseur', 'repassage',
+    'détachant', 'désodorisant', 'nettoyant ',
+    # ── Alimentation / épicerie ───────────────────────────────────────
+    'chocolat ', 'barre de chocolat', 'confiture', 'biscuit',
+    'épices', 'sel de', 'miel ', 'sauce ', 'vinaigre', 'thé ',
+    # ── Coffrets & sets ───────────────────────────────────────────────
     'coffret', 'lot de', 'lot 4', 'lot 12', 'set de',
-    'duo de bougies', 'ensemble de',
-    # Divers
-    'adhésif bougie', 'adhesif bougie', 'boîte', 'boite',
+    'duo de', 'ensemble de',
+    # ── Vaisselle EN (bowl, cup, jar…) ───────────────────────────────
+    'bowl', 'cup ', 'jar ', 'pot ', 'dish ',
+    # ── Pins, bijoux non-vestimentaires ──────────────────────────────
+    'badge ', 'badge merci', 'broche ',
+    'médaille', 'medaille', 'collier ', 'bracelet ', 'bague ',
+    'pendentif', 'médaillon', 'boucles d',
+    # ── Maroquinerie ─────────────────────────────────────────────────
+    'mallette', 'valise', 'portefeuille', 'porte-monnaie',
+    # ── Divers ────────────────────────────────────────────────────────
+    'adhésif bougie', 'boîte', 'boite', 'gourde', 'thermos',
 )
 _NON_CLOTHING_STARTS = _NON_CLOTHING_STARTS + ('gervasoni',)
 
 _NON_CLOTHING_CONTAINS = (
+    # Parfumerie / beauté apparaissant au milieu du nom
     'eau de parfum', 'eau de cologne', "parfum d'intérieur",
     'diffuseur parfumé', ' bougies', ' - bougie', ' - carnet',
-    ' assiette', ' canapé',
+    ' assiette', ' canapé', ' bowl', ' n°', '– lettres',
+    'en verre soufflé', 'en porcelaine', 'en céramique',
+    'en grès', 'en laiton', 'en lin lavé', 'en percale',
+    # Maroquinerie au milieu du nom (format "Marque – Porte-clé – Couleur")
+    'porte-clé', 'porte-clés', 'porte clé', 'keychain',
+    'sac à dos', 'sac bandoulière',
+    '– mallette', '– valise', '– portefeuille',
+    '– vernis', '– parfum',
 )
+
+# Marques concept-stores : on rejette tout article sans style NI catégorie reconnus.
+_CONCEPT_STORE_BRANDS = frozenset(['Merci'])
 
 
 def _is_adult_clothing(p: dict) -> bool:
@@ -71,25 +122,70 @@ def _is_adult_clothing(p: dict) -> bool:
     for kw in _NON_CLOTHING_CONTAINS:
         if kw in name:
             return False
+    # Concept-stores : tout article sans style ET sans catégorie reconnus = non-vêtement
+    if p.get('brand_source') in _CONCEPT_STORE_BRANDS:
+        if (p.get('style') or 'Autre') == 'Autre' and (p.get('categorie') or 'Autre') == 'Autre':
+            return False
     return True
 
 
+def _run_scrape_background():
+    global _scraping_in_progress
+    try:
+        from pipeline.run import run, SCRAPERS
+        _logger.info("Auto-scrape démarré — DB boutique vide.")
+        run(list(SCRAPERS.keys()))
+        reset_boutique_cache()
+        _logger.info("Auto-scrape terminé — cache boutique rechargé.")
+    except Exception as exc:
+        _logger.error("Auto-scrape échoué : %s", exc)
+    finally:
+        _scraping_in_progress = False
+
+
 def _load_products():
-    global _cache
-    if _cache is None:
-        try:
-            with open(DB_PATH, encoding='utf-8') as f:
-                raw = json.load(f)
-            _cache = [p for p in raw if _is_adult_clothing(p)]
-        except (FileNotFoundError, json.JSONDecodeError):
-            _cache = []
+    global _cache, _filters, _cache_mtime, _scraping_in_progress
+
+    # Invalide le cache si le fichier JSON a été modifié depuis le dernier chargement
+    try:
+        current_mtime = os.path.getmtime(DB_PATH)
+    except OSError:
+        current_mtime = None
+
+    if _cache is None or current_mtime != _cache_mtime:
+        with _cache_lock:
+            if _cache is None or current_mtime != _cache_mtime:
+                try:
+                    with open(DB_PATH, encoding='utf-8') as f:
+                        raw = json.load(f)
+                    _cache = [p for p in raw if _is_adult_clothing(p)]
+                    _cache_mtime = current_mtime
+                    from collections import Counter
+                    brand_counts = Counter(p['brand_source'] for p in _cache if p.get('brand_source'))
+                    _filters = {
+                        'brands':       sorted(brand_counts.keys()),
+                        'brand_counts': dict(brand_counts),
+                        'types':        sorted({p['type']      for p in _cache if p.get('type')}),
+                        'cats':         sorted({p['categorie'] for p in _cache if p.get('categorie')}),
+                        'styles':       sorted({p['style']     for p in _cache if p.get('style')}),
+                        'sexes':        sorted({p['sexe']      for p in _cache if p.get('sexe')}),
+                    }
+                except (FileNotFoundError, json.JSONDecodeError):
+                    _cache = []
+                    _cache_mtime = current_mtime
+                    _filters = {'brands': [], 'brand_counts': {}, 'types': [], 'cats': [], 'styles': [], 'sexes': []}
+    if not _cache and not _scraping_in_progress:
+        _scraping_in_progress = True
+        threading.Thread(target=_run_scrape_background, daemon=True).start()
     return _cache
 
 
 def reset_boutique_cache():
     """Invalide le cache produit — à appeler après chaque scraping."""
-    global _cache
+    global _cache, _filters, _cache_mtime
     _cache = None
+    _filters = None
+    _cache_mtime = None
 
 
 @boutique_bp.route('/boutique')
@@ -98,13 +194,32 @@ def boutique():
     ctx = get_ctx()
     products = _load_products()
 
+    # --- Devise utilisateur ---
+    _cur_code = normalize_currency(ctx.get('currency', 'EUR'))
+    _cur_rate  = get_rate(_cur_code)
+    _cur_sym   = currency_symbol(_cur_code)
+
+    # --- Catégories rapides (pills) ---
+    QUICK_GROUPS = {
+        'tshirts':   {'label': 'T-Shirts',          'icon': '👕', 'styles': ['T-shirt']},
+        'shorts':    {'label': 'Shorts',             'icon': '🩳', 'styles': ['Short']},
+        'pulls':     {'label': 'Pulls & Sweats',     'icon': '🧥', 'styles': ['Pull', 'Sweat', 'Hoodie', 'Cardigan', 'Crop-top']},
+        'chemises':  {'label': 'Chemises & Polos',   'icon': '👔', 'styles': ['Chemise', 'Polo', 'Débardeur']},
+        'pantalons': {'label': 'Pantalons & Jeans',  'icon': '👖', 'styles': ['Pantalon', 'Jean', 'Legging', 'Chinos']},
+        'vestes':    {'label': 'Vestes & Blazers',   'icon': '🧣', 'styles': ['Veste', 'Blazer']},
+        'manteaux':  {'label': 'Manteaux',           'icon': '🧤', 'styles': ['Manteau', 'Doudoune', 'Parka', 'Trench']},
+        'robes':     {'label': 'Robes & Jupes',      'icon': '👗', 'styles': ['Robe', 'Jupe', 'Combinaison']},
+        'chaussures':{'label': 'Chaussures',         'icon': '👟', 'styles': None},  # filtre par type
+    }
+
     # --- Filtres ---
-    q_search = request.args.get('search', '').strip().lower()
-    q_brand  = request.args.get('brand', '')
-    q_type   = request.args.get('type', '')
-    q_cat    = request.args.get('categorie', '')
-    q_style  = request.args.get('style', '')
-    q_sexe   = request.args.get('sexe', '')
+    q_search  = request.args.get('search', '').strip().lower()
+    q_brands  = [v for v in request.args.getlist('brand')     if v]
+    q_types   = [v for v in request.args.getlist('type')      if v]
+    q_cats    = [v for v in request.args.getlist('categorie') if v]
+    q_styles  = [v for v in request.args.getlist('style')     if v]
+    q_sexes   = [v for v in request.args.getlist('sexe')      if v]
+    q_group   = request.args.get('group', '')
     q_price_max = request.args.get('price_max', '', type=str).strip()
     try:
         price_max = float(q_price_max) if q_price_max else None
@@ -115,22 +230,27 @@ def boutique():
     if q_search:
         filtered = [p for p in filtered if q_search in (p.get('name') or '').lower()
                     or q_search in (p.get('description') or '').lower()]
-    if q_brand:
-        filtered = [p for p in filtered if p.get('brand_source') == q_brand]
-    if q_type:
-        filtered = [p for p in filtered if p.get('type') == q_type]
-    if q_cat:
-        filtered = [p for p in filtered if p.get('categorie') == q_cat]
-    if q_style:
-        filtered = [p for p in filtered if p.get('style') == q_style]
-    if q_sexe:
-        q_sexe_lower = q_sexe.lower()
-        filtered = [
-            p for p in filtered
-            if (p.get('sexe') or '').lower() in (q_sexe_lower, 'mixte', 'unisexe')
-        ]
+    if q_brands:
+        q_brands_set = set(q_brands)
+        filtered = [p for p in filtered if p.get('brand_source') in q_brands_set]
+    if q_types:
+        filtered = [p for p in filtered if p.get('type') in q_types]
+    if q_cats:
+        filtered = [p for p in filtered if p.get('categorie') in q_cats]
+    if q_styles:
+        filtered = [p for p in filtered if p.get('style') in q_styles]
+    if q_group and q_group in QUICK_GROUPS:
+        grp_styles = QUICK_GROUPS[q_group]['styles']
+        if grp_styles:
+            filtered = [p for p in filtered if p.get('style') in grp_styles]
+        else:
+            filtered = [p for p in filtered if p.get('type') == 'Chaussures']
+    if q_sexes:
+        sexes_lower = {sx.lower() for sx in q_sexes} | {'mixte', 'unisexe'}
+        filtered = [p for p in filtered if (p.get('sexe') or '').lower() in sexes_lower]
     if price_max is not None:
-        filtered = [p for p in filtered if p.get('price_value') is not None and p['price_value'] <= price_max]
+        price_max_eur = price_max / _cur_rate if _cur_rate and _cur_rate != 1.0 else price_max
+        filtered = [p for p in filtered if p.get('price_value') is not None and p['price_value'] <= price_max_eur]
 
     total = len(filtered)
 
@@ -142,19 +262,26 @@ def boutique():
     if page > total_pages:
         page = total_pages
     offset = (page - 1) * PER_PAGE
-    page_items = filtered[offset:offset + PER_PAGE]
+    page_items = apply_to_products(filtered[offset:offset + PER_PAGE], _cur_rate, _cur_sym)
 
-    # --- Options de filtres (valeurs présentes dans les données) ---
-    all_brands  = sorted({p['brand_source'] for p in products if p.get('brand_source')})
-    all_types   = sorted({p['type'] for p in products if p.get('type')})
-    all_cats    = sorted({p['categorie'] for p in products if p.get('categorie')})
-    all_styles  = sorted({p['style'] for p in products if p.get('style')})
-    all_sexes   = sorted({p['sexe'] for p in products if p.get('sexe')})
+    # --- Options de filtres (pré-calculées à l'init du cache) ---
+    _flt = _filters or {}
+    all_brands      = _flt.get('brands', [])
+    brand_counts    = _flt.get('brand_counts', {})
+    all_types       = _flt.get('types', [])
+    all_cats        = _flt.get('cats', [])
+    all_styles      = _flt.get('styles', [])
+    all_sexes       = _flt.get('sexes', [])
 
     af = dict(
         search=request.args.get('search', ''),
-        brand=q_brand, type=q_type, categorie=q_cat,
-        style=q_style, sexe=q_sexe, price_max=q_price_max,
+        brands=q_brands,
+        types=q_types,
+        categories=q_cats,
+        styles=q_styles,
+        sexes=q_sexes,
+        price_max=q_price_max,
+        group=q_group,
     )
 
     me = ctx['me']
@@ -189,6 +316,8 @@ def boutique():
         total_pages=total_pages,
         af=af,
         all_brands=all_brands,
+        brand_counts=brand_counts,
+        quick_groups=QUICK_GROUPS,
         all_types=all_types,
         all_cats=all_cats,
         all_styles=all_styles,
@@ -197,6 +326,9 @@ def boutique():
         user_gender=me.gender if me else '',
         wishlisted_urls=wishlisted_urls,
         wishlist_count=wishlist_count,
+        scraping_in_progress=_scraping_in_progress,
+        user_currency_code=_cur_code,
+        user_currency_sym=_cur_sym,
         **ctx,
     )
 
@@ -233,15 +365,25 @@ _OUTER_KW     = ['veste', 'manteau', 'blouson', 'parka', 'doudoune', 'coupe-vent
 _BOTTOM_KW    = ['pantalon', 'jean', 'short', 'bermuda', 'jogging', 'legging', 'cargo',
                   'chino', 'jupe', 'robe']
 _SHOES_KW     = ['chaussure', 'sneaker', 'basket', 'boot', 'botte', 'mocassin', 'espadrille',
-                  'sandal', 'running', 'jordan', 'air max', 'tennis shoe']
+                  'sandal', 'running', 'jordan', 'air max', 'tennis shoe',
+                  'footwear', 'trainer', 'loafer', 'derby', 'mule', 'ballerine', 'sabot']
 _TOP_KW       = ['t-shirt', 'tshirt', 'polo', 'chemise', 'top', 'débardeur', 'haut', 'maillot']
 _ACCESSORY_KW = ['pochette', 'sacoche', 'cabas', 'tote', 'portefeuille', 'porte-monnaie',
                   'ceinture', 'bracelet', 'collier', 'bague', 'montre', 'lunette',
                   'chapeau', 'bob ', 'bonnet', 'casquette', 'béret', 'écharpe', 'foulard',
-                  'gant ', 'mitaine', 'sac à', 'sac de', 'backpack', 'wallet']
+                  'gant ', 'mitaine', 'sac à', 'sac de', 'backpack', 'wallet',
+                  # Chaussettes & collants → accessoire, pas haut/bas
+                  'chaussette', 'socquette', 'mi-chaussette', 'collant', 'bas résille']
+
+
+# Marques qui ne vendent que des chaussures — slot forcé même si le nom ne contient
+# aucun mot-clé chaussure (ex : "ALBATROSS 82", "Low Plain", "Dart")
+_SHOE_ONLY_BRANDS = frozenset(['karhu', 'filling pieces'])
 
 
 def _boutique_slot(p: dict) -> str:
+    if (p.get('brand_source') or '').lower() in _SHOE_ONLY_BRANDS:
+        return 'shoes'
     text = ' '.join(filter(None, [
         p.get('categorie', ''), p.get('type', ''), p.get('name', '')
     ])).lower()
@@ -289,6 +431,17 @@ def _complete_wardrobe_inner():
     item = me.items.filter_by(id=item_id).first()
     if not item:
         return jsonify(error='Vêtement introuvable'), 404
+
+    # Devise utilisateur (pour filtre budget + affichage prix)
+    from utils.auth import get_ctx as _get_ctx
+    _ctx = _get_ctx()
+    _cur_code = normalize_currency(_ctx.get('currency', 'EUR'))
+    _cur_rate  = get_rate(_cur_code)
+    _cur_sym   = currency_symbol(_cur_code)
+
+    # budget_max est exprimé dans la devise utilisateur → convertir en EUR pour le filtre
+    if budget_max is not None and _cur_rate and _cur_rate != 1.0:
+        budget_max = budget_max / _cur_rate
 
     anchor_slot  = _WARDROBE_SLOT.get(item.category, 'top')
     needed_slots = _NEEDED_SLOTS.get(anchor_slot, ['top', 'bottom', 'shoes'])
@@ -441,7 +594,7 @@ def _complete_wardrobe_inner():
                 "format": "json",
                 "options": {"temperature": 0.15},
             },
-            timeout=60,
+            timeout=180,
         )
         resp.raise_for_status()
         raw = _sanitize(resp.json().get("message", {}).get("content", ""))
@@ -472,7 +625,8 @@ def _complete_wardrobe_inner():
         'color': item.color or '', 'brand': item.brand or '',
         'thumb': item.thumb_path or item.image_path or '',
     }
-    return jsonify(conseil=result.get('conseil', ''), products=selected, anchor=anchor_data)
+    selected_converted = apply_to_products(selected, _cur_rate, _cur_sym)
+    return jsonify(conseil=result.get('conseil', ''), products=selected_converted, anchor=anchor_data, currency_sym=_cur_sym)
 
 
 # ── Ajout d'un article boutique à la garde-robe ──────────────────────────────
@@ -554,10 +708,13 @@ def boutique_wishlist_toggle():
         return jsonify(error='URL manquante'), 400
 
     me = current_user()
+    all_urls = [w.product_url for w in WishlistItem.query.filter_by(user_id=me.id).all()]
+    _logger.info("TOGGLE user=%s url=%r stored_count=%d url_in_stored=%s", me.id, url, len(all_urls), url in all_urls)
     existing = WishlistItem.query.filter_by(user_id=me.id, product_url=url).first()
     if existing:
         db.session.delete(existing)
         db.session.commit()
+        _logger.info("TOGGLE supprimé id=%s", existing.id)
         return jsonify(wishlisted=False)
 
     snapshot = {k: data.get(k) for k in [
@@ -620,7 +777,24 @@ def boutique_wishlist_page():
         from utils.mail import send_price_alert_email
         send_price_alert_email(me, dropped)
 
-    products = [json.loads(w.product_json) for w in rows]
+    # Devise utilisateur pour l'affichage
+    _cur_code = normalize_currency(ctx.get('currency', 'EUR'))
+    _cur_rate  = get_rate(_cur_code)
+    _cur_sym   = currency_symbol(_cur_code)
+
+    products = apply_to_products([json.loads(w.product_json) for w in rows], _cur_rate, _cur_sym)
+
+    # Convertir aussi les montants dans les alertes de baisse
+    if dropped and _cur_rate != 1.0:
+        dropped = [
+            {**d, 'old_price': round(d['old_price'] * _cur_rate, 2),
+                  'new_price': round(d['new_price'] * _cur_rate, 2),
+                  'currency': _cur_sym}
+            for d in dropped
+        ]
+    elif dropped:
+        dropped = [{**d, 'currency': _cur_sym} for d in dropped]
+
     wishlisted_urls = {w.product_url for w in rows}
     return render_template(
         'wishlist.html',
@@ -628,5 +802,6 @@ def boutique_wishlist_page():
         total=len(products),
         wishlisted_urls=wishlisted_urls,
         price_drops=dropped,
+        user_currency_sym=_cur_sym,
         **ctx,
     )

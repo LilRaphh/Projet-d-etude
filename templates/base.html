@@ -312,6 +312,27 @@ textarea.fc{resize:vertical;min-height:80px}
   .hdr-nav{display:none!important}
 }
 
+/* Mobile header weather chip */
+.mob-hdr-wx{
+  display:none;
+  align-items:center;
+  gap:.3rem;
+  padding:.24rem .52rem;
+  border-radius:99px;
+  border:1px solid var(--bor);
+  background:var(--bg);
+  font-size:.84rem;
+  color:var(--tm);
+  white-space:nowrap;
+  text-decoration:none;
+  line-height:1;
+}
+.mob-hdr-wx-icon{font-size:1rem;line-height:1}
+.mob-hdr-wx-temp{font-weight:500;color:var(--tx)}
+@media(max-width:640px){
+  .mob-hdr-wx{display:flex}
+}
+
 {% block extra_css %}{% endblock %}
 </style>
 {% block extra_head %}{% endblock %}
@@ -322,6 +343,12 @@ textarea.fc{resize:vertical;min-height:80px}
   <div class="wrap hdr-in">
     <a href="/" class="logo">{{ app_name }}<b>.</b></a>
     {% if me %}
+    {% if global_weather %}
+    <a href="/forecast" class="mob-hdr-wx" title="{{ global_weather.city }} — {{ global_weather.label }}">
+      <span class="mob-hdr-wx-icon">{{ global_weather.icon }}</span>
+      <span class="mob-hdr-wx-temp">{{ global_weather.temp }}°</span>
+    </a>
+    {% endif %}
     <button class="mob-btn" id="mobBtn" aria-label="Menu"><span></span><span></span><span></span></button>
     <nav class="hdr-nav">
       <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Garde-robe</a>
@@ -487,7 +514,15 @@ textarea.fc{resize:vertical;min-height:80px}
     </div>
     <div class="fg">
       <label class="lbl">Devise</label>
-      <input name="currency" class="fc" value="{{ currency }}" maxlength="4">
+      <select name="currency" class="fc">
+        {% set _cur = currency | upper %}
+        {% set _cur = 'EUR' if _cur in ('€','') else _cur %}
+        {% set _cur = 'USD' if _cur == '$' else _cur %}
+        {% set _cur = 'GBP' if _cur == '£' else _cur %}
+        {% for code, sym in [('EUR','€ — Euro'),('USD','$ — Dollar US'),('GBP','£ — Livre sterling'),('CHF','Fr. — Franc suisse'),('CAD','CA$ — Dollar canadien'),('JPY','¥ — Yen japonais'),('AUD','A$ — Dollar australien'),('MAD','MAD — Dirham marocain'),('SEK','kr — Couronne suédoise'),('NOK','kr — Couronne norvégienne'),('DKK','kr — Couronne danoise'),('PLN','zł — Zloty polonais'),('CZK','Kč — Couronne tchèque')] %}
+        <option value="{{ code }}" {% if _cur == code %}selected{% endif %}>{{ sym }}</option>
+        {% endfor %}
+      </select>
     </div>
     <hr class="s-sep">
     <p class="s-ttl" style="font-size:1.05rem">Génération IA</p>
@@ -555,6 +590,7 @@ function csrfFetch(url, options) {
   options.headers = options.headers || {};
   var token = document.querySelector('meta[name="csrf-token"]');
   if (token) options.headers['X-CSRFToken'] = token.getAttribute('content');
+  options.headers['ngrok-skip-browser-warning'] = '1';
   return fetch(url, options);
 }
 </script>
