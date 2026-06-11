@@ -7,6 +7,7 @@ class FillingPiecesScraper(ShopifyBaseScraper):
     BASE_URL     = "https://fillingpieces.com"
     BRAND_SOURCE = "Filling Pieces"
     CURRENCY     = "USD"
+    FORCE_SHOE   = True  # Filling Pieces ne vend que des chaussures
 
     def _infer_sexe(self, tags: List[str], title: str, product_type: str) -> Tuple[str, str]:
         # Tags du type "Gender: Men" / "Gender: Women" ou "Male" / "Female"

@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 OLLAMA_BASE = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 VISION_MODEL = os.environ.get("VISION_MODEL", "qwen2.5vl:7b")
+OLLAMA_TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "300"))
 
 # Mapping catégories AI -> catégories app
 CATEGORY_MAP = {
@@ -139,14 +140,19 @@ def _call_ollama(img_b64: str, prompt: str, model: Optional[str] = None) -> Opti
         "options": {"temperature": 0.05, "seed": 42},
     }
     try:
-        resp = requests.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=120)
+        resp = requests.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=OLLAMA_TIMEOUT)
+        if resp.status_code == 404:
+            used_model = model if model else VISION_MODEL
+            raise RuntimeError(f"MODEL_NOT_FOUND:{used_model}")
         resp.raise_for_status()
     except requests.ConnectionError:
         raise RuntimeError(
-            "Ollama inaccessible. Lancez `ollama serve` puis vérifiez que le modèle est bien installé."
+            "Ollama inaccessible. Vérifiez que le service est démarré."
         )
     except requests.Timeout:
-        raise RuntimeError("Délai d'attente dépassé pour Qwen2.5-VL (120 s). Réessayez.")
+        raise RuntimeError(f"Délai d'attente dépassé pour Ollama ({OLLAMA_TIMEOUT}s). Réessayez.")
+    except RuntimeError:
+        raise
     except requests.RequestException as e:
         raise RuntimeError(f"Erreur réseau Ollama : {e}")
     raw = resp.json().get("message", {}).get("content", "")

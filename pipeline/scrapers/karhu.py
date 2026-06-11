@@ -8,6 +8,7 @@ class KarhuScraper(ShopifyBaseScraper):
     BASE_URL     = "https://karhu.com"
     BRAND_SOURCE = "Karhu"
     CURRENCY     = "EUR"
+    FORCE_SHOE   = True  # Karhu ne vend que des chaussures
 
     def _infer_sexe(self, tags: List[str], title: str, product_type: str) -> Tuple[str, str]:
         t = title.lower()

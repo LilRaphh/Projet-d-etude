@@ -15,7 +15,7 @@ from typing import List
 from pipeline import logging_config
 from pipeline.scrapers import (
     MangoScraper,
-    NikeScraper, JulesScraper, GymsharkScraper,
+    NikeScraper, JulesScraper, GymsharkScraper, AsosScraper,
     LeCoqSportifScraper, TacchiniScraper, KappaScraper, LottoScraper,
     ApcScraper, BalzacScraper, MaisonLabicheScraper,
     RoujeScraper, CabaiaScraper,
@@ -53,6 +53,7 @@ if _PLAYWRIGHT_AVAILABLE:
     SCRAPERS["nike"]     = NikeScraper
     SCRAPERS["jules"]    = JulesScraper
     SCRAPERS["gymshark"] = GymsharkScraper
+    SCRAPERS["asos"]     = AsosScraper
 
 
 def run(scraper_names: List[str], log_level: str = "INFO") -> dict:

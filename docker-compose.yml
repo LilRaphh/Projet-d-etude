@@ -1,9 +1,11 @@
 # =============================================================
-#  docker-compose.yml — Wardrobe app + Ollama + ngrok
+#  docker-compose.yml — Wardrobe app + ngrok
+#
+#  Prérequis : Ollama doit tourner sur le Mac (app menu-bar ou `ollama serve`)
 #
 #  Démarrer : docker compose up -d
 #  Arrêter  : docker compose down
-#  Logs     : docker compose logs -f app
+#  Logs app : docker compose logs -f app
 #  URL ngrok: docker compose logs -f ngrok
 #
 #  App → http://localhost:5001
@@ -19,17 +21,20 @@ services:
       - "5001:5001"
     env_file: .env
     environment:
-      OLLAMA_URL: http://ollama:11434
+      # Ollama tourne nativement sur le Mac — accessible via host.docker.internal
+      OLLAMA_URL: http://host.docker.internal:11434
       HF_HOME: /app/data/hf_cache
       DATABASE_URL: sqlite:////app/data/wardrobe.db
-      VISION_MODEL: llava:7b
-      TEXT_MODEL: llava:7b
+      VISION_MODEL: qwen2.5vl:7b
+      TEXT_MODEL: qwen2.5vl:7b
     volumes:
       - ./static/uploads:/app/static/uploads
       - ./data:/app/data
       - ./logs:/app/logs
-    depends_on:
-      - ollama
+      - ./templates:/app/templates
+      - ./routes:/app/routes
+      - ./ai:/app/ai
+      - ./utils:/app/utils
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')"]
       interval: 30s
@@ -37,19 +42,11 @@ services:
       retries: 3
       start_period: 60s
 
-  ollama:
-    image: ollama/ollama:latest
-    container_name: wardrobe_ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-
   ngrok:
     image: ngrok/ngrok:latest
     container_name: wardrobe_ngrok
-    restart: unless-stopped
+    restart: on-failure:3
+    stop_grace_period: 15s
     command: http app:5001 --log=stdout
     ports:
       - "4040:4040"
@@ -57,6 +54,3 @@ services:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
     depends_on:
       - app
-
-volumes:
-  ollama_data:
