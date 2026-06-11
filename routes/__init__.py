@@ -1,3 +1,4 @@
+from .add_from_photo import photo_bp
 from .admin import admin_bp
 from .ai_recommend import ai_bp
 from .api import api_bp
@@ -25,3 +26,4 @@ def register_blueprints(app):
     app.register_blueprint(complete_bp)
     app.register_blueprint(calendar_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(photo_bp)

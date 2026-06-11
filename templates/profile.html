@@ -186,6 +186,45 @@
         </div>
       </form>
 
+      <!-- GIF de chargement personnalisé -->
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="loading_gif">
+        <div class="pc">
+          <p class="pc-ttl">GIF de chargement</p>
+          <p class="pc-desc">Remplacez l'animation de chargement par un .gif personnalisé (max 5 Mo).</p>
+
+          {% if loading_gif %}
+          <div style="display:flex;align-items:center;gap:1.2rem;margin-bottom:1rem;padding:.75rem;border:1px solid var(--bor);border-radius:var(--r);background:var(--bg)">
+            <img src="{{ url_for('static', filename='uploads/loading_gifs/' + loading_gif) }}"
+                 alt="GIF actuel" style="width:60px;height:60px;object-fit:contain;border-radius:4px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.82rem;color:var(--tx);font-weight:500">GIF actuel</div>
+              <div style="font-size:.74rem;color:var(--tm);margin-top:.1rem">{{ loading_gif }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="fg">
+            <label class="lbl">Nouveau GIF (.gif uniquement)</label>
+            <input type="file" name="loading_gif" accept=".gif,image/gif" class="fc" style="padding:.4rem .8rem">
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;gap:.6rem;flex-wrap:wrap">
+            <button type="submit" class="btn btn-primary btn-sm">Mettre à jour</button>
+            {% if loading_gif %}
+            <button type="submit" form="del-gif-form" class="btn btn-ghost btn-sm" style="color:#C0392B;border-color:#FCCFCF">Supprimer</button>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+      {% if loading_gif %}
+      <form id="del-gif-form" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="delete_loading_gif">
+      </form>
+      {% endif %}
+
       <!-- Informations du compte -->
       <div>
         <div class="pc">

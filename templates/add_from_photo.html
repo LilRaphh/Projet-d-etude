@@ -1,0 +1,919 @@
+{% extends "base.html" %}
+{% block title %}Ajouter depuis une photo — {{ app_name }}{% endblock %}
+
+{% block extra_css %}
+/* ─── Layout ─────────────────────────────────────────── */
+.afp { padding: 1.75rem 0 5rem; }
+.afp-ttl { font-family: var(--serif); font-size: clamp(1.4rem,3vw,2.1rem); font-weight: 300; margin-bottom: .35rem; }
+.afp-ttl em { color: var(--a); font-style: italic; }
+.afp-sub { font-size: .83rem; color: var(--tm); margin-bottom: 1.5rem; line-height: 1.55; }
+
+/* ─── Bannière info/avertissement ────────────────────── */
+.afp-nokey {
+  display: flex; align-items: flex-start; gap: .65rem;
+  padding: .75rem 1rem;
+  background: #FFF8EC; border: 1px solid #F5D87A; border-radius: var(--r);
+  font-size: .82rem; color: #7A5C00;
+  margin-bottom: 1.4rem;
+}
+.afp-nokey a { color: var(--a); font-weight: 500; text-decoration: underline; }
+
+/* ─── Section téléchargement OWL-ViT ─────────────────── */
+.afp-dl {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  padding: 1.6rem 1.4rem;
+  margin-bottom: 1.4rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.afp-dl-hdr { display: flex; align-items: center; gap: .7rem; }
+.afp-dl-ico { font-size: 1.8rem; flex-shrink: 0; opacity: .75; }
+.afp-dl-ttl { font-size: 1rem; font-weight: 600; color: var(--tx); }
+.afp-dl-desc { font-size: .82rem; color: var(--tm); line-height: 1.55; }
+.afp-dl-desc strong { color: var(--tx); }
+
+.afp-dl-bar-wrap { display: none; flex-direction: column; gap: .32rem; }
+.afp-dl-bar-wrap.on { display: flex; }
+.afp-dl-bar-track { height: 8px; background: var(--bor); border-radius: 99px; overflow: hidden; }
+.afp-dl-bar-fill {
+  height: 100%; background: var(--a); border-radius: 99px;
+  width: 0%; transition: width .6s ease;
+}
+.afp-dl-bar-meta {
+  display: flex; justify-content: space-between;
+  font-size: .73rem; color: var(--tl);
+}
+.afp-dl-status { font-size: .82rem; color: var(--tm); font-style: italic; }
+.afp-dl-err { font-size: .82rem; color: #8A1A1A; display: none; }
+.afp-dl-err.on { display: block; }
+
+/* ─── Zone de dépôt ──────────────────────────────────── */
+.afp-dz {
+  border: 2px dashed var(--bor);
+  border-radius: var(--rl);
+  background: var(--bg);
+  padding: 2.5rem 2rem;
+  display: flex; flex-direction: column; align-items: center; gap: .7rem;
+  cursor: pointer;
+  transition: all var(--tr);
+  text-align: center;
+  margin-bottom: 1.4rem;
+  position: relative;
+  overflow: hidden;
+}
+.afp-dz:hover, .afp-dz.drag { border-color: var(--a); background: var(--am); }
+.afp-dz-ico { font-size: 2.6rem; opacity: .55; transition: opacity var(--tr); }
+.afp-dz:hover .afp-dz-ico { opacity: .85; }
+.afp-dz-ttl { font-size: 1rem; font-weight: 500; color: var(--tx); }
+.afp-dz-hint { font-size: .78rem; color: var(--tl); }
+#afpInput { display: none; }
+
+/* Prévisualisation de la photo sélectionnée dans la dropzone */
+.afp-dz-preview {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: .55rem;
+  width: 100%;
+}
+.afp-dz-preview img {
+  max-height: 220px;
+  max-width: 100%;
+  border-radius: var(--r);
+  object-fit: contain;
+  box-shadow: var(--sh);
+}
+.afp-dz-preview .afp-fname {
+  font-size: .78rem; color: var(--tm);
+  max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.afp-dz-default {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  width: 100%;
+}
+.afp-dz.has-file .afp-dz-default { display: none; }
+.afp-dz.has-file .afp-dz-preview  { display: flex; }
+.afp-dz.has-file { border-style: solid; }
+
+/* ─── Bouton analyse ─────────────────────────────────── */
+.afp-action {
+  display: flex; align-items: center; gap: .75rem; margin-bottom: 1.2rem; flex-wrap: wrap;
+}
+
+/* ─── Overlay de chargement ──────────────────────────── */
+.afp-loading {
+  display: none;
+  flex-direction: column; align-items: center; gap: .9rem;
+  padding: 2.6rem 2rem 2.2rem;
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  text-align: center;
+  margin-bottom: 1.4rem;
+}
+.afp-loading.on { display: flex; }
+.afp-spin {
+  width: 36px; height: 36px;
+  border: 3px solid var(--bor);
+  border-top-color: var(--a);
+  border-radius: 50%;
+  animation: afp-rotate .85s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes afp-rotate { to { transform: rotate(360deg); } }
+.afp-loading-txt { font-size: .88rem; color: var(--tm); font-weight: 500; min-height: 1.3em; }
+.afp-loading-sub { font-size: .76rem; color: var(--tl); }
+
+/* Barre de progression simulée */
+.afp-pbar-wrap {
+  width: 100%; max-width: 340px;
+  display: flex; flex-direction: column; align-items: stretch; gap: .32rem;
+}
+.afp-pbar-track {
+  height: 6px;
+  background: var(--bor);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.afp-pbar-fill {
+  height: 100%;
+  background: var(--a);
+  border-radius: 99px;
+  width: 0%;
+  transition: width .55s cubic-bezier(.25,.8,.25,1);
+}
+.afp-pbar-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: .72rem; color: var(--tl);
+}
+.afp-pbar-step { font-style: italic; }
+
+/* ─── Message vide / erreur ──────────────────────────── */
+.afp-msg {
+  display: none;
+  padding: 1.4rem 1rem;
+  border-radius: var(--r);
+  text-align: center;
+  font-size: .85rem;
+  margin-bottom: 1.2rem;
+}
+.afp-msg.on { display: block; }
+.afp-msg.warn { background: #FFF8EC; border: 1px solid #F5D87A; color: #7A5C00; }
+.afp-msg.err  { background: #FFF0F0; border: 1px solid #F8C0C0; color: #8A1A1A; }
+
+/* ─── Section résultats ──────────────────────────────── */
+.afp-results { display: none; }
+.afp-results.on { display: block; }
+
+.afp-res-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .75rem; flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+.afp-res-ttl {
+  font-family: var(--serif);
+  font-size: 1.25rem; font-weight: 400;
+}
+.afp-res-ttl strong { color: var(--a); }
+.afp-res-hint { font-size: .78rem; color: var(--tm); }
+
+/* ─── Grille de cartes ───────────────────────────────── */
+.afp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+
+/* ─── Carte individuelle ─────────────────────────────── */
+.afc {
+  background: var(--sur);
+  border: 1px solid var(--bor);
+  border-radius: var(--rl);
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow var(--tr), opacity var(--tr);
+}
+.afc:hover { box-shadow: var(--sh); }
+.afc.ignored { opacity: .38; }
+.afc.ignored .afc-body { pointer-events: none; }
+
+.afc-img {
+  aspect-ratio: 1;
+  background: var(--bg);
+  overflow: hidden;
+  position: relative;
+}
+.afc-img img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  display: block;
+  padding: .5rem;
+  box-sizing: border-box;
+}
+
+/* Badge de numéro */
+.afc-num {
+  position: absolute; bottom: .42rem; left: .42rem;
+  background: rgba(0,0,0,.5);
+  color: #fff; font-size: .62rem; font-weight: 600;
+  padding: .16rem .44rem; border-radius: 99px;
+}
+
+/* Bouton bascule conserver/ignorer */
+.afc-toggle {
+  position: absolute; top: .45rem; right: .45rem;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; line-height: 1;
+  transition: background var(--tr), transform var(--tr);
+  z-index: 2;
+}
+.afc-toggle.keep   { background: var(--a); color: #fff; }
+.afc-toggle.keep:hover   { filter: brightness(.88); transform: scale(1.08); }
+.afc-toggle.ignore { background: rgba(0,0,0,.48); color: #fff; }
+.afc-toggle.ignore:hover { background: #C0392B; transform: scale(1.08); }
+
+.afc-body { padding: .72rem .78rem .88rem; display: flex; flex-direction: column; gap: .42rem; }
+.afc-body input, .afc-body select {
+  width: 100%;
+  padding: .34rem .5rem;
+  border: 1px solid var(--bor);
+  border-radius: var(--r);
+  background: var(--bg);
+  font-size: .78rem; color: var(--tx); font-family: inherit;
+  transition: border-color var(--tr);
+  appearance: none;
+}
+.afc-body input:focus, .afc-body select:focus {
+  outline: none; border-color: var(--a); box-shadow: 0 0 0 3px var(--am);
+}
+.afc-body input.err { border-color: #C0392B; }
+.afc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .32rem; }
+
+/* ─── Barre d'action sticky ──────────────────────────── */
+.afp-bar {
+  position: sticky; bottom: 0;
+  background: var(--sur);
+  border-top: 1px solid var(--bor);
+  padding: .9rem 0;
+  display: none;
+  align-items: center; gap: .75rem; flex-wrap: wrap;
+}
+.afp-bar.on { display: flex; }
+.afp-bar-info { font-size: .83rem; color: var(--tm); flex: 1; }
+.afp-bar-info strong { color: var(--tx); }
+
+/* Barre de progression */
+.afp-progress {
+  display: none;
+  width: 100%; height: 4px;
+  background: var(--bor); border-radius: 2px;
+  overflow: hidden; margin-top: .5rem;
+}
+.afp-progress-bar {
+  height: 100%; background: var(--a); border-radius: 2px;
+  transition: width .3s ease; width: 0%;
+}
+
+@media (max-width: 640px) {
+  .afp-grid { grid-template-columns: 1fr 1fr; }
+  .afp-dz-preview img { max-height: 150px; }
+}
+@media (max-width: 380px) {
+  .afp-grid { grid-template-columns: 1fr; }
+}
+{% endblock %}
+
+{% block content %}
+<div class="afp"><div class="wrap">
+
+  <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom:.85rem">← Garde-robe</a>
+  <h1 class="afp-ttl">Ajouter depuis une <em>photo entière</em></h1>
+  <p class="afp-sub">
+    Importez une photo complète — le système détecte automatiquement chaque vêtement et accessoire visible,
+    les découpe individuellement et vous propose de les enregistrer dans votre garde-robe.
+  </p>
+
+  {% if not ollama_ok and not owlvit_available %}
+  <div class="afp-nokey">
+    <span style="font-size:1.1rem;flex-shrink:0">⚠</span>
+    <span>
+      Ollama n'est pas démarré. Téléchargez le modèle OWL-ViT ci-dessous pour une détection 100% locale sans Ollama.
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- ─── Section téléchargement OWL-ViT (première utilisation) ── -->
+  {% if not owlvit_available %}
+  <div class="afp-dl" id="afpDlSection">
+    <div class="afp-dl-hdr">
+      <span class="afp-dl-ico">🔍</span>
+      <div>
+        <p class="afp-dl-ttl">Modèle de détection OWL-ViT requis</p>
+      </div>
+    </div>
+    <p class="afp-dl-desc">
+      Pour une détection précise et rapide (~3 s), cette fonctionnalité utilise <strong>OWL-ViT</strong>
+      — un modèle de détection d'objets de Google optimisé pour les vêtements.<br>
+      Téléchargement unique d'environ <strong>600 Mo</strong>, stocké localement sur votre machine.
+    </p>
+
+    <div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="afpDlBtn"
+        onclick="startDownload()"
+        {% if owlvit_downloading %}disabled{% endif %}
+      >
+        {% if owlvit_downloading %}
+          Téléchargement en cours…
+        {% else %}
+          Télécharger le modèle (~600 Mo)
+        {% endif %}
+      </button>
+    </div>
+
+    <div class="afp-dl-bar-wrap {% if owlvit_downloading %}on{% endif %}" id="afpDlBarWrap">
+      <div class="afp-dl-bar-track">
+        <div class="afp-dl-bar-fill" id="afpDlBarFill"></div>
+      </div>
+      <div class="afp-dl-bar-meta">
+        <span id="afpDlStatusTxt">{% if owlvit_downloading %}Téléchargement en cours…{% endif %}</span>
+        <span id="afpDlPct"></span>
+      </div>
+    </div>
+    <p class="afp-dl-err" id="afpDlErr"></p>
+  </div>
+  {% endif %}
+
+  <!-- ─── Zone de dépôt ─────────────────────────────────── -->
+  <div class="afp-dz" id="afpDz">
+    <input type="file" id="afpInput" accept="image/jpeg,image/png,image/webp">
+
+    <div class="afp-dz-default">
+      <div class="afp-dz-ico">🖼</div>
+      <div class="afp-dz-ttl">Glissez une photo ici</div>
+      <div class="afp-dz-hint">ou cliquez pour sélectionner — JPG, PNG, WEBP</div>
+    </div>
+
+    <div class="afp-dz-preview">
+      <img id="afpPreviewImg" src="" alt="Aperçu">
+      <span class="afp-fname" id="afpFname"></span>
+      <span style="font-size:.74rem;color:var(--tl)">Cliquez pour changer de photo</span>
+    </div>
+  </div>
+
+  <!-- ─── Bouton analyser ───────────────────────────────── -->
+  <div class="afp-action">
+    <button
+      type="button"
+      class="btn btn-primary"
+      id="afpAnalyzeBtn"
+      disabled
+      onclick="analyzePhoto()"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Analyser la photo
+    </button>
+    <span style="font-size:.78rem;color:var(--tl)" id="afpHint">
+      {% if not owlvit_available %}
+        Téléchargez d'abord le modèle de détection
+      {% else %}
+        Sélectionnez une photo pour commencer
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- ─── Chargement ────────────────────────────────────── -->
+  <div class="afp-loading" id="afpLoading">
+    <div class="afp-spin"></div>
+    <p class="afp-loading-txt" id="afpLoadingTxt">Envoi de la photo…</p>
+
+    <div class="afp-pbar-wrap">
+      <div class="afp-pbar-track">
+        <div class="afp-pbar-fill" id="afpPbarFill"></div>
+      </div>
+      <div class="afp-pbar-meta">
+        <span class="afp-pbar-step" id="afpPbarStep">Initialisation…</span>
+        <span id="afpPbarPct">0 %</span>
+      </div>
+    </div>
+
+    <p class="afp-loading-sub" id="afpLoadingSub">Traitement local — 3 à 10 s avec OWL-ViT.</p>
+  </div>
+
+  <!-- ─── Message (vide / erreur) ──────────────────────── -->
+  <div class="afp-msg" id="afpMsg"></div>
+
+  <!-- ─── Résultats ────────────────────────────────────── -->
+  <div class="afp-results" id="afpResults">
+    <div class="afp-res-hdr">
+      <div>
+        <p class="afp-res-ttl"><strong id="afpCount">0</strong> vêtement(s) détecté(s)</p>
+        <p class="afp-res-hint">Cochez ✓ pour conserver, ✕ pour ignorer — modifiez les informations si besoin.</p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="resetPage()">
+        ↺ Nouvelle photo
+      </button>
+    </div>
+    <div class="afp-grid" id="afpGrid"></div>
+  </div>
+
+  <!-- ─── Barre d'action sticky ────────────────────────── -->
+  <div class="afp-bar" id="afpBar">
+    <div class="afp-bar-info">
+      <strong id="afpKeptCount">0</strong> vêtement(s) sélectionné(s)
+      <div class="afp-progress" id="afpProgress">
+        <div class="afp-progress-bar" id="afpProgressBar"></div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="resetPage()">Annuler</button>
+    <button type="button" class="btn btn-primary" id="afpSaveBtn" onclick="saveItems()">
+      Sauvegarder
+    </button>
+  </div>
+
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var CATS             = {{ cats    | tojson }};
+var COLORS           = {{ colors  | tojson }};
+var SEASONS          = {{ seasons | tojson }};
+var OWLVIT_AVAILABLE = {{ 'true' if owlvit_available else 'false' }};
+
+// État global de la page
+var selectedFile    = null;
+var detectedItems   = [];   // [{name, category, color, crop_path, crop_thumb_path, kept}]
+var currentSession  = null;
+
+// ─── Téléchargement OWL-ViT ──────────────────────────────────────────────
+
+var _dlPollTimer = null;
+
+function startDownload() {
+  var btn = document.getElementById('afpDlBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Démarrage…';
+
+  document.getElementById('afpDlErr').className = 'afp-dl-err';
+  document.getElementById('afpDlBarWrap').classList.add('on');
+  document.getElementById('afpDlStatusTxt').textContent = 'Connexion à HuggingFace…';
+  document.getElementById('afpDlPct').textContent = '';
+
+  fetch('/add-from-photo?action=start-download')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.status === 'already_cached' || data.status === 'ready') {
+        _onDownloadComplete();
+        return;
+      }
+      if (data.error) {
+        _onDownloadError(data.error);
+        return;
+      }
+      btn.textContent = 'Téléchargement en cours…';
+      _pollDownloadStatus();
+    })
+    .catch(function(err) { _onDownloadError('Erreur réseau : ' + err); });
+}
+
+function _pollDownloadStatus() {
+  clearInterval(_dlPollTimer);
+  _dlPollTimer = setInterval(function() {
+    fetch('/add-from-photo?action=model-status')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.status === 'ready' || data.status === 'done') {
+          clearInterval(_dlPollTimer);
+          _onDownloadComplete();
+          return;
+        }
+        if (data.status === 'error') {
+          clearInterval(_dlPollTimer);
+          _onDownloadError(data.error || 'Erreur lors du téléchargement.');
+          return;
+        }
+        var pct = data.progress || 0;
+        document.getElementById('afpDlBarFill').style.width = pct + '%';
+        document.getElementById('afpDlPct').textContent = pct > 0 ? pct + ' %' : '';
+        var label = data.current_file
+          ? 'Téléchargement : ' + data.current_file.split('/').pop()
+          : 'Téléchargement en cours…';
+        document.getElementById('afpDlStatusTxt').textContent = label;
+      })
+      .catch(function() { /* ignore poll errors — retry next tick */ });
+  }, 1800);
+}
+
+function _onDownloadComplete() {
+  clearInterval(_dlPollTimer);
+  OWLVIT_AVAILABLE = true;
+
+  var sec = document.getElementById('afpDlSection');
+  if (sec) {
+    sec.innerHTML = '<div style="display:flex;align-items:center;gap:.6rem;padding:.5rem 0;color:var(--a);font-size:.88rem;font-weight:500">'
+      + '<span style="font-size:1.2rem">✓</span> Modèle OWL-ViT prêt — détection activée.</div>';
+  }
+
+  document.getElementById('afpHint').textContent = 'Sélectionnez une photo pour commencer';
+  // Enable analyze if a file is already selected
+  if (selectedFile) {
+    document.getElementById('afpAnalyzeBtn').disabled = false;
+  }
+}
+
+function _onDownloadError(msg) {
+  clearInterval(_dlPollTimer);
+  var btn = document.getElementById('afpDlBtn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Réessayer le téléchargement'; }
+  var errEl = document.getElementById('afpDlErr');
+  if (errEl) { errEl.textContent = msg; errEl.className = 'afp-dl-err on'; }
+  document.getElementById('afpDlBarFill').style.width = '0%';
+  document.getElementById('afpDlStatusTxt').textContent = '';
+  document.getElementById('afpDlPct').textContent = '';
+}
+
+// Si un téléchargement était en cours au rechargement de page, reprendre le polling
+{% if owlvit_downloading %}
+document.addEventListener('DOMContentLoaded', function() { _pollDownloadStatus(); });
+{% endif %}
+
+// ─── Utilitaires HTML ─────────────────────────────────────────────────────
+
+function buildCatOptions(selected) {
+  return CATS.map(function(c) {
+    return '<option value="' + esc(c) + '"' + (c === selected ? ' selected' : '') + '>' + esc(c) + '</option>';
+  }).join('');
+}
+
+function buildColorOptions(selected) {
+  var base = '<option value="">Couleur —</option>';
+  return base + COLORS.map(function(c) {
+    return '<option value="' + esc(c) + '"' + (c === selected ? ' selected' : '') + '>' + esc(c) + '</option>';
+  }).join('');
+}
+
+function buildSeasonOptions(selected) {
+  var base = '<option value="">Saison —</option>';
+  return base + SEASONS.map(function(s) {
+    return '<option value="' + esc(s) + '"' + (s === selected ? ' selected' : '') + '>' + esc(s) + '</option>';
+  }).join('');
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── Drop zone ────────────────────────────────────────────────────────────
+
+var dz  = document.getElementById('afpDz');
+var inp = document.getElementById('afpInput');
+
+dz.addEventListener('click', function(e) {
+  if (e.target.closest('#afpInput')) return;
+  inp.click();
+});
+
+inp.addEventListener('change', function() {
+  if (this.files && this.files[0]) setFile(this.files[0]);
+});
+
+dz.addEventListener('dragover', function(e) {
+  e.preventDefault();
+  dz.classList.add('drag');
+});
+dz.addEventListener('dragleave', function() { dz.classList.remove('drag'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  dz.classList.remove('drag');
+  var f = e.dataTransfer.files[0];
+  if (f && f.type.match(/^image\/(jpeg|png|webp)/)) setFile(f);
+});
+
+document.addEventListener('paste', function(e) {
+  if (e.clipboardData && e.clipboardData.files.length > 0) {
+    var f = e.clipboardData.files[0];
+    if (f && f.type.match(/^image\//)) setFile(f);
+  }
+});
+
+function setFile(file) {
+  selectedFile = file;
+
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    document.getElementById('afpPreviewImg').src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById('afpFname').textContent = file.name;
+  dz.classList.add('has-file');
+
+  if (OWLVIT_AVAILABLE) {
+    document.getElementById('afpAnalyzeBtn').disabled = false;
+    document.getElementById('afpHint').textContent = file.name;
+  } else {
+    document.getElementById('afpHint').textContent = 'Téléchargez d\'abord le modèle de détection';
+  }
+
+  // Réinitialiser les résultats si on change de photo
+  hideResults();
+}
+
+// ─── Barre de progression simulée ────────────────────────────────────────
+
+var _pbarTimer = null;
+var _pbarVal   = 0;
+
+var _STEPS = [
+  { at:  0, label: 'Envoi de la photo…' },
+  { at: 12, label: 'Analyse des vêtements…' },
+  { at: 35, label: 'Détection des contours…' },
+  { at: 58, label: 'Identification des articles…' },
+  { at: 75, label: 'Découpage en cours…' },
+];
+
+function _stepLabel(pct) {
+  var label = _STEPS[0].label;
+  for (var i = 0; i < _STEPS.length; i++) {
+    if (pct >= _STEPS[i].at) label = _STEPS[i].label;
+  }
+  return label;
+}
+
+function _setPbar(pct) {
+  pct = Math.round(Math.min(100, Math.max(0, pct)));
+  document.getElementById('afpPbarFill').style.width  = pct + '%';
+  document.getElementById('afpPbarPct').textContent   = pct + ' %';
+  document.getElementById('afpPbarStep').textContent  = _stepLabel(pct);
+  document.getElementById('afpLoadingTxt').textContent = _stepLabel(pct);
+}
+
+function _startPbar() {
+  _pbarVal = 0;
+  _setPbar(0);
+  clearInterval(_pbarTimer);
+  _pbarTimer = setInterval(function () {
+    if (_pbarVal >= 85) return;
+    // Vitesse décroissante : rapide au départ, lente à l'approche de 85 %
+    var increment = _pbarVal < 20 ? 2.5
+                  : _pbarVal < 45 ? 1.2
+                  : _pbarVal < 68 ? 0.6
+                  : 0.25;
+    _pbarVal = Math.min(85, _pbarVal + increment);
+    _setPbar(_pbarVal);
+  }, 500);
+}
+
+function _completePbar(callback) {
+  clearInterval(_pbarTimer);
+  _setPbar(100);
+  setTimeout(callback, 350);
+}
+
+function _resetPbar() {
+  clearInterval(_pbarTimer);
+  _pbarVal = 0;
+  _setPbar(0);
+}
+
+// ─── Analyse ─────────────────────────────────────────────────────────────
+
+function analyzePhoto() {
+  if (!selectedFile) return;
+
+  hideResults();
+  hideMsg();
+  _resetPbar();
+  document.getElementById('afpLoading').classList.add('on');
+  document.getElementById('afpAnalyzeBtn').disabled = true;
+  _startPbar();
+
+  var fd = new FormData();
+  fd.append('photo', selectedFile);
+
+  csrfFetch('/api/add-from-photo/analyze', { method: 'POST', body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _completePbar(function () {
+        document.getElementById('afpLoading').classList.remove('on');
+        document.getElementById('afpAnalyzeBtn').disabled = false;
+
+        if (data.error) {
+          showMsg(data.error, 'err');
+          return;
+        }
+
+        currentSession = data.session_id;
+
+        if (!data.items || data.items.length === 0) {
+          showMsg(data.message || 'Aucun vêtement détecté.', 'warn');
+          return;
+        }
+
+        detectedItems = data.items.map(function(it) {
+          return Object.assign({}, it, { kept: true });
+        });
+
+        renderGrid();
+        document.getElementById('afpResults').classList.add('on');
+        document.getElementById('afpBar').classList.add('on');
+      });
+    })
+    .catch(function(err) {
+      clearInterval(_pbarTimer);
+      document.getElementById('afpLoading').classList.remove('on');
+      document.getElementById('afpAnalyzeBtn').disabled = false;
+      showMsg('Erreur réseau : ' + err, 'err');
+    });
+}
+
+// ─── Grille de cartes ─────────────────────────────────────────────────────
+
+function renderGrid() {
+  var grid = document.getElementById('afpGrid');
+  var html = '';
+
+  for (var i = 0; i < detectedItems.length; i++) {
+    var it = detectedItems[i];
+    var ignored = !it.kept;
+    html += '<div class="afc' + (ignored ? ' ignored' : '') + '" id="afc_' + i + '">';
+
+    // Image
+    html += '<div class="afc-img">';
+    html += '<img src="/static/' + esc(it.crop_path) + '" alt="' + esc(it.name) + '" loading="lazy">';
+    html += '<span class="afc-num">#' + (i + 1) + '</span>';
+
+    // Bouton conserver/ignorer
+    if (!ignored) {
+      html += '<button type="button" class="afc-toggle keep" title="Ignorer cet article" onclick="toggleItem(' + i + ')">✓</button>';
+    } else {
+      html += '<button type="button" class="afc-toggle ignore" title="Conserver cet article" onclick="toggleItem(' + i + ')">✕</button>';
+    }
+    html += '</div>';
+
+    // Champs
+    html += '<div class="afc-body">';
+    html += '<input type="text" id="name_' + i + '" value="' + esc(it.name) + '" placeholder="Nom *" oninput="syncItem(' + i + ', \'name\', this.value)">';
+    html += '<select id="cat_' + i + '" onchange="syncItem(' + i + ', \'category\', this.value)">' + buildCatOptions(it.category) + '</select>';
+    html += '<div class="afc-row2">';
+    html += '<select id="color_' + i + '" onchange="syncItem(' + i + ', \'color\', this.value)">' + buildColorOptions(it.color) + '</select>';
+    html += '<select id="season_' + i + '" onchange="syncItem(' + i + ', \'season\', this.value)">' + buildSeasonOptions('') + '</select>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  grid.innerHTML = html;
+  updateBar();
+}
+
+function toggleItem(idx) {
+  detectedItems[idx].kept = !detectedItems[idx].kept;
+  var card = document.getElementById('afc_' + idx);
+  var btn  = card.querySelector('.afc-toggle');
+  if (detectedItems[idx].kept) {
+    card.classList.remove('ignored');
+    btn.className = 'afc-toggle keep';
+    btn.title = 'Ignorer cet article';
+    btn.textContent = '✓';
+  } else {
+    card.classList.add('ignored');
+    btn.className = 'afc-toggle ignore';
+    btn.title = 'Conserver cet article';
+    btn.textContent = '✕';
+  }
+  updateBar();
+}
+
+function syncItem(idx, field, value) {
+  detectedItems[idx][field] = value;
+}
+
+function updateBar() {
+  var kept = detectedItems.filter(function(it) { return it.kept; }).length;
+  document.getElementById('afpKeptCount').textContent = kept;
+  document.getElementById('afpSaveBtn').disabled = (kept === 0);
+  document.getElementById('afpCount').textContent = detectedItems.length;
+}
+
+// ─── Sauvegarde ───────────────────────────────────────────────────────────
+
+function saveItems() {
+  var toSave = [];
+  var valid  = true;
+
+  for (var i = 0; i < detectedItems.length; i++) {
+    if (!detectedItems[i].kept) continue;
+
+    var nameEl = document.getElementById('name_' + i);
+    var name   = nameEl ? nameEl.value.trim() : detectedItems[i].name;
+
+    if (!name) {
+      nameEl && nameEl.classList.add('err');
+      nameEl && nameEl.focus();
+      valid = false;
+      break;
+    }
+    nameEl && nameEl.classList.remove('err');
+
+    toSave.push({
+      name:             name,
+      category:         document.getElementById('cat_' + i)   ? document.getElementById('cat_' + i).value   : detectedItems[i].category,
+      color:            document.getElementById('color_' + i)  ? document.getElementById('color_' + i).value  : detectedItems[i].color,
+      season:           document.getElementById('season_' + i) ? document.getElementById('season_' + i).value : '',
+      crop_path:        detectedItems[i].crop_path,
+      crop_thumb_path:  detectedItems[i].crop_thumb_path,
+    });
+  }
+
+  if (!valid || toSave.length === 0) return;
+
+  var btn = document.getElementById('afpSaveBtn');
+  btn.disabled  = true;
+  btn.textContent = 'Enregistrement…';
+
+  var progress    = document.getElementById('afpProgress');
+  var progressBar = document.getElementById('afpProgressBar');
+  progress.style.display = '';
+  progressBar.style.width = '30%';
+
+  csrfFetch('/api/add-from-photo/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: toSave }),
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.error) {
+        btn.disabled = false;
+        btn.textContent = 'Sauvegarder';
+        progress.style.display = 'none';
+        showMsg(data.error, 'err');
+        return;
+      }
+      progressBar.style.width = '100%';
+      setTimeout(function() { window.location.href = '/'; }, 350);
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Sauvegarder';
+      progress.style.display = 'none';
+      showMsg('Erreur réseau : ' + err, 'err');
+    });
+}
+
+// ─── Helpers état UI ──────────────────────────────────────────────────────
+
+function showLoading(on) {
+  document.getElementById('afpLoading').classList.toggle('on', on);
+  if (!on) { clearInterval(_pbarTimer); }
+}
+
+function showMsg(txt, type) {
+  var el = document.getElementById('afpMsg');
+  el.textContent = txt;
+  el.className = 'afp-msg on ' + type;
+}
+
+function hideMsg() {
+  document.getElementById('afpMsg').className = 'afp-msg';
+}
+
+function hideResults() {
+  document.getElementById('afpResults').classList.remove('on');
+  document.getElementById('afpBar').classList.remove('on');
+  document.getElementById('afpGrid').innerHTML = '';
+  detectedItems = [];
+  currentSession = null;
+}
+
+function resetPage() {
+  // Réinitialiser complètement la page
+  selectedFile = null;
+  dz.classList.remove('has-file');
+  inp.value = '';
+  document.getElementById('afpPreviewImg').src = '';
+  document.getElementById('afpFname').textContent = '';
+  document.getElementById('afpAnalyzeBtn').disabled = true;
+  document.getElementById('afpHint').textContent = 'Sélectionnez une photo pour commencer';
+  document.getElementById('afpProgress').style.display = 'none';
+  document.getElementById('afpProgressBar').style.width = '0%';
+  hideResults();
+  hideMsg();
+  showLoading(false);
+}
+</script>
+{% endblock %}

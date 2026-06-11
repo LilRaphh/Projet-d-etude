@@ -18,9 +18,9 @@ import sys
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-from flask import Flask, flash, redirect, request, session
+from flask import Flask, flash, jsonify, redirect, request, session
 
-from config import BASE_DIR, Config, OUTFIT_FOLDER, THUMB_FOLDER, UPLOAD_FOLDER
+from config import BASE_DIR, Config, LOADING_GIF_FOLDER, OUTFIT_FOLDER, THUMB_FOLDER, UPLOAD_FOLDER
 from extensions import cache, csrf, db, limiter
 from models import UserSetting
 from routes import register_blueprints
@@ -83,7 +83,7 @@ def create_app():
 
     _configure_logging(app)
 
-    for directory in (UPLOAD_FOLDER, THUMB_FOLDER, OUTFIT_FOLDER):
+    for directory in (UPLOAD_FOLDER, THUMB_FOLDER, OUTFIT_FOLDER, LOADING_GIF_FOLDER):
         os.makedirs(directory, exist_ok=True)
 
     with app.app_context():
@@ -125,6 +125,8 @@ def create_app():
     @app.errorhandler(CSRFError)
     def csrf_error(e):
         app.logger.warning("CSRF error: %s", e)
+        if request.path.startswith('/api/') or request.is_json:
+            return jsonify(error='Token CSRF invalide ou expiré. Rechargez la page.'), 400
         flash('Requête invalide (token expiré). Veuillez réessayer.', 'error')
         return redirect(request.referrer or '/'), 400
 

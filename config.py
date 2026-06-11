@@ -4,6 +4,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 THUMB_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'thumbs')
 OUTFIT_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'outfits')
+LOADING_GIF_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'loading_gifs')
 THUMB_SIZE = (500, 500)
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
