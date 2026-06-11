@@ -42,13 +42,21 @@ def _installed_models() -> List[str]:
 
 
 def _start_ollama_server():
-    """Lance `ollama serve` en subprocess détaché si Ollama n'est pas déjà actif."""
+    """Vérifie qu'Ollama est accessible, et tente de le démarrer via CLI si absent (hors Docker)."""
     if _is_ollama_running():
         log.info("Ollama déjà actif sur %s", OLLAMA_BASE)
         return True
 
+    # En Docker, Ollama tourne dans son propre conteneur — pas de CLI disponible ici.
+    # On attend simplement qu'il soit prêt.
     if not shutil.which("ollama"):
-        log.warning("Commande `ollama` introuvable — installez Ollama (https://ollama.com)")
+        log.info("CLI `ollama` absent (mode Docker) — attente du serveur sur %s…", OLLAMA_BASE)
+        for _ in range(_OLLAMA_START_TIMEOUT):
+            time.sleep(1)
+            if _is_ollama_running():
+                log.info("Ollama prêt.")
+                return True
+        log.warning("Ollama inaccessible après %ds.", _OLLAMA_START_TIMEOUT)
         return False
 
     log.info("Démarrage d'Ollama en arrière-plan…")
@@ -57,13 +65,12 @@ def _start_ollama_server():
             ["ollama", "serve"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            start_new_session=True,  # détaché du processus Flask
+            start_new_session=True,
         )
     except OSError as e:
         log.error("Impossible de lancer Ollama : %s", e)
         return False
 
-    # Attente que le serveur soit prêt
     for _ in range(_OLLAMA_START_TIMEOUT):
         time.sleep(1)
         if _is_ollama_running():
@@ -74,24 +81,38 @@ def _start_ollama_server():
     return False
 
 
-def _pull_model(model: str):
-    """Pull un modèle Ollama. Bloquant, à appeler dans un thread dédié."""
+def _pull_model_streaming(model: str):
+    """Pull un modèle Ollama avec streaming. Yield des dicts de progression Ollama."""
+    import json as _json
+    resp = requests.post(
+        f"{OLLAMA_BASE}/api/pull",
+        json={"name": model, "stream": True},
+        timeout=3600,
+        stream=True,
+    )
+    resp.raise_for_status()
+    for line in resp.iter_lines():
+        if line:
+            try:
+                yield _json.loads(line)
+            except Exception:
+                pass
+
+
+def _pull_model(model: str) -> bool:
+    """Pull un modèle Ollama. Retourne True si succès, False sinon."""
     log.info("Pull du modèle Ollama '%s'… (peut prendre plusieurs minutes)", model)
     try:
-        result = subprocess.run(
-            ["ollama", "pull", model],
-            capture_output=True,
-            text=True,
-            timeout=3600,  # 1h max
-        )
-        if result.returncode == 0:
-            log.info("Modèle '%s' installé avec succès.", model)
-        else:
-            log.error("Échec du pull '%s' : %s", model, result.stderr.strip())
-    except subprocess.TimeoutExpired:
-        log.error("Timeout lors du pull de '%s'.", model)
+        for prog in _pull_model_streaming(model):
+            status = prog.get("status", "")
+            log.debug("Pull '%s': %s", model, status)
+            if status == "success":
+                log.info("Modèle '%s' installé avec succès.", model)
+                return True
+        return False
     except Exception as e:
         log.error("Erreur pull '%s' : %s", model, e)
+        return False
 
 
 def _setup_models():

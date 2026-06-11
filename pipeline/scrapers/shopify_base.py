@@ -18,6 +18,29 @@ logger = logging.getLogger(__name__)
 
 PAGE_SIZE = 250
 
+# Product types Shopify clairement non-vestimentaires (case-insensitive substring match)
+_NON_CLOTHING_TYPES = frozenset([
+    # Maison & déco
+    "maison", "home", "deco", "déco", "decoration", "décoration",
+    "lighting", "luminaire", "furniture", "meuble", "objet", "objet déco",
+    "bougie", "candle", "vase", "cadre", "frame",
+    # Cuisine & table
+    "cuisine", "kitchen", "table", "vaisselle", "tableware", "cookware",
+    "ustensile", "couvert", "cutlery", "casserole", "poêle", "plat",
+    "tasse", "mug", "assiette", "verre", "carafe",
+    # Beauté & soin
+    "beaute", "beauté", "beauty", "soin", "skincare", "parfum", "fragrance",
+    "cosmetique", "cosmétique",
+    # Papeterie & livres
+    "papeterie", "stationery", "livre", "book", "carnet", "notebook",
+    # Divers non-vêtement
+    "jouet", "toy", "jeu", "game", "plant", "plante", "art", "print",
+    "poster", "affiche", "outil", "tool",
+])
+
+# Si le product_type est vide mais que la catégorie inférée est "Autre" et qu'il
+# n'y a aucune taille vestimentaire, c'est probablement du non-vestimentaire.
+# Les sous-classes peuvent activer ce filtrage strict avec STRICT_CLOTHING = True.
 SIZE_LABELS = {
     "XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL",
     "34", "36", "38", "40", "42", "44", "46", "48",
@@ -26,9 +49,15 @@ SIZE_LABELS = {
 }
 
 SHOE_KEYWORDS = [
-    "chaussure", "sneaker", "bottine", "mocassin", "boot",
-    "shoe", "derby", "espadrille", "sandale", "loafer", "mule",
-    "trainer", "basket", "pump", "heel",
+    # Français
+    "chaussure", "sneaker", "bottine", "mocassin", "botte", "espadrille",
+    "sandale", "derby", "loafer", "mule", "sabot", "tong", "ballerine",
+    "basket", "tennis",
+    # Anglais (Shopify product_type courants)
+    "shoe", "boot", "trainer", "pump", "heel", "footwear", "sneakers",
+    "trainers", "sandal", "clog", "slipper", "oxford", "runner",
+    # Termes running/sport
+    "running shoe", "athletic shoe",
 ]
 
 
@@ -42,6 +71,15 @@ class ShopifyBaseScraper(BaseScraper):
 
     # Devise par défaut — surcharger si le store est en USD, GBP…
     CURRENCY: str = "EUR"
+
+    # Mettre True pour les concept stores qui mélangent vêtements et non-vêtements.
+    # Filtre les produits dont le product_type Shopify est clairement non-vestimentaire,
+    # et les produits classés "Autre" sans aucune taille vestimentaire.
+    STRICT_CLOTHING: bool = False
+
+    # Mettre True pour les marques 100 % chaussures (Karhu, Filling Pieces…).
+    # Tous les produits seront forcés en type "Chaussures" sans passer par SHOE_KEYWORDS.
+    FORCE_SHOE: bool = False
 
     # ------------------------------------------------------------------
     def _infer_sexe(self, tags: List[str], title: str, product_type: str) -> Tuple[str, str]:
@@ -169,11 +207,23 @@ class ShopifyBaseScraper(BaseScraper):
             if size and size not in all_tailles:
                 all_tailles.append(size)
 
-        is_shoe = any(
+        is_shoe = self.FORCE_SHOE or any(
             k in name.lower() or k in p_type_raw.lower()
             for k in SHOE_KEYWORDS
         )
         p_type = "Chaussures" if is_shoe else "Vêtement"
+
+        if self.STRICT_CLOTHING:
+            p_type_lower = p_type_raw.lower()
+            # Rejeter si le product_type Shopify correspond à une catégorie non-vestimentaire
+            if any(nct in p_type_lower for nct in _NON_CLOTHING_TYPES if p_type_lower):
+                logger.debug("[%s] Ignoré (product_type non-vêtement) : %s [%s]", self.BRAND_SOURCE, name, p_type_raw)
+                return None
+            # Rejeter si catégorie inférée = "Autre" ET aucune taille vestimentaire
+            inferred_cat = self.infer_categorie(name, desc, p_type)
+            if inferred_cat == "Autre" and not all_tailles and not is_shoe:
+                logger.debug("[%s] Ignoré (Autre + sans tailles) : %s", self.BRAND_SOURCE, name)
+                return None
 
         return Product(
             name         = name,

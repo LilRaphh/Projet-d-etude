@@ -286,7 +286,7 @@ function startAnalyzeAll() {
 
   fetch("/api/analyze-all", {
     method: "POST",
-    headers: { "X-CSRFToken": csrf, "Content-Type": "application/json" },
+    headers: { "X-CSRFToken": csrf, "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" },
     body: "{}"
   }).then(function(resp) {
     if (!resp.ok) {
@@ -320,7 +320,28 @@ function startAnalyzeAll() {
 }
 
 function handleAnalyzeEvent(ev) {
-  if (ev.type === "start") {
+  if (ev.type === "error") {
+    showAnalyzeError(ev.message || "Erreur inconnue.");
+    return;
+  } else if (ev.type === "pulling") {
+    document.getElementById("analyzeProgressLabel").textContent = "Téléchargement du modèle " + ev.model + "… (peut prendre plusieurs minutes)";
+    document.getElementById("analyzeProgressBar").style.width = "0%";
+    return;
+  } else if (ev.type === "pulling_progress") {
+    var lbl = ev.status || "Téléchargement…";
+    if (ev.pct !== null && ev.pct !== undefined) {
+      document.getElementById("analyzeProgressBar").style.width = ev.pct + "%";
+      lbl += " — " + ev.pct + "%";
+    } else if (lbl === "success") {
+      document.getElementById("analyzeProgressBar").style.width = "100%";
+    }
+    document.getElementById("analyzeProgressLabel").textContent = lbl;
+    return;
+  } else if (ev.type === "pull_done") {
+    document.getElementById("analyzeProgressBar").style.width = "100%";
+    document.getElementById("analyzeProgressLabel").textContent = "Modèle prêt. Démarrage de l'analyse…";
+    return;
+  } else if (ev.type === "start") {
     if (ev.total === 0) {
       document.getElementById("analyzeProgressLabel").textContent = "Aucun vêtement à analyser.";
       showAnalyzeDone(0, 0, 0);
@@ -358,7 +379,11 @@ function handleAnalyzeEvent(ev) {
     log.appendChild(entry);
     log.scrollTop = log.scrollHeight;
   } else if (ev.type === "done") {
-    showAnalyzeDone(ev.ok, ev.errors, ev.total);
+    if (ev.fatal) {
+      showAnalyzeError(ev.fatal);
+    } else {
+      showAnalyzeDone(ev.ok, ev.errors, ev.total);
+    }
   }
 }
 

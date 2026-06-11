@@ -1,0 +1,4 @@
+usage: run.py [-h]
+              [--scrapers {mango,lecoqsportif,tacchini,kappa,lotto,apc,balzac,maisonlabiche,rouje,cabaia,bonnegueule,merci,isabelmarant,amiparis,stussy,karhu,fillingpieces,palace} [{mango,lecoqsportif,tacchini,kappa,lotto,apc,balzac,maisonlabiche,rouje,cabaia,bonnegueule,merci,isabelmarant,amiparis,stussy,karhu,fillingpieces,palace} ...]]
+              [--log-level {DEBUG,INFO,WARNING,ERROR}]
+run.py: error: argument --scrapers: invalid choice: 'asos' (choose from 'mango', 'lecoqsportif', 'tacchini', 'kappa', 'lotto', 'apc', 'balzac', 'maisonlabiche', 'rouje', 'cabaia', 'bonnegueule', 'merci', 'isabelmarant', 'amiparis', 'stussy', 'karhu', 'fillingpieces', 'palace')

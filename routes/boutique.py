@@ -26,6 +26,7 @@ PER_PAGE = 24
 
 _cache = None
 _scraping_in_progress = False
+_cache_lock = threading.Lock()
 
 # ── Filtres qualité produit ───────────────────────────────────────────────────
 
@@ -37,10 +38,14 @@ _NON_CLOTHING_STARTS = (
     # Vaisselle & cuisine
     'tasse', 'assiette', 'verre', 'couteau', 'cuillère', 'fourchette',
     'sabre', 'bol', 'pichet', 'carafe', 'théière', 'cafetière',
-    'torchon', 'nappe', 'serviette',
+    'torchon', 'nappe', 'serviette', 'pocheuse', 'casserole', 'poêle',
+    'ustensile', 'plat ', 'plat à', 'cocotte', 'moule ', 'fouet ',
+    'spatule', 'passoire', 'louche', 'râpe ', 'économe', 'ouvre-',
+    'tire-bouchon', 'pince ', 'couvert', 'rouleau',
     # Déco & maison
     'coussin', 'drap', 'taie', 'housse', 'vase', 'plateau', 'peluche',
     'canapé', 'miroir', 'plaid', 'plante', 'gourde', 'jouet', 'magnet',
+    'cadre', 'tableau', 'sculpture', 'objet', 'outil ',
     # Papeterie & livres
     'carnet', 'affiche', 'stylo', 'livre', 'crayons', 'jeu de',
     'planche de stickers', 'poster',
@@ -96,12 +101,14 @@ def _run_scrape_background():
 def _load_products():
     global _cache, _scraping_in_progress
     if _cache is None:
-        try:
-            with open(DB_PATH, encoding='utf-8') as f:
-                raw = json.load(f)
-            _cache = [p for p in raw if _is_adult_clothing(p)]
-        except (FileNotFoundError, json.JSONDecodeError):
-            _cache = []
+        with _cache_lock:
+            if _cache is None:  # double-check après acquisition du verrou
+                try:
+                    with open(DB_PATH, encoding='utf-8') as f:
+                        raw = json.load(f)
+                    _cache = [p for p in raw if _is_adult_clothing(p)]
+                except (FileNotFoundError, json.JSONDecodeError):
+                    _cache = []
     if not _cache and not _scraping_in_progress:
         _scraping_in_progress = True
         threading.Thread(target=_run_scrape_background, daemon=True).start()
@@ -256,15 +263,25 @@ _OUTER_KW     = ['veste', 'manteau', 'blouson', 'parka', 'doudoune', 'coupe-vent
 _BOTTOM_KW    = ['pantalon', 'jean', 'short', 'bermuda', 'jogging', 'legging', 'cargo',
                   'chino', 'jupe', 'robe']
 _SHOES_KW     = ['chaussure', 'sneaker', 'basket', 'boot', 'botte', 'mocassin', 'espadrille',
-                  'sandal', 'running', 'jordan', 'air max', 'tennis shoe']
+                  'sandal', 'running', 'jordan', 'air max', 'tennis shoe',
+                  'footwear', 'trainer', 'loafer', 'derby', 'mule', 'ballerine', 'sabot']
 _TOP_KW       = ['t-shirt', 'tshirt', 'polo', 'chemise', 'top', 'débardeur', 'haut', 'maillot']
 _ACCESSORY_KW = ['pochette', 'sacoche', 'cabas', 'tote', 'portefeuille', 'porte-monnaie',
                   'ceinture', 'bracelet', 'collier', 'bague', 'montre', 'lunette',
                   'chapeau', 'bob ', 'bonnet', 'casquette', 'béret', 'écharpe', 'foulard',
-                  'gant ', 'mitaine', 'sac à', 'sac de', 'backpack', 'wallet']
+                  'gant ', 'mitaine', 'sac à', 'sac de', 'backpack', 'wallet',
+                  # Chaussettes & collants → accessoire, pas haut/bas
+                  'chaussette', 'socquette', 'mi-chaussette', 'collant', 'bas résille']
+
+
+# Marques qui ne vendent que des chaussures — slot forcé même si le nom ne contient
+# aucun mot-clé chaussure (ex : "ALBATROSS 82", "Low Plain", "Dart")
+_SHOE_ONLY_BRANDS = frozenset(['karhu', 'filling pieces'])
 
 
 def _boutique_slot(p: dict) -> str:
+    if (p.get('brand_source') or '').lower() in _SHOE_ONLY_BRANDS:
+        return 'shoes'
     text = ' '.join(filter(None, [
         p.get('categorie', ''), p.get('type', ''), p.get('name', '')
     ])).lower()

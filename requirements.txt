@@ -14,6 +14,8 @@ python-dotenv>=1.0
 beautifulsoup4>=4.12
 lxml>=5.2
 tqdm>=4.66
+playwright>=1.44
+pyvirtualdisplay>=3.0
 
 # Briques IA locales (vecteurs stockés dans SQLite natif — pas de ChromaDB)
 torch>=2.1.0
