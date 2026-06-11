@@ -213,7 +213,7 @@ def _pick_by_prompt(suggestions: list, prompt: str, vision_model: str) -> dict:
         "options": {"temperature": 0.1},
     }
     try:
-        resp = req.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=30)
+        resp = req.post(f"{OLLAMA_BASE}/api/chat", json=payload, timeout=120)
         resp.raise_for_status()
         content = resp.json().get("message", {}).get("content", "").strip()
         m = re.search(r"\d", content)

@@ -500,11 +500,20 @@
     {% endif %}
 
     {% else %}
+    {% if scraping_in_progress %}
+    <div class="bq-empty">
+      <div class="bq-empty-ico">⏳</div>
+      <h3>Mise à jour de la boutique en cours…</h3>
+      <p>Le catalogue est en train d'être récupéré. Recharge la page dans quelques minutes.</p>
+      <meta http-equiv="refresh" content="30">
+    </div>
+    {% else %}
     <div class="bq-empty">
       <div class="bq-empty-ico">🔍</div>
       <h3>Aucun produit trouvé</h3>
       <p>Essaie de modifier tes filtres ou <a href="/boutique" style="color:var(--a)">réinitialise la recherche</a>.</p>
     </div>
+    {% endif %}
     {% endif %}
 
   </div>

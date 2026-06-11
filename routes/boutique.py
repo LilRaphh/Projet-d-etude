@@ -3,13 +3,17 @@ routes/boutique.py
 Page "Boutique" — affiche les produits scrapés depuis SmartWear_DB.json
 """
 import json
+import logging
 import os
 import random
 import re
+import threading
 import uuid
 from pathlib import Path
 
 from flask import Blueprint, jsonify, render_template, request
+
+_logger = logging.getLogger(__name__)
 
 from extensions import db
 from models import ClothingItem, WishlistItem
@@ -21,6 +25,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'pipeline', 'output', 'S
 PER_PAGE = 24
 
 _cache = None
+_scraping_in_progress = False
 
 # ── Filtres qualité produit ───────────────────────────────────────────────────
 
@@ -74,8 +79,22 @@ def _is_adult_clothing(p: dict) -> bool:
     return True
 
 
+def _run_scrape_background():
+    global _scraping_in_progress
+    try:
+        from pipeline.run import run, SCRAPERS
+        _logger.info("Auto-scrape démarré — DB boutique vide.")
+        run(list(SCRAPERS.keys()))
+        reset_boutique_cache()
+        _logger.info("Auto-scrape terminé — cache boutique rechargé.")
+    except Exception as exc:
+        _logger.error("Auto-scrape échoué : %s", exc)
+    finally:
+        _scraping_in_progress = False
+
+
 def _load_products():
-    global _cache
+    global _cache, _scraping_in_progress
     if _cache is None:
         try:
             with open(DB_PATH, encoding='utf-8') as f:
@@ -83,6 +102,9 @@ def _load_products():
             _cache = [p for p in raw if _is_adult_clothing(p)]
         except (FileNotFoundError, json.JSONDecodeError):
             _cache = []
+    if not _cache and not _scraping_in_progress:
+        _scraping_in_progress = True
+        threading.Thread(target=_run_scrape_background, daemon=True).start()
     return _cache
 
 
@@ -197,6 +219,7 @@ def boutique():
         user_gender=me.gender if me else '',
         wishlisted_urls=wishlisted_urls,
         wishlist_count=wishlist_count,
+        scraping_in_progress=_scraping_in_progress,
         **ctx,
     )
 
@@ -441,7 +464,7 @@ def _complete_wardrobe_inner():
                 "format": "json",
                 "options": {"temperature": 0.15},
             },
-            timeout=60,
+            timeout=180,
         )
         resp.raise_for_status()
         raw = _sanitize(resp.json().get("message", {}).get("content", ""))
@@ -554,10 +577,13 @@ def boutique_wishlist_toggle():
         return jsonify(error='URL manquante'), 400
 
     me = current_user()
+    all_urls = [w.product_url for w in WishlistItem.query.filter_by(user_id=me.id).all()]
+    _logger.info("TOGGLE user=%s url=%r stored_count=%d url_in_stored=%s", me.id, url, len(all_urls), url in all_urls)
     existing = WishlistItem.query.filter_by(user_id=me.id, product_url=url).first()
     if existing:
         db.session.delete(existing)
         db.session.commit()
+        _logger.info("TOGGLE supprimé id=%s", existing.id)
         return jsonify(wishlisted=False)
 
     snapshot = {k: data.get(k) for k in [
