@@ -1737,12 +1737,13 @@ elif page == "🔬 Qualité":
     if st.session_state.audit_stats:
         s = st.session_state.audit_stats
         st.subheader("Résultats de l'audit")
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Produits initiaux",      s.get("total_initial", 0))
-        c2.metric("Doublons supprimés",     s.get("dupes_removed", 0),  delta_color="inverse")
-        c3.metric("Descriptions nettoyées", s.get("desc_fixed", 0))
-        c4.metric("Sexe inférés",           s.get("sexe_fixed", 0))
-        c5.metric("Produits finaux",        s.get("total_final", 0))
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+        c1.metric("Produits initiaux",        s.get("total_initial", 0))
+        c2.metric("Doublons supprimés",       s.get("dupes_removed", 0),           delta_color="inverse")
+        c3.metric("Non-vestimentaires retirés", s.get("non_clothing_removed", 0),  delta_color="inverse")
+        c4.metric("Descriptions nettoyées",   s.get("desc_fixed", 0))
+        c5.metric("Sexe inférés",             s.get("sexe_fixed", 0))
+        c6.metric("Produits finaux",          s.get("total_final", 0))
 
     # Résultats checks
     if st.session_state.check_anomalies is not None:
@@ -1759,6 +1760,80 @@ elif page == "🔬 Qualité":
                             f"- `[{p.get('brand_source')}]` **{str(p.get('name',''))[:55]}**"
                             f" | style=`{p.get('style')}` | catégorie=`{p.get('categorie')}`"
                         )
+
+    # ── Gestion des non-vestimentaires ────────────────────────────────
+    st.divider()
+    st.subheader("🚫 Articles non-vestimentaires filtrés")
+
+    REJECTED_FILE = OUTPUT_DIR / "SmartWear_rejected.json"
+    CUSTOM_KW_FILE = OUTPUT_DIR / "non_clothing_keywords.json"
+
+    col_rej, col_kw = st.columns([3, 2], gap="large")
+
+    with col_rej:
+        if REJECTED_FILE.exists():
+            with open(REJECTED_FILE, encoding="utf-8") as f:
+                rejected = json.load(f)
+
+            brand_opts = ["Toutes"] + sorted({p.get("brand_source","?") for p in rejected})
+            brand_filter = st.selectbox("Filtrer par marque", brand_opts, key="rej_brand")
+            shown = rejected if brand_filter == "Toutes" else [
+                p for p in rejected if p.get("brand_source") == brand_filter
+            ]
+
+            st.caption(f"{len(shown)} articles affichés sur {len(rejected)} rejetés")
+
+            for p in shown[:60]:
+                with st.expander(
+                    f"[{p.get('brand_source','?')}] {p.get('name','?')[:60]}"
+                    f"  —  _{p.get('_reject_reason','')}_"
+                ):
+                    cols = st.columns([1, 3])
+                    if p.get("image"):
+                        cols[0].image(p["image"], width=100)
+                    with cols[1]:
+                        st.markdown(
+                            f"**Style** : `{p.get('style','?')}` | "
+                            f"**Catégorie** : `{p.get('categorie','?')}` | "
+                            f"**Prix** : {p.get('price_value','?')} €"
+                        )
+                        if p.get("url"):
+                            st.markdown(f"[Voir sur le site]({p['url']})")
+        else:
+            st.info("Lance l'audit pour voir les articles filtrés.")
+
+    with col_kw:
+        st.markdown("**Mots-clés custom** _(ajoutés au filtre de l'audit)_")
+
+        custom_kw: list = []
+        if CUSTOM_KW_FILE.exists():
+            try:
+                with open(CUSTOM_KW_FILE, encoding="utf-8") as f:
+                    custom_kw = json.load(f)
+            except Exception:
+                custom_kw = []
+
+        kw_text = st.text_area(
+            "Un mot-clé par ligne (présent dans le nom du produit = rejeté)",
+            value="\n".join(custom_kw),
+            height=200,
+            key="custom_kw_input",
+            label_visibility="collapsed",
+        )
+
+        if st.button("💾 Sauvegarder les mots-clés", use_container_width=True):
+            new_kw = [line.strip().lower() for line in kw_text.splitlines() if line.strip()]
+            try:
+                with open(CUSTOM_KW_FILE, "w", encoding="utf-8") as f:
+                    json.dump(new_kw, f, indent=2, ensure_ascii=False)
+                st.success(f"✅ {len(new_kw)} mots-clés sauvegardés — relance l'audit pour les appliquer.")
+            except Exception as e:
+                st.error(f"Erreur : {e}")
+
+        st.caption(
+            "Ces mots-clés complètent la liste intégrée dans le code. "
+            "Ils sont appliqués dès le prochain audit."
+        )
 
     # Aperçu stats DB
     st.divider()

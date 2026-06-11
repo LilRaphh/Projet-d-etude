@@ -11,15 +11,14 @@ Deux moteurs (auto-détectés) :
 import json
 import logging
 import math
-import os
 from typing import Optional
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
 from config import ANTHROPIC_MODEL, OCCASIONS
 from extensions import db
-from models import ClothingItem, ItemEmbedding, Outfit, UserSetting
-from utils.auth import get_ctx
+from models import ClothingItem, ItemEmbedding, Outfit
+from utils.auth import get_api_key as _api_key, get_ctx, get_uid as _uid
 
 log = logging.getLogger(__name__)
 complete_bp = Blueprint("complete", __name__)
@@ -41,22 +40,6 @@ _SLOT_ICONS = {
 }
 # Ordre d'affichage des slots
 _SLOT_ORDER = ["top", "bottom", "shoes", "outer", "accessory"]
-
-
-# ---------------------------------------------------------------------------
-# Helpers auth
-# ---------------------------------------------------------------------------
-
-def _uid() -> Optional[int]:
-    return session.get("user_id")
-
-
-def _api_key() -> str:
-    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if key:
-        return key
-    uid = _uid()
-    return UserSetting.get(uid, "anthropic_key", "") if uid else ""
 
 
 # ---------------------------------------------------------------------------

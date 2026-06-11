@@ -5,7 +5,7 @@ import time
 
 from flask import Blueprint, Response, jsonify, stream_with_context
 
-from config import BASE_DIR
+from config import ANALYSIS_MAX_RETRIES, ANALYSIS_RETRY_DELAY, BASE_DIR
 from extensions import db
 from models import ClothingItem, Outfit
 from utils.auth import current_user, login_required
@@ -61,7 +61,7 @@ def api_analyze_all():
 
     items = me.items.filter(
         ClothingItem.image_path.isnot(None),
-        db.or_(ClothingItem.ai_analyzed == False, ClothingItem.ai_analyzed == None),
+        ClothingItem.ai_analyzed.isnot(True),
     ).all()
 
     def generate():
@@ -123,26 +123,30 @@ def api_analyze_all():
 
             yield f"data: {json.dumps({'type': 'processing', 'done': i, 'total': total, 'item': item_name})}\n\n"
 
-            for attempt in range(3):
+            for attempt in range(ANALYSIS_MAX_RETRIES):
                 if attempt > 0:
                     yield f"data: {json.dumps({'type': 'retry', 'done': i, 'total': total, 'item': item_name, 'attempt': attempt + 1})}\n\n"
-                    time.sleep(3)
+                    time.sleep(ANALYSIS_RETRY_DELAY)
 
                 result_holder[0] = None
                 error_holder[0] = None
 
+                from flask import current_app
+                _app = current_app._get_current_object()
+
                 def _run(img_abs=img_abs):
                     try:
-                        result_holder[0] = analyze_and_store_item(item, img_abs, vision_model=vision_model_pref)
+                        with _app.app_context():
+                            result_holder[0] = analyze_and_store_item(item, img_abs, vision_model=vision_model_pref)
                     except Exception as exc:
                         error_holder[0] = str(exc)[:120]
 
                 t = threading.Thread(target=_run, daemon=True)
                 t.start()
 
-                # Keep-alive SSE toutes les 20s pendant l'inférence (évite timeout ngrok/proxy à 60s)
+                # Keep-alive SSE toutes les 5s pendant l'inférence (évite timeout ngrok/proxy)
                 while t.is_alive():
-                    t.join(timeout=20)
+                    t.join(timeout=5)
                     if t.is_alive():
                         yield ": keep-alive\n\n"
 

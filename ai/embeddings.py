@@ -73,15 +73,24 @@ def _device_of_model() -> torch.device:
 # Encodage
 # ---------------------------------------------------------------------------
 
+_CLIP_MAX_PX = 336  # CLIP travaille en 224px, 336 garde une marge sans coût inutile
+
+
 def encode_image(image_path: str) -> List[float]:
     """Retourne l'embedding FashionCLIP (512-dim) d'une image, normalisé L2."""
     model, processor = _get_model()
-    device = _device_of_model()
+    device = next(model.parameters()).device
     image = Image.open(image_path).convert("RGB")
+    w, h = image.size
+    if max(w, h) > _CLIP_MAX_PX:
+        scale = _CLIP_MAX_PX / max(w, h)
+        image = image.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
     inputs = processor(images=image, return_tensors="pt", padding=True)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         features = model.get_image_features(**inputs)
+        if not isinstance(features, torch.Tensor):
+            features = features.pooler_output
         features = features / features.norm(dim=-1, keepdim=True)
     return features.squeeze().cpu().tolist()
 
@@ -89,7 +98,7 @@ def encode_image(image_path: str) -> List[float]:
 def encode_text(text: str) -> List[float]:
     """Retourne l'embedding FashionCLIP d'un texte, normalisé L2."""
     model, processor = _get_model()
-    device = _device_of_model()
+    device = next(model.parameters()).device
     inputs = processor(
         text=[text],
         return_tensors="pt",
@@ -100,6 +109,8 @@ def encode_text(text: str) -> List[float]:
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         features = model.get_text_features(**inputs)
+        if not isinstance(features, torch.Tensor):
+            features = features.pooler_output
         features = features / features.norm(dim=-1, keepdim=True)
     return features.squeeze().cpu().tolist()
 

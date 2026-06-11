@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta
 from urllib.parse import urljoin, urlparse
 
@@ -33,8 +34,8 @@ def register():
 
         if not all([username, email, password]):
             flash('Tous les champs sont obligatoires.', 'error')
-        elif len(password) < 6:
-            flash('Mot de passe trop court (6 car. min.).', 'error')
+        elif len(password) < 8:
+            flash('Mot de passe trop court (8 car. min.).', 'error')
         elif password != password2:
             flash('Les mots de passe ne correspondent pas.', 'error')
         elif User.query.filter_by(email=email).first():
@@ -46,6 +47,7 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
+            session.clear()
             session['user_id'] = user.id
             row = EmailVerificationToken.create_for(user)
             send_verification_email(user, row.token, request.host_url)
@@ -71,10 +73,18 @@ def login():
 
         if user and user.check_password(password):
             remember = request.form.get('remember') == '1'
-            session.permanent = remember  # True = 30 j, False = expire à la fermeture du navigateur
+            session.clear()  # Prevent session fixation
+            session.permanent = remember
             session['user_id'] = user.id
             user.last_login_at = datetime.utcnow()
-            user.last_login_ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+            # Only trust X-Forwarded-For when the app runs behind a configured trusted proxy
+            import os as _os
+            trusted_proxy = _os.environ.get('TRUSTED_PROXY', '').strip()
+            if trusted_proxy and request.remote_addr == trusted_proxy:
+                ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
+            else:
+                ip = request.remote_addr
+            user.last_login_ip = ip
             db.session.commit()
             flash(f'Ravi de vous revoir, {user.username} !', 'success')
             next_url = request.args.get('next')
@@ -97,6 +107,7 @@ def logout():
 def verify_email(token):
     row = EmailVerificationToken.query.filter_by(token=token).first()
     if not row or not row.is_valid():
+        time.sleep(0.05)  # Constant-time response against timing analysis
         flash('Ce lien est invalide ou a expiré.', 'error')
         return redirect('/')
     row.user.email_verified = True
@@ -147,6 +158,7 @@ def reset_password(token):
 
     row = PasswordResetToken.query.filter_by(token=token).first()
     if not row or not row.is_valid():
+        time.sleep(0.05)  # Constant-time response against timing analysis
         flash('Ce lien est invalide ou a expiré.', 'error')
         return redirect('/forgot-password')
 
@@ -154,8 +166,8 @@ def reset_password(token):
         new_pw = request.form.get('password', '')
         new_pw2 = request.form.get('password2', '')
 
-        if len(new_pw) < 6:
-            flash('Mot de passe trop court (6 car. min.).', 'error')
+        if len(new_pw) < 8:
+            flash('Mot de passe trop court (8 car. min.).', 'error')
         elif new_pw != new_pw2:
             flash('Les mots de passe ne correspondent pas.', 'error')
         else:

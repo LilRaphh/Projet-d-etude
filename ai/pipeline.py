@@ -57,6 +57,7 @@ def analyze_and_store_item(item, image_full_path: str, vision_model: Optional[st
         vision_model=vision_model or None,
         item_name=item.name or None,
         item_category=item.category or None,
+        item_description=getattr(item, "notes", None) or None,
     )
 
     log.info("Encodage FashionCLIP item %d…", item.id)
@@ -76,7 +77,7 @@ def analyze_and_store_item(item, image_full_path: str, vision_model: Optional[st
         "ai_subcategory": ai_attrs.get("subcategory") or "",
     }
 
-    description = _build_description(ai_attrs, item)
+    description = _build_description(ai_attrs, item, product_description=getattr(item, "notes", None) or None)
 
     store_item(
         item_id=item.id,
@@ -90,7 +91,7 @@ def analyze_and_store_item(item, image_full_path: str, vision_model: Optional[st
     return ai_attrs
 
 
-def _build_description(ai_attrs: dict, item) -> str:
+def _build_description(ai_attrs: dict, item, product_description: Optional[str] = None) -> str:
     """Construit une description textuelle pour le champ document ChromaDB."""
     shoe_detail = ai_attrs.get("shoe_detail")
     if shoe_detail:
@@ -111,6 +112,8 @@ def _build_description(ai_attrs: dict, item) -> str:
         image_gen = str(shoe_detail.get("image_gen_prompt", "")).strip()
         if image_gen:
             parts.insert(0, image_gen)
+        if product_description:
+            parts.append(product_description)
         return ". ".join(parts)
 
     # Description standard pour les autres vêtements
@@ -124,6 +127,7 @@ def _build_description(ai_attrs: dict, item) -> str:
         ai_attrs.get("pattern"),
         ai_attrs.get("fit"),
         getattr(item, "brand", None),
+        product_description,
     ]:
         if val:
             parts.append(str(val))
