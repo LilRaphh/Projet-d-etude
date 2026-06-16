@@ -8,7 +8,8 @@
 #  Logs app : docker compose logs -f app
 #  URL ngrok: docker compose logs -f ngrok
 #
-#  App → http://localhost:5001
+#  App      → http://localhost:5001
+#  Monitoring (optionnel) : docker compose -f docker-compose.monitoring.yml up -d
 # =============================================================
 
 services:
@@ -35,12 +36,19 @@ services:
       - ./routes:/app/routes
       - ./ai:/app/ai
       - ./utils:/app/utils
+      - ./config.py:/app/config.py
+      - ./models.py:/app/models.py
+      - ./extensions.py:/app/extensions.py
+      - ./app.py:/app/app.py
+      - ./pipeline/output:/app/pipeline/output
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+    networks:
+      - smartwear
 
   ngrok:
     image: ngrok/ngrok:latest
@@ -54,3 +62,10 @@ services:
       NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
     depends_on:
       - app
+    networks:
+      - smartwear
+
+networks:
+  smartwear:
+    name: smartwear
+    driver: bridge

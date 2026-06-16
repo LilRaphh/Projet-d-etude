@@ -1,11 +1,14 @@
 # =============================================================
 #  docker-compose.monitoring.yml — Stack Grafana + Loki + Promtail + Stats
 #
-#  Lance : docker compose -f docker-compose.monitoring.yml up -d
-#  Stop  : docker compose -f docker-compose.monitoring.yml down
+#  Lance (seul ou avec l'app) : docker compose -f docker-compose.monitoring.yml up -d
+#  Stop                        : docker compose -f docker-compose.monitoring.yml down
 #
 #  Grafana → http://localhost:3000  (admin / admin)
 #  Stats   → http://localhost:8888/stats.json
+#
+#  Réseau partagé avec l'app : smartwear
+#    → Grafana peut atteindre wardrobe_app:5001 quand les deux stacks tournent
 # =============================================================
 
 services:
@@ -72,11 +75,18 @@ services:
     restart: unless-stopped
     networks:
       - monitoring
+      - smartwear
 
 volumes:
   loki_data:
   grafana_data:
 
 networks:
+  # Réseau interne au stack monitoring (Loki ↔ Promtail ↔ stats-server ↔ Grafana)
   monitoring:
+    name: smartwear_monitoring
+    driver: bridge
+  # Réseau partagé avec docker-compose.yml — créé si absent, réutilisé sinon
+  smartwear:
+    name: smartwear
     driver: bridge
