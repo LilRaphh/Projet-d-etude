@@ -55,11 +55,12 @@ def index():
             'days': [(week_start + timedelta(days=i)) for i in range(7)]
         }
         
-        # Navigation semaine
-        prev_week = week - 1 if week > 1 else 52
+        # Navigation semaine — utilise le vrai max ISO (52 ou 53 selon l'année)
+        _max_week = date(year, 12, 28).isocalendar()[1]
+        prev_week = week - 1 if week > 1 else date(year - 1, 12, 28).isocalendar()[1]
         prev_year = year if week > 1 else year - 1
-        next_week = week + 1 if week < 52 else 1
-        next_year = year if week < 52 else year + 1
+        next_week = week + 1 if week < _max_week else 1
+        next_year = year if week < _max_week else year + 1
         
     else:
         # Vue mois (existante)

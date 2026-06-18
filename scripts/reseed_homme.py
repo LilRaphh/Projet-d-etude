@@ -1,16 +1,21 @@
 """
 Reseed demo_homme : 28 vêtements variés + ai_analyzed=False pour re-analyse IA.
-Usage : python reseed_homme.py
+Usage : python scripts/reseed_homme.py  (depuis la racine du projet)
 """
+import os
+import sys
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(_ROOT, '.env'))
 
 import hashlib
 import io
 import json
-import os
 import random
-import sys
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
@@ -22,7 +27,7 @@ from config import THUMB_FOLDER, THUMB_SIZE, UPLOAD_FOLDER
 from extensions import db
 from models import ClothingItem, User
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "pipeline", "output", "SmartWear_DB.json")
+DB_PATH = os.path.join(_ROOT, "pipeline", "output", "SmartWear_DB.json")
 TARGET_EMAIL = "demo.homme@vitrine.fr"
 
 # ---------------------------------------------------------------------------

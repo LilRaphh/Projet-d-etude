@@ -10,6 +10,7 @@ import re
 import threading
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, render_template, request
 
@@ -634,8 +635,15 @@ def _complete_wardrobe_inner():
 _STATIC_DIR = Path(__file__).parent.parent / 'static'
 
 
+_MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+from utils.security import is_safe_image_url as _is_safe_image_url
+
+
 def _download_image(url: str, user_id: int):
     """Télécharge l'image distante et retourne le chemin relatif (ex. uploads/3/boutique_abc.jpg)."""
+    if not url or not _is_safe_image_url(url):
+        return None
     try:
         import requests as req
         dest_dir = _STATIC_DIR / 'uploads' / str(user_id)
@@ -646,8 +654,14 @@ def _download_image(url: str, user_id: int):
         filename = f"boutique_{uuid.uuid4().hex[:12]}.{ext}"
         r = req.get(url, timeout=15, stream=True, headers={'User-Agent': 'Mozilla/5.0'})
         r.raise_for_status()
-        with open(dest_dir / filename, 'wb') as f:
+        dest_path = dest_dir / filename
+        total = 0
+        with open(dest_path, 'wb') as f:
             for chunk in r.iter_content(8192):
+                total += len(chunk)
+                if total > _MAX_DOWNLOAD_BYTES:
+                    dest_path.unlink(missing_ok=True)
+                    return None
                 f.write(chunk)
         return f"uploads/{user_id}/{filename}"
     except Exception:
@@ -707,9 +721,12 @@ def boutique_wishlist_toggle():
     if not url:
         return jsonify(error='URL manquante'), 400
 
+    # Rejeter les schemes non-HTTP pour éviter le stockage de javascript: XSS
+    if urlparse(url).scheme not in ('http', 'https'):
+        return jsonify(error='URL invalide'), 400
+
     me = current_user()
-    all_urls = [w.product_url for w in WishlistItem.query.filter_by(user_id=me.id).all()]
-    _logger.info("TOGGLE user=%s url=%r stored_count=%d url_in_stored=%s", me.id, url, len(all_urls), url in all_urls)
+    _logger.info("TOGGLE user=%s url=%r", me.id, url)
     existing = WishlistItem.query.filter_by(user_id=me.id, product_url=url).first()
     if existing:
         db.session.delete(existing)
@@ -737,7 +754,7 @@ def boutique_wishlist_toggle():
         db.session.commit()
     except Exception:
         db.session.rollback()
-        return jsonify(wishlisted=True)
+        return jsonify(wishlisted=False, error='Erreur lors de la sauvegarde.')
     return jsonify(wishlisted=True)
 
 
@@ -775,7 +792,7 @@ def boutique_wishlist_page():
         db.session.commit()
     if dropped and me.email_verified:
         from utils.mail import send_price_alert_email
-        send_price_alert_email(me, dropped)
+        send_price_alert_email(me, dropped, base_url=request.host_url)
 
     # Devise utilisateur pour l'affichage
     _cur_code = normalize_currency(ctx.get('currency', 'EUR'))

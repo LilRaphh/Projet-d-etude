@@ -153,6 +153,20 @@ def profile():
         elif action == 'delete_account':
             confirm = request.form.get('confirm_delete', '')
             if confirm == me.username:
+                from config import BASE_DIR
+                from models import CalendarEntry
+                from utils.images import delete_images
+                for item in me.items.all():
+                    delete_images(item)
+                face_path = os.path.join(BASE_DIR, 'static', 'uploads', 'faces', f'{me.id}.jpg')
+                if os.path.isfile(face_path):
+                    os.remove(face_path)
+                loading_gif = UserSetting.get(me.id, 'loading_gif', '')
+                if loading_gif:
+                    gif_path = os.path.join(LOADING_GIF_FOLDER, loading_gif)
+                    if os.path.isfile(gif_path):
+                        os.remove(gif_path)
+                CalendarEntry.query.filter_by(user_id=me.id).delete()
                 db.session.delete(me)
                 db.session.commit()
                 session.clear()

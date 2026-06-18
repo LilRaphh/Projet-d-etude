@@ -652,7 +652,10 @@ body.is-loading .page-loading-overlay{
     <a href="/add-bulk" class="mob-nl" style="margin-top:.1rem">Importer en masse</a>
     <div class="mob-sep"></div>
     <a href="/profile" class="mob-nl">Mon profil</a>
-    <a href="/logout" class="mob-nl">Se déconnecter</a>
+    <form method="post" action="/logout" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="mob-nl" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;text-align:left;width:100%">Se déconnecter</button>
+    </form>
   </nav>
 </aside>
 {% endif %}
@@ -753,7 +756,10 @@ body.is-loading .page-loading-overlay{
     <strong style="color:var(--tx)">{{ me.username }}</strong> — {{ me.email }}
   </div>
   <a href="/profile" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:.45rem">Mon profil</a>
-  <a href="/logout" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</a>
+  <form method="post" action="/logout" style="margin:0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</button>
+  </form>
 </aside>
 
 <script>

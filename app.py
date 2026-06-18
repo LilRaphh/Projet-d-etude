@@ -96,7 +96,21 @@ def create_app():
                 "ALTER TABLE outfits ADD COLUMN style_analysis TEXT",
                 "ALTER TABLE wishlist_items ADD COLUMN price_alert BOOLEAN NOT NULL DEFAULT 1",
                 "ALTER TABLE wishlist_items ADD COLUMN last_known_price FLOAT",
+                # Colonnes IA sur clothing_items
                 "ALTER TABLE clothing_items ADD COLUMN ai_color VARCHAR(40)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_subcategory VARCHAR(80)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_style VARCHAR(40)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_formality INTEGER",
+                "ALTER TABLE clothing_items ADD COLUMN ai_pattern VARCHAR(40)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_material VARCHAR(40)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_fit VARCHAR(20)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_secondary_color VARCHAR(40)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_thickness VARCHAR(20)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_length VARCHAR(20)",
+                "ALTER TABLE clothing_items ADD COLUMN ai_description TEXT",
+                "ALTER TABLE clothing_items ADD COLUMN ai_analyzed BOOLEAN DEFAULT 0",
+                # Index manquant sur outfits.user_id
+                "CREATE INDEX IF NOT EXISTS ix_outfits_user_id ON outfits (user_id)",
             ]:
                 try:
                     conn.execute(db.text(stmt))

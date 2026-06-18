@@ -7,14 +7,14 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
-[![Claude API](https://img.shields.io/badge/Claude-API-D97706?style=flat-square)](https://anthropic.com)
+[![Claude API](https://img.shields.io/badge/Claude-Sonnet_4.6-D97706?style=flat-square)](https://anthropic.com)
 [![Ollama](https://img.shields.io/badge/Ollama-local_LLM-000000?style=flat-square)](https://ollama.ai)
 
 </div>
 
 ---
 
-SmartWear est une application web de gestion de garde-robe personnelle qui combine un moteur IA hybride (local + cloud) avec un pipeline de scraping de 28 marques de mode. Elle vous permet d'organiser vos vêtements, générer des suggestions de tenues adaptées à la météo, vérifier la cohérence stylistique et découvrir de nouveaux articles — le tout depuis une interface web.
+SmartWear est une application web de gestion de garde-robe personnelle combinant un moteur IA hybride (local + cloud) avec un pipeline de scraping de 28 marques de mode. Elle permet d'organiser ses vêtements, générer des suggestions de tenues adaptées à la météo, vérifier la cohérence stylistique et découvrir de nouveaux articles — le tout depuis une interface web.
 
 ---
 
@@ -26,6 +26,7 @@ SmartWear est une application web de gestion de garde-robe personnelle qui combi
 - [Démarrage rapide](#démarrage-rapide)
 - [Variables d'environnement](#variables-denvironnement)
 - [Pipeline de scraping](#pipeline-de-scraping)
+- [Scripts utilitaires](#scripts-utilitaires)
 - [Monitoring](#monitoring)
 - [Sécurité](#sécurité)
 - [Documentation par module](#documentation-par-module)
@@ -39,27 +40,28 @@ SmartWear est une application web de gestion de garde-robe personnelle qui combi
 | Fonctionnalité | Description |
 |----------------|-------------|
 | **Garde-robe** | Ajout de vêtements avec photo, catégorie, marque, taille, couleur, saison, condition, prix et tags personnalisés |
-| **Tenues** | Créez et notez des combinaisons, suivez les ports, générez une photo mannequin via Flux (Pollinations.ai, gratuit) |
+| **Tenues** | Créez et notez des combinaisons, suivez les ports, générez une photo mannequin via Flux (Pollinations.ai) |
 | **Complétion de tenue** | Suggère les pièces manquantes à partir d'un vêtement ancre (IA locale + Claude) |
 | **Calendrier** | Planifiez vos tenues jour par jour avec prévisions météo 7 jours (Open-Meteo, sans clé) |
 | **Ajout depuis photo** | Extrait et catégorise automatiquement les vêtements d'une photo uploadée |
+| **Import en masse** | Importez jusqu'à 40 vêtements simultanément avec photos |
 
 ### IA & recommandations
 
 | Fonctionnalité | Technologie |
 |----------------|-------------|
 | **Styliste IA** | Suggestions adaptées à la météo et à l'occasion — Claude API + Ollama |
-| **Similarité visuelle** | Moteur d'embeddings FashionCLIP 100% local, sans cloud, sans ChromaDB |
+| **Similarité visuelle** | Moteur d'embeddings FashionCLIP 100 % local, sans cloud, sans ChromaDB |
 | **Vérification de style** | Analyse de cohérence sur photo ou tenue existante — vision multimodale |
 | **Boutique intelligente** | Catalogue scrapé (28 marques), ajout direct en garde-robe ou wishlist |
-| **Alerte de prix** | Surveillance automatique des articles en wishlist avec notification de baisse |
+| **Alerte de prix** | Surveillance automatique des articles en wishlist avec notification e-mail de baisse |
 
 ### Compte & paramètres
 
-- Inscription avec vérification e-mail, connexion, réinitialisation de mot de passe
-- Profil utilisateur : genre, esthétique, budget, tailles par défaut
-- Paramètres personnalisables : devise, ville, clés API chiffrées, couleur d'accent
-- Dashboard administrateur pour la gestion des utilisateurs et des données système
+- Inscription avec vérification e-mail, connexion sécurisée, réinitialisation de mot de passe
+- Profil utilisateur : genre, esthétique, budget, tailles par défaut, bio
+- Paramètres personnalisables : devise, ville météo, clés API chiffrées, couleur d'accent, GIF de chargement
+- Dashboard administrateur pour la gestion des utilisateurs
 
 ---
 
@@ -68,54 +70,72 @@ SmartWear est une application web de gestion de garde-robe personnelle qui combi
 ```
 Projet-d-etude/
 │
-├── app.py                    # Fabrique Flask + create_app()
-├── config.py                 # Constantes globales (catégories, tailles, couleurs) + classe Config
-├── extensions.py             # Instances partagées (SQLAlchemy, CSRF, Limiter, Cache)
-├── models.py                 # 10 modèles SQLAlchemy
+├── app.py                    # Fabrique Flask + create_app(), migrations auto, warmup IA
+├── config.py                 # Constantes globales (catégories, tailles, couleurs) + class Config
+├── extensions.py             # Instances partagées : db, csrf, limiter, cache
+├── models.py                 # 10 modèles SQLAlchemy (User, ClothingItem, Outfit, …)
 │
-├── routes/                   # 13 blueprints Flask
-│   ├── auth.py               # Inscription, connexion, vérification e-mail, reset mot de passe
-│   ├── main.py               # Galerie garde-robe, filtrage, tri
+├── routes/                   # 13 blueprints Flask (1 domaine = 1 fichier)
+│   ├── auth.py               # Inscription, connexion, vérification e-mail, reset mdp
+│   ├── main.py               # Galerie garde-robe, filtrage, tri, paramètres
 │   ├── outfits.py            # CRUD tenues, génération image IA, analyse de style
 │   ├── stylist.py            # Suggestions météo-adaptées (Claude + Ollama)
 │   ├── ai_recommend.py       # Recommandations par similarité visuelle (FashionCLIP)
 │   ├── style_check.py        # Analyse de cohérence stylistique
 │   ├── complete.py           # Complétion de tenue depuis un vêtement ancre
 │   ├── add_from_photo.py     # Extraction de vêtements depuis une photo
-│   ├── boutique.py           # Catalogue scrapé + gestion wishlist
-│   ├── calendar.py           # Planification calendrier + météo
-│   ├── profile.py            # Profil utilisateur et préférences
+│   ├── boutique.py           # Catalogue scrapé + wishlist + alertes prix
+│   ├── calendar.py           # Planification calendrier + météo intégrée
+│   ├── profile.py            # Profil, préférences, suppression de compte
 │   ├── api.py                # Endpoints AJAX internes (tags, streaming, etc.)
 │   └── admin.py              # Dashboard administration
 │
 ├── ai/                       # Moteur IA local
-│   ├── pipeline.py           # Orchestrateur (vision → embeddings → scoring → explication)
-│   ├── vision.py             # FashionCLIP + Qwen2.5-VL — analyse visuelle
-│   ├── embeddings.py         # Stockage vectoriel SQLite + recherche par similarité
-│   ├── scoring.py            # Combinaison embeddings + règles métier
+│   ├── pipeline.py           # Orchestrateur : vision → embeddings → scoring → explication
+│   ├── vision.py             # Qwen2.5-VL (Ollama) — analyse visuelle des vêtements
+│   ├── embeddings.py         # FashionCLIP — stockage vectoriel SQLite + similarité cosinus
+│   ├── scoring.py            # Score de compatibilité (embeddings + règles métier)
 │   ├── rules.py              # Filtres saison, occasion, cohérence couleurs
-│   ├── explainer.py          # Explications en langage naturel (Ollama)
+│   ├── explainer.py          # Génération d'explications en langage naturel (Ollama)
 │   └── ollama_setup.py       # Détection, lancement et pull de modèles Ollama
 │
 ├── utils/                    # Services partagés
-│   ├── auth.py               # Décorateur @login_required + helper get_ctx()
+│   ├── security.py           # Validators SSRF, open-redirect, localhost-only (centralisés)
+│   ├── auth.py               # current_user(), @login_required, get_ctx()
+│   ├── images.py             # Validation magic bytes, anti-decompression-bomb, thumbnails
+│   ├── ai.py                 # Génération image (Pollinations / SD local) + prompts Claude
+│   ├── mail.py               # Envoi SMTP : vérification, reset, alertes prix
+│   ├── crypto.py             # Chiffrement Fernet pour les clés API tierces
+│   ├── currency.py           # Conversion de devises avec mise en cache
 │   ├── weather.py            # WeatherService (Open-Meteo — géolocalisation + prévisions)
-│   ├── crypto.py             # Chiffrement Fernet pour clés API
-│   ├── images.py             # Validation magic bytes, redimensionnement, sauvegarde
-│   ├── mail.py               # Envoi e-mail (vérification, reset)
-│   ├── ai.py                 # Wrapper Anthropic Claude API
-│   ├── currency.py           # Conversion EUR/USD avec mise en cache
 │   └── tags.py               # Parsing et normalisation des tags
 │
-├── pipeline/                 # Module de scraping indépendant
-│   ├── run.py                # CLI (argparse)
-│   ├── pipeline.py           # Normalisation, déduplication, export JSON
-│   ├── scrapers/             # 28 scrapers de marques (Playwright + BeautifulSoup)
+├── pipeline/                 # Module de scraping indépendant (process batch)
+│   ├── run.py                # CLI (argparse) — point d'entrée
+│   ├── pipeline.py           # Normalisation, déduplication, export JSON / MongoDB
+│   ├── scrapers/             # 28 scrapers (Playwright + BeautifulSoup4)
+│   │   ├── base.py           # Classe de base commune
+│   │   ├── shopify_base.py   # Classe de base pour les marques sur Shopify
+│   │   └── *.py              # Nike, Mango, H&M, Lacoste, Kappa, APC, Jacquemus, …
 │   └── dags/                 # DAG Apache Airflow (3h UTC quotidien)
 │
-├── templates/                # 24 templates Jinja2
-├── static/uploads/           # Photos uploadées (gitignored)
-├── monitoring/               # Config Loki, Promtail, Grafana
+├── finetune/                 # Pipeline de fine-tuning LLM (offline)
+│   ├── bronze.py / silver.py / gold.py   # Étapes médaillon de nettoyage des données
+│   ├── prepare_dataset.py / train.py     # Préparation dataset + entraînement LoRA
+│   └── data/*.jsonl          # Jeux de données d'entraînement / validation
+│
+├── scripts/                  # Scripts utilitaires à lancer depuis la racine
+│   ├── seed_demo.py          # Crée 2 comptes démo avec vêtements réels du catalogue
+│   └── reseed_homme.py       # Réinitialise le compte demo_homme (28 pièces variées)
+│
+├── monitoring/               # Stack d'observabilité (optionnelle)
+│   ├── loki-config.yml       # Agrégation des logs
+│   ├── promtail-config.yml   # Collecte des logs applicatifs
+│   └── grafana-provisioning/ # Dashboards et datasources auto-provisionnés
+│
+├── templates/                # 32 templates Jinja2 (base + pages + erreurs + admin)
+├── static/uploads/           # Fichiers uploadés par les utilisateurs (gitignored)
+├── data/wardrobe.db          # Base SQLite (dev / prod léger)
 │
 ├── docker-compose.yml                # App + ngrok
 ├── docker-compose.monitoring.yml     # Grafana + Loki + Promtail
@@ -128,13 +148,13 @@ Projet-d-etude/
 
 | Couche | Technologie | Rôle |
 |--------|-------------|------|
-| **Web** | Flask 3+ | Serveur web, blueprints, CSRF, rate limiting |
+| **Web** | Flask 3+ | Serveur, blueprints, CSRF global, rate limiting |
 | **Base de données** | SQLite / SQLAlchemy | Persistance (switchable PostgreSQL via `DATABASE_URL`) |
 | **Embeddings locaux** | FashionCLIP (HuggingFace / PyTorch) | Similarité visuelle sans dépendance cloud |
-| **LLM local** | Ollama — qwen2.5vl:7b | Analyse vision + génération texte en local |
-| **LLM cloud** | Anthropic Claude API | Suggestions avancées, analyse stylistique |
+| **LLM local** | Ollama — qwen2.5vl:7b | Analyse vision + génération de texte en local |
+| **LLM cloud** | Anthropic Claude Sonnet 4.6 | Suggestions avancées, analyse stylistique |
 | **Génération d'images** | Pollinations.ai (Flux) | Photos mannequin pour les tenues (gratuit) |
-| **Météo** | Open-Meteo | Prévisions 7 jours, gratuit, sans clé API |
+| **Météo** | Open-Meteo | Prévisions 7 jours, sans clé API |
 | **Cache** | SimpleCache (dev) / Redis (prod) | Cache serveur configurable |
 | **Scraping** | Playwright + BeautifulSoup4 | Sites JS-heavy et HTML statique |
 | **Monitoring** | Grafana + Loki + Promtail | Dashboards et agrégation de logs |
@@ -146,8 +166,8 @@ Projet-d-etude/
 ### Prérequis
 
 - Docker & Docker Compose **ou** Python 3.11+
-- Une clé API Anthropic (pour les fonctionnalités IA cloud)
-- [Ollama](https://ollama.ai) installé localement (optionnel — pour l'IA locale)
+- Une clé API Anthropic (fonctionnalités IA cloud — optionnel)
+- [Ollama](https://ollama.ai) installé localement (IA locale — optionnel)
 
 ---
 
@@ -156,13 +176,13 @@ Projet-d-etude/
 ```bash
 # 1. Copier et configurer l'environnement
 cp .env.example .env
-# Ouvrir .env et renseigner au minimum : SECRET_KEY et ANTHROPIC_API_KEY
+# Ouvrir .env et renseigner au minimum : SECRET_KEY
 
 # 2. Lancer l'application
 docker compose up -d --build
 
 # 3. Accéder à l'app
-# http://localhost:5001
+# → http://localhost:5001
 # Interface ngrok : http://localhost:4040
 ```
 
@@ -203,14 +223,14 @@ python app.py --reset-db           # Réinitialiser la base de données
 
 ```env
 SECRET_KEY=<hex-32-bytes>          # Générer : python -c "import secrets; print(secrets.token_hex(32))"
-ANTHROPIC_API_KEY=sk-ant-...       # Clé API Anthropic (fonctionnalités IA cloud)
 ```
 
 ### Recommandées
 
 ```env
-PORT=5001                          # Port du serveur (défaut : 5000)
-ANTHROPIC_MODEL=claude-sonnet-4-5  # Modèle Claude (défaut : sonnet)
+ANTHROPIC_API_KEY=sk-ant-...       # Clé API Anthropic (fonctionnalités IA cloud)
+ANTHROPIC_MODEL=claude-sonnet-4-6  # Modèle Claude (défaut : claude-sonnet-4-6)
+PORT=5001                          # Port du serveur
 LOG_DIR=./logs                     # Répertoire de logs (stdout si absent)
 ITEMS_PER_PAGE=24                  # Pagination de la galerie
 ```
@@ -218,12 +238,12 @@ ITEMS_PER_PAGE=24                  # Pagination de la galerie
 ### Optionnelles
 
 ```env
+# Base de données
+DATABASE_URL=sqlite:///wardrobe.db # SQLite (défaut) ou postgresql://...
+
 # Cache
 CACHE_TYPE=SimpleCache             # SimpleCache (dev) | RedisCache (prod)
 REDIS_URL=redis://localhost:6379   # Cache Redis distribué
-
-# Base de données
-DATABASE_URL=sqlite:///wardrobe.db # SQLite (défaut) ou PostgreSQL
 
 # IA locale
 OLLAMA_URL=http://localhost:11434  # URL du serveur Ollama
@@ -241,7 +261,8 @@ POLLINATIONS_WIDTH=832
 POLLINATIONS_HEIGHT=1216
 POLLINATIONS_ENHANCE=true
 
-# Tunneling
+# Mandataire / réseau
+TRUSTED_PROXY=<ip>                # IP du reverse proxy de confiance (X-Forwarded-For)
 NGROK_AUTHTOKEN=...               # Token ngrok (optionnel)
 
 # Pipeline
@@ -254,7 +275,7 @@ MONGO_URI=mongodb://...           # MongoDB pour sortie scraper (optionnel)
 
 Module Python **indépendant** de l'application Flask. Collecte les catalogues de 28 marques de mode, normalise le schéma produit, déduplique et exporte en JSON (ou MongoDB).
 
-**Marques supportées :** Mango, Nike, H&M, ASOS, Lacoste, Kappa, Jules, Le Coq Sportif, Sergio Tacchini, Lotto, et 18 autres via Shopify API.
+**Marques supportées :** Mango, Nike, H&M, ASOS, Lacoste, Kappa, Jules, Le Coq Sportif, Sergio Tacchini, Lotto, APC, Jacquemus, Isabel Marant, Rouje, Ami Paris, Balzac Paris, Maison Labiche, Bonnegueule, Gymshark, Filling Pieces, Stüssy, Palace, Cabaïa, Merci, Karhu, et d'autres via Shopify API.
 
 ```bash
 # Installer les dépendances du pipeline
@@ -271,9 +292,25 @@ python -m pipeline.run --scrapers mango nike kappa
 python -m pipeline.run --log-level DEBUG
 ```
 
-Le pipeline inclut un **DAG Apache Airflow** (`pipeline/dags/scraping_dag.py`) pour une exécution planifiée quotidienne à 3h UTC, ainsi qu'un dashboard de monitoring (`pipeline/dashboard.py`) avec statistiques et graphiques en temps réel.
+Le pipeline inclut un **DAG Apache Airflow** (`pipeline/dags/scraping_dag.py`) pour une exécution planifiée quotidienne à 3h UTC, et un dashboard de monitoring (`pipeline/dashboard.py`) avec statistiques en temps réel.
 
 Voir [pipeline/README.md](pipeline/README.md) pour la documentation complète.
+
+---
+
+## Scripts utilitaires
+
+Les scripts de maintenance se lancent **depuis la racine du projet** :
+
+```bash
+# Créer 2 comptes démo (demo_homme / demo_femme) avec vêtements réels du catalogue
+python scripts/seed_demo.py
+
+# Réinitialiser uniquement le compte demo_homme (28 pièces variées, prêt pour la démo IA)
+python scripts/reseed_homme.py
+```
+
+> Ces scripts requièrent que `pipeline/output/SmartWear_DB.json` existe (lancer d'abord `python -m pipeline.run`).
 
 ---
 
@@ -290,7 +327,7 @@ docker compose -f docker-compose.monitoring.yml up -d
 # Stats JSON   → http://localhost:8888/stats.json
 ```
 
-Les logs applicatifs sont émis en JSON structuré compatible Loki/ELK. Les métriques incluent : tentatives de connexion, uploads, durée de génération IA, performance des scrapers.
+Les logs applicatifs sont émis en JSON structuré compatible Loki/ELK. Les métriques couvrent : tentatives de connexion, uploads, durée de génération IA, performance des scrapers.
 
 ---
 
@@ -299,13 +336,22 @@ Les logs applicatifs sont émis en JSON structuré compatible Loki/ELK. Les mét
 | Mesure | Détail |
 |--------|--------|
 | **Démarrage protégé** | L'app refuse de démarrer sans `SECRET_KEY` |
-| **Chiffrement des clés API** | Clés tierces stockées chiffrées en base (Fernet / AES-256) |
-| **CSRF global** | Flask-WTF sur tous les formulaires et endpoints AJAX |
-| **Rate limiting** | Routes login, register, upload et IA protégées |
-| **Validation des fichiers** | Contrôle par magic bytes (pas uniquement l'extension) |
-| **Hachage des mots de passe** | Werkzeug PBKDF2 |
-| **Vérification e-mail** | Obligatoire à l'inscription (token 24h) |
-| **Reset de mot de passe** | Token à usage unique (expiration 1h) |
+| **CSRF global** | Flask-WTF sur tous les formulaires et endpoints AJAX, y compris la déconnexion |
+| **Rate limiting** | Login, register, reset mdp, resend vérification et endpoints IA protégés par Flask-Limiter |
+| **Hachage des mots de passe** | Werkzeug PBKDF2-SHA256 |
+| **Vérification e-mail** | Token à usage unique (24 h) — révoque les anciens tokens à chaque nouvelle demande |
+| **Reset de mot de passe** | Token à usage unique (expiration 1 h) |
+| **Chiffrement des clés API** | Clés tierces (Anthropic, Pollinations) stockées chiffrées en base (Fernet / AES-128-CBC) |
+| **Validation des fichiers** | Contrôle par magic bytes (filetype), pas uniquement l'extension |
+| **Anti-decompression bomb** | `PIL.Image.MAX_IMAGE_PIXELS = 50 MP` + catch `DecompressionBombError` |
+| **Protection SSRF** | `utils/security.py` bloque les IPs privées, loopback et link-local sur tout fetch serveur |
+| **Localhost-only pour SD/Ollama** | `is_local_url()` interdit tout hôte autre que `localhost` / `127.x` |
+| **Anti open-redirect** | `is_safe_redirect_target()` valide l'origine sur tous les redirects paramétriques |
+| **Anti XSS stocké** | Validation du schème d'URL (`http`/`https` uniquement) avant persistance en wishlist |
+| **Pas d'open-redirect admin** | Redirect post-reset hardcodé vers `/admin/users/{id}` (plus de paramètre `back`) |
+| **Suppression de compte sécurisée** | Efface les fichiers images, le GIF, la photo de visage et les entrées calendrier avant `DELETE` |
+| **Commit-first pour les images** | Le fichier remplaçant est écrit, la DB committée, puis l'ancien fichier supprimé |
+| **Proxy de confiance** | `X-Forwarded-For` pris en compte uniquement si `TRUSTED_PROXY` est configuré |
 
 ---
 

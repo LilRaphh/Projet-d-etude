@@ -10,7 +10,7 @@ from .main import main_bp
 from .outfits import outfits_bp
 from .profile import profile_bp
 from .style_check import style_check_bp
-from routes.stylist import stylist_bp
+from .stylist import stylist_bp
 
 
 def register_blueprints(app):

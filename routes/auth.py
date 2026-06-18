@@ -1,6 +1,5 @@
 import time
 from datetime import datetime, timedelta
-from urllib.parse import urljoin, urlparse
 
 from flask import Blueprint, flash, redirect, render_template, request, session
 
@@ -8,16 +7,9 @@ from extensions import db, limiter
 from models import EmailVerificationToken, PasswordResetToken, User
 from utils.auth import current_user, get_ctx
 from utils.mail import send_reset_email, send_verification_email
+from utils.security import is_safe_redirect_target
 
 auth_bp = Blueprint('auth', __name__)
-
-
-def _is_safe_redirect_target(target):
-    if not target:
-        return False
-    ref = urlparse(request.host_url)
-    test = urlparse(urljoin(request.host_url, target))
-    return test.scheme in ('http', 'https') and ref.netloc == test.netloc
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -88,7 +80,7 @@ def login():
             db.session.commit()
             flash(f'Ravi de vous revoir, {user.username} !', 'success')
             next_url = request.args.get('next')
-            return redirect(next_url if _is_safe_redirect_target(next_url) else '/')
+            return redirect(next_url if is_safe_redirect_target(next_url, request.host_url) else '/')
 
         flash('Identifiants incorrects.', 'error')
         return render_template('login.html', prefill=login_value, **get_ctx())
@@ -96,7 +88,7 @@ def login():
     return render_template('login.html', prefill='', **get_ctx())
 
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     flash('Déconnecté.', 'info')
@@ -118,6 +110,7 @@ def verify_email(token):
 
 
 @auth_bp.route('/resend-verification')
+@limiter.limit("3 per hour")
 def resend_verification():
     user = current_user()
     if not user:

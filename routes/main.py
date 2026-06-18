@@ -1,3 +1,5 @@
+import os
+
 from flask import Blueprint, flash, jsonify, redirect, render_template, request
 from sqlalchemy import distinct
 
@@ -6,6 +8,7 @@ from extensions import db
 from models import ClothingItem, UserSetting
 from utils.auth import current_user, get_ctx, login_required
 from utils.images import delete_images, save_image
+from utils.security import is_safe_redirect_target
 from utils.tags import get_tags
 from utils.weather import WeatherService
 
@@ -165,8 +168,8 @@ def edit(iid):
 
     if request.method == 'POST':
         file_obj = request.files.get('image')
+        old_img, old_th = item.image_path, item.thumb_path
         if file_obj and file_obj.filename:
-            delete_images(item)
             item.image_path, item.thumb_path = save_image(file_obj)
 
         price_raw = request.form.get('price', '').strip()
@@ -187,6 +190,15 @@ def edit(iid):
 
         db.session.commit()
         flash('Vêtement mis à jour !', 'success')
+
+        if file_obj and file_obj.filename:
+            from config import BASE_DIR
+            for rel in (old_img, old_th):
+                if rel:
+                    p = os.path.join(BASE_DIR, 'static', rel)
+                    if os.path.isfile(p):
+                        os.remove(p)
+
         return redirect(f'/item/{iid}')
 
     default_sizes = {
@@ -249,7 +261,10 @@ def save_settings():
         if value:
             UserSetting.set(me.id, key, value)
     flash('Paramètres sauvegardés !', 'success')
-    return redirect(request.referrer or '/')
+    referrer = request.referrer
+    if not is_safe_redirect_target(referrer, request.host_url):
+        referrer = None
+    return redirect(referrer or '/')
 
 
 @main_bp.route('/forecast')

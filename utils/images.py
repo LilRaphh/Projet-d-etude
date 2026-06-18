@@ -4,6 +4,9 @@ import uuid
 import filetype
 from PIL import Image, ImageOps
 
+# Lever une exception au-delà de 50 MP pour bloquer les décompression bombs
+Image.MAX_IMAGE_PIXELS = 50_000_000
+
 from config import ALLOWED_EXT, BASE_DIR, THUMB_FOLDER, THUMB_SIZE, UPLOAD_FOLDER
 
 ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/webp', 'image/gif'}

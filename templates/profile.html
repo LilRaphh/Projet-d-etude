@@ -469,7 +469,10 @@
         <p class="pc-ttl">Session active</p>
         <p class="pc-desc">Vous êtes connecté sur cet appareil. Pour vous déconnecter de tous vos appareils, changez votre mot de passe.</p>
         <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-          <a href="/logout" class="btn btn-ghost">Se déconnecter</a>
+          <form method="post" action="/logout" style="display:inline;margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-ghost">Se déconnecter</button>
+          </form>
         </div>
       </div>
 

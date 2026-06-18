@@ -166,6 +166,7 @@ class EmailVerificationToken(db.Model):
 
     @classmethod
     def create_for(cls, user):
+        cls.query.filter_by(user_id=user.id, used=False).delete()
         token = secrets.token_urlsafe(32)
         row = cls(user_id=user.id, token=token, expires_at=datetime.utcnow() + timedelta(hours=24))
         db.session.add(row)
