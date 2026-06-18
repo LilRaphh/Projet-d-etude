@@ -364,3 +364,43 @@ Les logs applicatifs sont émis en JSON structuré compatible Loki/ELK. Les mét
 | Services utilitaires | [utils/README.md](utils/README.md) |
 | Pipeline de scraping | [pipeline/README.md](pipeline/README.md) |
 | Installation complète | [INSTALL.md](INSTALL.md) |
+
+---
+
+## Justification des choix techniques
+
+### Flask plutôt que FastAPI ou Django
+
+Flask a été préféré à ses deux alternatives principales pour des raisons opposées : FastAPI est conçu autour des APIs REST asynchrones et du typage strict, ce qui aurait compliqué l'intégration des templates Jinja2 et la gestion des sessions côté serveur. Django, à l'inverse, impose une structure trop rigide (ORM propriétaire, routing déclaratif, admin généré) pour un projet expérimental qui a évolué par itérations rapides. Flask offre l'équilibre : suffisamment structuré via les blueprints pour organiser 13 domaines fonctionnels, suffisamment léger pour ne pas contraindre les choix d'architecture IA.
+
+### SQLite + SQLAlchemy plutôt qu'une base managée
+
+SQLite a été choisi comme base par défaut pour trois raisons concrètes : zéro infrastructure à provisionner, portabilité totale (la base est un fichier unique), et performances largement suffisantes pour un usage mono-utilisateur à faible concurrence. SQLAlchemy abstrait le dialecte SQL, ce qui permet de basculer vers PostgreSQL via un simple changement de `DATABASE_URL` sans modifier une ligne de code applicatif — testé et validé. Les embeddings FashionCLIP (vecteurs flottants) sont stockés en JSON dans SQLite plutôt que dans un moteur vectoriel dédié (ChromaDB, Pinecone) : à l'échelle d'une garde-robe personnelle (< 1 000 articles), la recherche par similarité cosinus en mémoire est sous-milliseconde et élimine une dépendance externe.
+
+### Architecture IA hybride : local + cloud
+
+Le moteur IA combine délibérément deux niveaux. **Ollama + Qwen2.5-VL** (local) assure l'analyse visuelle des vêtements à l'upload : pas de coût par requête, pas de donnée personnelle envoyée vers un tiers, fonctionnement hors ligne. **Claude API** (cloud) intervient sur les tâches à haute valeur sémantique — suggestions stylistiques contextualisées, analyse de cohérence d'ensemble, génération de prompts complexes — où la qualité du raisonnement justifie le coût. Cette séparation évite aussi de saturer l'API cloud sur des opérations routinières (catégorisation, extraction d'attributs).
+
+### FashionCLIP plutôt qu'un embedding généraliste
+
+Un modèle généraliste comme CLIP d'OpenAI traite les images de mode comme n'importe quelle image naturelle. FashionCLIP (`patrickjohncyh/fashion-clip`) est fine-tuné sur un corpus de 700 000 produits fashion, ce qui produit des espaces d'embedding où la proximité cosinus reflète réellement la similarité vestimentaire (couleur, coupe, style, matière) plutôt qu'une ressemblance visuelle générique. Le modèle tient en ~400 Mo et s'exécute en CPU, ce qui le rend utilisable sans GPU.
+
+### Pollinations.ai plutôt que Stable Diffusion hébergé
+
+La génération d'images de tenues sur mannequin aurait pu reposer entièrement sur un SD local. Pollinations.ai (Flux) a été retenu comme solution par défaut pour deux raisons : gratuité sans clé API obligatoire, et qualité immédiatement exploitable sans configuration de checkpoint, LoRA ou prompt engineering spécialisé. L'option SD local (A1111 / ComfyUI) reste disponible via `local_sd_url` pour les utilisateurs qui préfèrent la confidentialité ou le contrôle total.
+
+### Playwright + BeautifulSoup4 pour le scraping
+
+Les 28 marques ciblées se répartissent en deux catégories techniques. Les marques sur Shopify exposent une API JSON (`/products.json`) exploitable directement via `requests` + `BeautifulSoup4` — rapide, stable, peu gourmand. Les marques avec sites JS-heavy (rendu React/Next.js côté client) nécessitent un navigateur sans tête : Playwright a été préféré à Selenium pour sa gestion native des contextes asynchrones, son API plus moderne et sa meilleure détection des requêtes réseau. La classe `shopify_base.py` factorise les 18 marques Shopify, limitant à ~60 lignes chaque scraper spécifique.
+
+### Open-Meteo plutôt que OpenWeatherMap
+
+Open-Meteo fournit des prévisions 7 jours avec résolution horaire, géolocalisation par nom de ville, et données de couverture nuageuse — sans clé API, sans quota, sans compte. OpenWeatherMap propose des données équivalentes mais impose un enregistrement et une limite sur le plan gratuit. Pour un projet académique où la météo est une fonctionnalité d'appoint (suggestions de tenues), éliminer cette friction d'onboarding a simplifié le déploiement.
+
+### Grafana + Loki plutôt qu'ELK ou Datadog
+
+La stack ELK (Elasticsearch + Logstash + Kibana) aurait requis 4–8 Go de RAM pour Elasticsearch seul. Datadog est un SaaS payant. Loki (agrégation de logs à la Prometheus, sans indexation full-text) + Promtail (collecteur) + Grafana (visualisation) tourne en moins de 512 Mo au total et s'intègre en une dizaine de lignes de configuration. La stack est optionnelle et entièrement découplée de l'application via `docker-compose.monitoring.yml` séparé.
+
+### Fernet pour le chiffrement des clés API
+
+Les clés API tierces (Anthropic, Pollinations) saisies par l'utilisateur dans l'interface sont stockées chiffrées en base. Fernet (AES-128-CBC + HMAC-SHA256, bibliothèque `cryptography`) a été retenu pour sa simplicité d'usage : une clé symétrique dérivée de `SECRET_KEY`, un appel à `Fernet.encrypt()` / `decrypt()`, et une résistance aux attaques par altération (l'HMAC invalide tout chiffré modifié). L'alternative — stocker en clair et compter sur les permissions de la base — était inacceptable dès lors que la base SQLite peut être exfiltrée comme un fichier ordinaire.
