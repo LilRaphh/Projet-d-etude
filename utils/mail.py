@@ -67,7 +67,7 @@ def send_verification_email(user, token: str, base_url: str) -> bool:
     return _send(user.email, subject, html, text)
 
 
-def send_price_alert_email(user, dropped_items: list) -> bool:
+def send_price_alert_email(user, dropped_items: list, base_url: str = '') -> bool:
     if not dropped_items:
         return False
 
@@ -98,7 +98,7 @@ def send_price_alert_email(user, dropped_items: list) -> bool:
     <tbody>{rows_html}</tbody>
   </table>
   <p style="text-align:center">
-    <a href="/boutique/wishlist" style="background:#111;color:#fff;padding:.65rem 1.25rem;border-radius:6px;text-decoration:none;font-size:.9rem">Voir ma wishlist</a>
+    <a href="{base_url.rstrip('/')}/boutique/wishlist" style="background:#111;color:#fff;padding:.65rem 1.25rem;border-radius:6px;text-decoration:none;font-size:.9rem">Voir ma wishlist</a>
   </p>
   <hr style="border:none;border-top:1px solid #eee;margin:1.5rem 0">
   <p style="font-size:.75rem;color:#999">Wardrobe — votre garde-robe personnelle</p>

@@ -226,7 +226,10 @@ def gen_face_upload():
     dest = os.path.join(face_dir, f'{me.id}.jpg')
 
     f.stream.seek(0)
-    img = Image.open(f.stream).convert('RGB')
+    try:
+        img = Image.open(f.stream).convert('RGB')
+    except Image.DecompressionBombError:
+        return jsonify(error='Image trop grande (limite 50 MP).'), 400
     img.thumbnail((1024, 1024), Image.LANCZOS)
     img.save(dest, 'JPEG', quality=90, optimize=True)
 

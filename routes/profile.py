@@ -1,9 +1,10 @@
+import os
 import secrets
 from datetime import datetime, timedelta
 
 from flask import Blueprint, flash, redirect, render_template, request, session
 
-from config import AESTHETICS, BUDGETS, GENDERS, SIZES_BY_CATEGORY
+from config import AESTHETICS, BUDGETS, GENDERS, LOADING_GIF_FOLDER, SIZES_BY_CATEGORY
 from extensions import db
 from models import User, UserSetting
 from utils.auth import current_user, get_ctx, login_required
@@ -152,6 +153,20 @@ def profile():
         elif action == 'delete_account':
             confirm = request.form.get('confirm_delete', '')
             if confirm == me.username:
+                from config import BASE_DIR
+                from models import CalendarEntry
+                from utils.images import delete_images
+                for item in me.items.all():
+                    delete_images(item)
+                face_path = os.path.join(BASE_DIR, 'static', 'uploads', 'faces', f'{me.id}.jpg')
+                if os.path.isfile(face_path):
+                    os.remove(face_path)
+                loading_gif = UserSetting.get(me.id, 'loading_gif', '')
+                if loading_gif:
+                    gif_path = os.path.join(LOADING_GIF_FOLDER, loading_gif)
+                    if os.path.isfile(gif_path):
+                        os.remove(gif_path)
+                CalendarEntry.query.filter_by(user_id=me.id).delete()
                 db.session.delete(me)
                 db.session.commit()
                 session.clear()
@@ -160,6 +175,36 @@ def profile():
             else:
                 flash('Confirmation incorrecte — tapez exactement votre nom d\'utilisateur.', 'error')
             return redirect('/profile?tab=securite')
+
+        elif action == 'loading_gif':
+            f = request.files.get('loading_gif')
+            if not f or not f.filename:
+                flash('Aucun fichier sélectionné.', 'error')
+            else:
+                ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+                if ext != 'gif':
+                    flash('Seuls les fichiers .gif sont acceptés.', 'error')
+                else:
+                    header = f.read(6)
+                    f.seek(0)
+                    if not (header[:4] == b'GIF8' and header[4:6] in (b'7a', b'9a')):
+                        flash('Fichier GIF invalide.', 'error')
+                    else:
+                        filename = f'{me.id}.gif'
+                        f.save(os.path.join(LOADING_GIF_FOLDER, filename))
+                        UserSetting.set(me.id, 'loading_gif', filename)
+                        flash('GIF de chargement mis à jour !', 'success')
+            return redirect('/profile?tab=compte')
+
+        elif action == 'delete_loading_gif':
+            filename = UserSetting.get(me.id, 'loading_gif', '')
+            if filename:
+                path = os.path.join(LOADING_GIF_FOLDER, filename)
+                if os.path.isfile(path):
+                    os.remove(path)
+                UserSetting.delete(me.id, 'loading_gif')
+                flash('GIF de chargement supprimé.', 'success')
+            return redirect('/profile?tab=compte')
 
         elif action == 'preferences':
             me.gender = request.form.get('gender', '').strip() or None

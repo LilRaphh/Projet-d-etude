@@ -1,16 +1,22 @@
 """
 Seed vitrine : crée 2 comptes démo avec des produits réels issus du pipeline de scraping.
-Usage : python seed_demo.py
+Usage : python scripts/seed_demo.py  (depuis la racine du projet)
 """
+import os
+import sys
+
+# Ajouter la racine du projet au PYTHONPATH pour les imports absolus
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(_ROOT, '.env'))
 
 import hashlib
 import io
 import json
-import os
 import random
-import sys
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
@@ -25,7 +31,7 @@ from models import ClothingItem, User
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-DB_PATH = os.path.join(os.path.dirname(__file__), "pipeline", "output", "SmartWear_DB.json")
+DB_PATH = os.path.join(_ROOT, "pipeline", "output", "SmartWear_DB.json")
 ACCOUNTS = [
     {"username": "demo_homme", "email": "demo.homme@vitrine.fr", "password": "Vitrine2024!", "gender": "Homme"},
     {"username": "demo_femme", "email": "demo.femme@vitrine.fr", "password": "Vitrine2024!", "gender": "Femme"},

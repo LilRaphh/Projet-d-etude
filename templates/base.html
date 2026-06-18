@@ -333,11 +333,209 @@ textarea.fc{resize:vertical;min-height:80px}
   .mob-hdr-wx{display:flex}
 }
 
+/* ── Page loading overlay ── */
+.page-loading-overlay{
+  position:fixed;
+  inset:0;
+  z-index:900;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(249,248,246,.82);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .28s ease;
+}
+body.is-loading .page-loading-overlay{
+  opacity:1;
+  pointer-events:all;
+}
+.page-loading-inner{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:.9rem;
+  animation:loader-float 1.9s ease-in-out infinite;
+}
+/*
+  Pixel art cat — grille 10×9, 1 pixel = 5×5 px
+  Chaque shadow = 5px 5px bloc à (col*5, row*5)
+
+  Vue de côté, chat courant vers la droite :
+
+       C:  0  1  2  3  4  5  6  7  8  9
+  R0:      #  .  .  #  .  .  .  .  .  .   ← pointes d'oreilles
+  R1:      ## .  .  ## .  .  .  .  .  .   ← bases des oreilles
+  R2:      ##### .  .  .  .  .  .  .  .   ← tête complète (0-4)
+  R3:      . #  .  # .  .  .  .  .  .  .  ← yeux (col 1 et 3)
+  R4:      ##### .  .  .  .  .  .  .  .   ← museau/menton
+  R5:      . .  ##### # # # .  .  #  .    ← corps (2-7) + queue haute (col 9)
+  R6:      . .  ####### # # # .  .  .     ← ventre (2-8) + base queue
+  R7:      frame-dépendant                ← pattes
+  R8:      frame-dépendant                ← pieds
+*/
+.page-loading-cat{
+  position:relative;
+  width:50px;
+  height:45px;
+}
+.page-loading-cat::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;
+  width:5px;height:5px;
+  background:transparent;
+  animation:cat-run .5s steps(1) infinite;
+}
+.page-loading-label{
+  font-family:var(--sans);
+  font-size:.7rem;
+  color:var(--tm);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+@keyframes loader-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-7px)}
+}
+@keyframes cat-run{
+  /* ── Frame 1 : pattes écartées (galop étendu) ── */
+  0%{box-shadow:
+    /* oreilles pointes */
+    0px 0px 0 0 var(--tx),
+    15px 0px 0 0 var(--tx),
+    /* bases oreilles */
+    0px 5px 0 0 var(--tx),
+    5px 5px 0 0 var(--tx),
+    15px 5px 0 0 var(--tx),
+    20px 5px 0 0 var(--tx),
+    /* tête (R2, cols 0-4) */
+    0px 10px 0 0 var(--tx),
+    5px 10px 0 0 var(--tx),
+    10px 10px 0 0 var(--tx),
+    15px 10px 0 0 var(--tx),
+    20px 10px 0 0 var(--tx),
+    /* yeux (R3, cols 1 et 3) */
+    5px 15px 0 0 var(--tx),
+    15px 15px 0 0 var(--tx),
+    /* menton (R4, cols 0-4) */
+    0px 20px 0 0 var(--tx),
+    5px 20px 0 0 var(--tx),
+    10px 20px 0 0 var(--tx),
+    15px 20px 0 0 var(--tx),
+    20px 20px 0 0 var(--tx),
+    /* corps haut (R5, cols 2-7) + queue col 9 */
+    10px 25px 0 0 var(--tx),
+    15px 25px 0 0 var(--tx),
+    20px 25px 0 0 var(--tx),
+    25px 25px 0 0 var(--tx),
+    30px 25px 0 0 var(--tx),
+    35px 25px 0 0 var(--tx),
+    45px 25px 0 0 var(--tx),
+    /* ventre (R6, cols 2-8) */
+    10px 30px 0 0 var(--tx),
+    15px 30px 0 0 var(--tx),
+    20px 30px 0 0 var(--tx),
+    25px 30px 0 0 var(--tx),
+    30px 30px 0 0 var(--tx),
+    35px 30px 0 0 var(--tx),
+    40px 30px 0 0 var(--tx),
+    /* pattes écartées (R7 : col 1 et 7) */
+    5px 35px 0 0 var(--tx),
+    35px 35px 0 0 var(--tx),
+    /* pieds écartés (R8 : col 0 et 8) */
+    0px 40px 0 0 var(--tx),
+    40px 40px 0 0 var(--tx)
+  }
+  /* ── Frame 2 : pattes repliées sous le ventre ── */
+  50%{box-shadow:
+    /* oreilles (identiques) */
+    0px 0px 0 0 var(--tx),
+    15px 0px 0 0 var(--tx),
+    0px 5px 0 0 var(--tx),
+    5px 5px 0 0 var(--tx),
+    15px 5px 0 0 var(--tx),
+    20px 5px 0 0 var(--tx),
+    /* tête (identique) */
+    0px 10px 0 0 var(--tx),
+    5px 10px 0 0 var(--tx),
+    10px 10px 0 0 var(--tx),
+    15px 10px 0 0 var(--tx),
+    20px 10px 0 0 var(--tx),
+    5px 15px 0 0 var(--tx),
+    15px 15px 0 0 var(--tx),
+    0px 20px 0 0 var(--tx),
+    5px 20px 0 0 var(--tx),
+    10px 20px 0 0 var(--tx),
+    15px 20px 0 0 var(--tx),
+    20px 20px 0 0 var(--tx),
+    /* corps (identique) */
+    10px 25px 0 0 var(--tx),
+    15px 25px 0 0 var(--tx),
+    20px 25px 0 0 var(--tx),
+    25px 25px 0 0 var(--tx),
+    30px 25px 0 0 var(--tx),
+    35px 25px 0 0 var(--tx),
+    45px 25px 0 0 var(--tx),
+    10px 30px 0 0 var(--tx),
+    15px 30px 0 0 var(--tx),
+    20px 30px 0 0 var(--tx),
+    25px 30px 0 0 var(--tx),
+    30px 30px 0 0 var(--tx),
+    35px 30px 0 0 var(--tx),
+    40px 30px 0 0 var(--tx),
+    /* pattes repliées sous le ventre (R7 : cols 2,3 et 6,7) */
+    10px 35px 0 0 var(--tx),
+    15px 35px 0 0 var(--tx),
+    30px 35px 0 0 var(--tx),
+    35px 35px 0 0 var(--tx)
+    /* pas de pieds visibles au sol */
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .page-loading-overlay{
+    transition:none;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    background:rgba(249,248,246,.95);
+  }
+  .page-loading-inner{animation:none}
+  .page-loading-cat::before{
+    animation:none;
+    box-shadow:
+      0px 0px 0 0 var(--tx),15px 0px 0 0 var(--tx),
+      0px 5px 0 0 var(--tx),5px 5px 0 0 var(--tx),15px 5px 0 0 var(--tx),20px 5px 0 0 var(--tx),
+      0px 10px 0 0 var(--tx),5px 10px 0 0 var(--tx),10px 10px 0 0 var(--tx),15px 10px 0 0 var(--tx),20px 10px 0 0 var(--tx),
+      5px 15px 0 0 var(--tx),15px 15px 0 0 var(--tx),
+      0px 20px 0 0 var(--tx),5px 20px 0 0 var(--tx),10px 20px 0 0 var(--tx),15px 20px 0 0 var(--tx),20px 20px 0 0 var(--tx),
+      10px 25px 0 0 var(--tx),15px 25px 0 0 var(--tx),20px 25px 0 0 var(--tx),25px 25px 0 0 var(--tx),30px 25px 0 0 var(--tx),35px 25px 0 0 var(--tx),45px 25px 0 0 var(--tx),
+      10px 30px 0 0 var(--tx),15px 30px 0 0 var(--tx),20px 30px 0 0 var(--tx),25px 30px 0 0 var(--tx),30px 30px 0 0 var(--tx),35px 30px 0 0 var(--tx),40px 30px 0 0 var(--tx),
+      5px 35px 0 0 var(--tx),35px 35px 0 0 var(--tx),
+      0px 40px 0 0 var(--tx),40px 40px 0 0 var(--tx)
+  }
+}
+
 {% block extra_css %}{% endblock %}
 </style>
 {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="is-loading">
+
+<div class="page-loading-overlay" aria-hidden="true">
+  <div class="page-loading-inner">
+    {% if loading_gif %}
+    <img src="{{ url_for('static', filename='uploads/loading_gifs/' + loading_gif) }}"
+         alt="" style="width:80px;height:80px;object-fit:contain">
+    {% else %}
+    <div class="page-loading-cat"></div>
+    {% endif %}
+    <p class="page-loading-label">Chargement…</p>
+  </div>
+</div>
+
+<div class="page-shell">
 
 <header class="hdr">
   <div class="wrap hdr-in">
@@ -396,6 +594,9 @@ textarea.fc{resize:vertical;min-height:80px}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Ajouter
       </a>
+      <a href="/add-from-photo" class="btn btn-ghost btn-sm nav-bulk" title="Ajouter depuis une photo entière">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </a>
       <a href="/add-bulk" class="btn btn-ghost btn-sm nav-bulk" title="Importer plusieurs vêtements">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
       </a>
@@ -445,10 +646,16 @@ textarea.fc{resize:vertical;min-height:80px}
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Ajouter un vêtement
     </a>
+    <a href="/add-from-photo" class="mob-nl {% if request.path == '/add-from-photo' %}active{% endif %}" style="margin-top:.1rem">
+      🖼 Ajouter depuis une photo
+    </a>
     <a href="/add-bulk" class="mob-nl" style="margin-top:.1rem">Importer en masse</a>
     <div class="mob-sep"></div>
     <a href="/profile" class="mob-nl">Mon profil</a>
-    <a href="/logout" class="mob-nl">Se déconnecter</a>
+    <form method="post" action="/logout" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="mob-nl" style="background:none;border:none;cursor:pointer;padding:0;font:inherit;text-align:left;width:100%">Se déconnecter</button>
+    </form>
   </nav>
 </aside>
 {% endif %}
@@ -549,7 +756,10 @@ textarea.fc{resize:vertical;min-height:80px}
     <strong style="color:var(--tx)">{{ me.username }}</strong> — {{ me.email }}
   </div>
   <a href="/profile" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:.45rem">Mon profil</a>
-  <a href="/logout" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</a>
+  <form method="post" action="/logout" style="margin:0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center">Se déconnecter</button>
+  </form>
 </aside>
 
 <script>
@@ -595,5 +805,59 @@ function csrfFetch(url, options) {
 }
 </script>
 {% block extra_js %}{% endblock %}
+
+</div><!-- /.page-shell -->
+
+<script>
+(function(){
+  var body = document.body;
+  var timer;
+
+  function hideLoading(){
+    clearTimeout(timer);
+    body.classList.remove('is-loading');
+  }
+
+  function showLoading(){
+    clearTimeout(timer);
+    body.classList.add('is-loading');
+    timer = setTimeout(hideLoading, 8000);
+  }
+
+  // Remove overlay when page is fully loaded
+  if(document.readyState === 'complete'){
+    hideLoading();
+  } else {
+    window.addEventListener('load', hideLoading);
+  }
+
+  // bfcache restore (back/forward button)
+  window.addEventListener('pageshow', function(e){
+    if(e.persisted) hideLoading();
+  });
+
+  // Internal link navigation
+  document.addEventListener('click', function(e){
+    var a = e.target.closest('a[href]');
+    if(!a) return;
+    if(a.target === '_blank') return;
+    if(a.hasAttribute('disabled') || a.classList.contains('disabled')) return;
+    var href = a.getAttribute('href');
+    if(!href) return;
+    if(href === '#' || href.startsWith('#')) return;
+    if(href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+    try{
+      var url = new URL(href, location.href);
+      if(url.origin !== location.origin) return;
+    } catch(ex){ return; }
+    showLoading();
+  });
+
+  // Form submission
+  document.addEventListener('submit', function(e){
+    showLoading();
+  });
+})();
+</script>
 </body>
 </html>

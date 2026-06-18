@@ -24,7 +24,8 @@ OUTPUT_DIR   = PIPELINE_DIR / "output"
 LOG_DIR      = PIPELINE_DIR / "logs"
 DB_FILE      = OUTPUT_DIR / "SmartWear_DB.json"
 STATS_FILE   = OUTPUT_DIR / "stats.json"
-VENV_PYTHON  = str(PROJECT_ROOT / ".venv" / "bin" / "python")
+VENV_PYTHON      = str(PROJECT_ROOT / ".venv" / "bin" / "python")
+CHECKPOINT_PATH  = LOG_DIR / "asos_checkpoint.json"
 
 ALL_SCRAPERS = [
     "mango", "lecoqsportif", "tacchini", "kappa", "lotto",
@@ -83,7 +84,8 @@ def _layout(fig, title="", height=None):
 
 # ── Session state ──────────────────────────────────────────────────
 for key, default in [("pid", None), ("run_log", None),
-                     ("audit_stats", None), ("check_anomalies", None)]:
+                     ("audit_stats", None), ("check_anomalies", None),
+                     ("paused", False), ("save_msg", None)]:
     if key not in st.session_state:
         st.session_state[key] = default
 
@@ -288,13 +290,20 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 running = is_running(st.session_state.pid)
 if running:
-    st.sidebar.success(f"🟢 Pipeline actif (PID {st.session_state.pid})")
+    paused_sb = st.session_state.get("paused", False)
+    if paused_sb:
+        st.sidebar.warning(f"⏸ Pipeline en pause (PID {st.session_state.pid})")
+    else:
+        st.sidebar.success(f"🟢 Pipeline actif (PID {st.session_state.pid})")
     if st.sidebar.button("⏹ Arrêter le pipeline"):
         try:
+            if paused_sb:
+                os.kill(st.session_state.pid, 18)
             os.kill(st.session_state.pid, 15)
         except Exception:
             pass
-        st.session_state.pid = None
+        st.session_state.pid    = None
+        st.session_state.paused = False
         st.rerun()
 else:
     st.sidebar.info("⚪ Pipeline inactif")
@@ -1330,7 +1339,7 @@ elif page == "🚀 Lancer":
             unsafe_allow_html=True,
         )
 
-        # Boutons lancement / arrêt
+        # ── Bouton Lancer ──────────────────────────────────────────
         if not running:
             if st.button(
                 f"▶  Lancer {n_sel} scraper{'s' if n_sel > 1 else ''}",
@@ -1343,22 +1352,103 @@ elif page == "🚀 Lancer":
                                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 st.session_state.pid          = proc.pid
                 st.session_state.cc_launched  = selected_list
+                st.session_state.paused       = False
+                st.session_state.save_msg     = None
                 time.sleep(1.5)
                 st.rerun()
         else:
-            st.button("⏳ Pipeline en cours…", disabled=True, use_container_width=True)
-            if st.button("⏹  Arrêter", use_container_width=True):
+            st.button("⏳ Pipeline actif (PID %d)" % st.session_state.pid,
+                      disabled=True, use_container_width=True)
+
+        st.markdown("---")
+
+        # ── Panneau de contrôle (toujours visible) ─────────────────
+        st.markdown("**Contrôle du pipeline**")
+        paused = st.session_state.get("paused", False)
+
+        if running:
+            if paused:
+                st.warning("⏸ En pause")
+            else:
+                st.success("🟢 En cours…")
+        else:
+            st.info("⚪ Aucun pipeline actif")
+
+        bc1, bc2, bc3, bc4 = st.columns(4)
+
+        # Pause / Reprendre
+        if not paused:
+            if bc1.button("⏸ Pause", use_container_width=True, disabled=not running):
                 try:
-                    os.kill(st.session_state.pid, 15)
+                    os.kill(st.session_state.pid, 19)  # SIGSTOP
+                    st.session_state.paused = True
                 except Exception:
                     pass
-                st.session_state.pid = None
                 st.rerun()
+        else:
+            if bc1.button("▶ Reprendre", use_container_width=True, type="primary"):
+                try:
+                    os.kill(st.session_state.pid, 18)  # SIGCONT
+                    st.session_state.paused = False
+                except Exception:
+                    pass
+                st.rerun()
+
+        # Enregistrer (checkpoint ASOS)
+        if bc2.button("💾 Enregistrer", use_container_width=True):
+            if CHECKPOINT_PATH.exists():
+                try:
+                    ck = json.loads(CHECKPOINT_PATH.read_text(encoding="utf-8"))
+                    n_saved = len(ck.get("done", []))
+                    st.session_state.save_msg = f"✅ {n_saved}/48 pages ASOS sauvegardées"
+                except Exception:
+                    st.session_state.save_msg = "✅ Checkpoint enregistré"
+            else:
+                st.session_state.save_msg = "ℹ️ Aucun checkpoint ASOS pour l'instant"
+            st.rerun()
+
+        # Arrêter (SIGTERM)
+        if bc4.button("⏹ Arrêter", use_container_width=True, disabled=not running):
+            try:
+                if paused:
+                    os.kill(st.session_state.pid, 18)  # SIGCONT d'abord
+                os.kill(st.session_state.pid, 15)       # SIGTERM
+            except Exception:
+                pass
+            st.session_state.pid    = None
+            st.session_state.paused = False
+            st.rerun()
+
+        if st.session_state.get("save_msg"):
+            st.info(st.session_state.save_msg)
+
+        # Checkpoint ASOS
+        if CHECKPOINT_PATH.exists():
+            try:
+                ck = json.loads(CHECKPOINT_PATH.read_text(encoding="utf-8"))
+                n_done_ck = len(ck.get("done", []))
+                st.caption(f"🔖 Checkpoint ASOS : {n_done_ck}/48 pages sauvegardées")
+                if st.button("🗑️ Effacer le checkpoint", use_container_width=True):
+                    CHECKPOINT_PATH.unlink(missing_ok=True)
+                    st.rerun()
+            except Exception:
+                pass
 
         # Options avancées
         with st.expander("⚙️ Options avancées"):
             log_level = st.selectbox("Niveau de log", ["INFO", "DEBUG", "WARNING"], index=0,
                                      key="cc_log_level")
+            st.markdown("**Reconnecter à un pipeline existant**")
+            pid_input = st.number_input("PID du process", min_value=1, step=1,
+                                        value=st.session_state.pid or 1,
+                                        key="cc_pid_input")
+            if st.button("🔗 Connecter", use_container_width=True):
+                if is_running(int(pid_input)):
+                    st.session_state.pid    = int(pid_input)
+                    st.session_state.paused = False
+                    st.rerun()
+                else:
+                    st.error(f"Aucun process actif avec le PID {pid_input}")
 
     # ─────────────────────────────────────────────────────────────
     # COLONNE DROITE : Progression

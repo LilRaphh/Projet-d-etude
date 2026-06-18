@@ -719,6 +719,11 @@ def generate_image(prompt, api_key=None, outfit=None, image_model=None, local_ur
     # Génération locale (A1111 ou ComfyUI)
     if effective_model in ('local-a1111', 'local-comfyui'):
         negative_prompt = build_negative_prompt(gender=gender)
+        # Restreindre local_url à localhost pour éviter le SSRF
+        if local_url:
+            from utils.security import is_local_url
+            if not is_local_url(local_url):
+                return None, "L'URL de génération locale doit pointer vers localhost."
         local_base = (local_url or 'http://localhost:7860').rstrip('/')
         current_app.logger.info(
             f'Local generation | provider={effective_model} | url={local_base} '

@@ -106,8 +106,7 @@ def reset_password(user_id):
     user.set_password(new_pw)
     db.session.commit()
     flash(f'Mot de passe de {user.username} mis à jour.', 'success')
-    back = request.form.get('back', '/admin/users')
-    return redirect(back)
+    return redirect(f'/admin/users/{user_id}')
 
 
 @admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])

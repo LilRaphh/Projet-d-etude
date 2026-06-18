@@ -174,18 +174,23 @@ _FRENCH_FUNCTION_WORDS = frozenset([
     "à", "par", "pour", "sur", "sous", "avec", "d",
 ])
 
-# Corrections de casse pour les marques mal capitalisées dans les titres Merci.
+# Corrections de casse applicables globalement à tous les scrapers.
 _BRAND_CASING_MAP = {
-    "carhartt wip":   "Carhartt WIP",
-    "a.p.c":          "A.P.C.",
-    "a.p.c.":         "A.P.C.",
-    "apc":            "A.P.C.",
-    "ami paris":      "AMI Paris",
-    "amiparis":       "AMI Paris",
-    "maison kitsune": "Maison Kitsuné",
-    "maison kitsuné": "Maison Kitsuné",
-    "épice":          "Épice",
-    "epice":          "Épice",
+    # ── ASOS / extractions de noms ─────────────────────────────────────
+    "carhartt wip":          "Carhartt WIP",
+    "sixsoeurs":             "Sixsoeurs",
+    # ── Marques françaises ──────────────────────────────────────────────
+    "a.p.c":                 "A.P.C.",
+    "a.p.c.":                "A.P.C.",
+    "apc":                   "A.P.C.",
+    "ami paris":             "AMI Paris",
+    "amiparis":              "AMI Paris",
+    "maison kitsune":        "Maison Kitsuné",
+    "maison kitsuné":        "Maison Kitsuné",
+    "épice":                 "Épice",
+    "epice":                 "Épice",
+    "levis":                 "Levi's",
+    "levi's":                "Levi's",
 }
 
 
@@ -195,8 +200,15 @@ _MERCI_URL_DOMAIN = "merci-merci.com"
 def _looks_like_product_name(candidate: str) -> bool:
     """Retourne True si le candidat ressemble à un nom de produit (pas une marque)."""
     words = candidate.lower().split()
-    # Contient un mot de la liste produit → pas une marque
-    if any(w in _MERCI_NON_BRAND_WORDS for w in words):
+    # Vérifier aussi les tokens après suppression des tirets en tête
+    # "-T-Shirt" → stripped = "t-shirt" (dans _MERCI_NON_BRAND_WORDS)
+    #            → split   = ["t", "shirt"] (pour les formes composées futures)
+    all_tokens = set(words)
+    for w in words:
+        stripped = w.strip("-")
+        all_tokens.add(stripped)
+        all_tokens.update(t for t in stripped.split("-") if t)
+    if any(w in _MERCI_NON_BRAND_WORDS for w in all_tokens):
         return True
     # Contient une préposition/article français → description de produit, pas une marque
     # Exception : "x" est autorisé (collaborations : "Dôen x Merci")
@@ -290,6 +302,18 @@ def _normalize_brand(brand: str) -> str:
     return _BRAND_CASING_MAP.get(brand.lower(), brand)
 
 
+def _normalize_all_brands(products: list) -> tuple:
+    """Applique _BRAND_CASING_MAP à tous les produits, pas seulement Merci."""
+    fixed = 0
+    for p in products:
+        brand = p.get("brand_source") or ""
+        canonical = _BRAND_CASING_MAP.get(brand.lower().strip())
+        if canonical and canonical != brand:
+            p["brand_source"] = canonical
+            fixed += 1
+    return products, fixed
+
+
 def _fix_merci_brands(products: list) -> tuple:
     """Pour les items Merci dont le nom contient 'Marque – Produit',
     extrait la vraie marque et nettoie le nom.
@@ -334,6 +358,10 @@ def run_audit(input_file: str = INPUT_FILE) -> dict:
     total = len(products)
     logger.info("[Audit] %d produits chargés", total)
 
+    # 0. Normaliser les noms de marques (casse, variantes) avant tout le reste
+    products, brands_normalized = _normalize_all_brands(products)
+    logger.info("[Audit] Marques normalisées (casse) : %d", brands_normalized)
+
     products, dupes_removed = _deduplicate(products)
 
     # 1. Réparer les items corrompus par un précédent audit (mauvaise extraction de marque)
@@ -368,6 +396,7 @@ def run_audit(input_file: str = INPUT_FILE) -> dict:
 
     stats = {
         "total_initial":        total,
+        "brands_normalized":    brands_normalized,
         "dupes_removed":        dupes_removed,
         "brands_fixed":         brands_fixed,
         "non_clothing_removed": non_clothing_removed,

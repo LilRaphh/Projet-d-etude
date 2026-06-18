@@ -15,7 +15,7 @@ import json
 import logging
 import os
 import sys
-from typing import List, Optional
+from typing import List, Optional, Set
 
 try:
     from playwright.sync_api import sync_playwright, TimeoutError as PWTimeout
@@ -24,8 +24,11 @@ except ImportError as e:
 
 from pipeline.scrapers.base import BaseScraper
 from pipeline.models import Product
+from pipeline.config import LOG_DIR
 
 logger = logging.getLogger(__name__)
+
+CHECKPOINT_PATH = os.path.join(LOG_DIR, "asos_checkpoint.json")
 
 ASOS_CATALOG = [
     # (genre, sexe, type_hint, url)
@@ -428,6 +431,30 @@ class AsosScraper(BaseScraper):
         )
 
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _checkpoint_load() -> Set[str]:
+        """Charge le checkpoint et retourne l'ensemble des URLs déjà traitées."""
+        try:
+            with open(CHECKPOINT_PATH, encoding="utf-8") as f:
+                return set(json.load(f).get("done", []))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return set()
+
+    @staticmethod
+    def _checkpoint_save(done: Set[str]) -> None:
+        os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
+        with open(CHECKPOINT_PATH, "w", encoding="utf-8") as f:
+            json.dump({"done": list(done)}, f, ensure_ascii=False)
+
+    @staticmethod
+    def _checkpoint_clear() -> None:
+        try:
+            os.remove(CHECKPOINT_PATH)
+        except FileNotFoundError:
+            pass
+
+    # ------------------------------------------------------------------
     @staticmethod
     def _need_virtual_display() -> bool:
         """Retourne True si on est sur Linux sans DISPLAY (typiquement Docker)."""
@@ -436,6 +463,14 @@ class AsosScraper(BaseScraper):
     # ------------------------------------------------------------------
     def run(self) -> List[Product]:
         all_products: List[Product] = []
+        done_urls = self._checkpoint_load()
+
+        all_pages = ASOS_CATALOG + ASOS_BRAND_PAGES
+        total = len(all_pages)
+
+        if done_urls:
+            skipped = sum(1 for _, _, _, u in all_pages if u in done_urls)
+            logger.info(f"[ASOS] Reprise depuis checkpoint — {skipped}/{total} pages déjà traitées")
 
         vdisplay = None
         if self._need_virtual_display():
@@ -465,9 +500,13 @@ class AsosScraper(BaseScraper):
                 except Exception:
                     keystore = "7qyyrb1-46"
 
-                for genre, sexe, type_hint, cat_url in ASOS_CATALOG + ASOS_BRAND_PAGES:
+                for page_idx, (genre, sexe, type_hint, cat_url) in enumerate(all_pages):
+                    if cat_url in done_urls:
+                        logger.info(f"[ASOS] ⏭ Page {page_idx + 1}/{total} déjà traitée, on passe")
+                        continue
+
                     label = cat_url.split("q=")[-1] if "recherche" in cat_url else cat_url.split("/cat/")[0].rstrip("/").split("/")[-1]
-                    logger.info(f"[ASOS] {genre}/{sexe}/{type_hint} — {label}")
+                    logger.info(f"[ASOS] Page {page_idx + 1}/{total} — {genre}/{sexe}/{type_hint} — {label}")
 
                     product_urls = self._get_product_urls(page, cat_url)
                     logger.info(f"[ASOS] {len(product_urls)} URLs trouvées")
@@ -487,9 +526,14 @@ class AsosScraper(BaseScraper):
                             except Exception:
                                 pass
 
+                    done_urls.add(cat_url)
+                    self._checkpoint_save(done_urls)
                     self.sleep(8.0, 15.0)
 
                 browser.close()
+
+            self._checkpoint_clear()
+            logger.info("[ASOS] Checkpoint supprimé (run complet)")
         finally:
             if vdisplay is not None:
                 vdisplay.stop()

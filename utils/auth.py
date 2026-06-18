@@ -53,9 +53,11 @@ def admin_required(view_func):
 def get_ctx():
     user = current_user()
     uid = user.id if user else 0
+    loading_gif_file = UserSetting.get(uid, 'loading_gif', '') if uid else ''
     return {
         'app_name': UserSetting.get(uid, 'app_name', 'Wardrobe'),
         'accent': UserSetting.get(uid, 'accent', '#C8956C'),
         'currency': UserSetting.get(uid, 'currency', '€'),
         'me': user,
+        'loading_gif': loading_gif_file,
     }

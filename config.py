@@ -1,9 +1,11 @@
 import os
+from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 THUMB_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'thumbs')
 OUTFIT_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'outfits')
+LOADING_GIF_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads', 'loading_gifs')
 THUMB_SIZE = (500, 500)
 ALLOWED_EXT = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
 
@@ -14,7 +16,7 @@ POLLINATIONS_ENHANCE = os.environ.get('POLLINATIONS_ENHANCE', 'true').lower() ==
 POLLINATIONS_SAFE = os.environ.get('POLLINATIONS_SAFE', 'false').lower() == 'true'
 POLLINATIONS_FIXED_SEED = os.environ.get('POLLINATIONS_FIXED_SEED', '').strip()
 
-ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-sonnet-4-5')
+ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-sonnet-4-6')
 ITEMS_PER_PAGE = int(os.environ.get('ITEMS_PER_PAGE', 24))
 
 CATEGORIES = [
@@ -85,5 +87,4 @@ class Config:
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = 300
     TEMPLATES_AUTO_RELOAD = True
-    from datetime import timedelta
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)  # durée si "se souvenir de moi" coché
